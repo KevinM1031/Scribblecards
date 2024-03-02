@@ -1,3 +1,3 @@
-# flashcards
+# Flashcards
 
-Custom online flashcards because I need it.
+Custom flashcards app because I need it.
