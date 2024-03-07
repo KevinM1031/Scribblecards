@@ -47,7 +47,7 @@ fun DecksMenu() {}
 fun DeckView() {}
 
 @Composable
-fun FlashcardSession) {}
+fun FlashcardSession() {}
 
 @Composable
 fun SessionSummary() {}
