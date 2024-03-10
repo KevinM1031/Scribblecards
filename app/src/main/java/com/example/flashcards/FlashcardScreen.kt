@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.flashcards.ui.DashboardScreen
+import com.example.flashcards.ui.DeckScreen
 import com.example.flashcards.ui.MainMenuScreen
 
 enum class FlashcardScreen() {
@@ -49,6 +50,14 @@ fun FlashcardApp(
                 viewModel,
                 onDeckButtonClicked = { navController.navigate(FlashcardScreen.Deck.name) },
             )
+        }
+        composable(route = FlashcardScreen.Deck.name) {
+            DeckScreen(
+                viewModel,
+                onStartButtonClicked = { navController.navigate(FlashcardScreen.Session.name) },
+                onCreateButtonClicked = { navController.navigate(FlashcardScreen.CreateCard.name) },
+                onImportButtonClicked = { navController.navigate(FlashcardScreen.ImportCards.name) },
+                )
         }
     }
 }
