@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.flashcards.ui.Loading
+import com.example.flashcards.ui.MainMenuScreen
 import com.example.flashcards.ui.theme.FlashcardsTheme
 
 class MainActivity : ComponentActivity() {
@@ -33,94 +35,11 @@ class MainActivity : ComponentActivity() {
             FlashcardsTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-
+                    FlashcardApp()
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Loading(modifier: Modifier = Modifier) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = modifier
-    ) {
-        Spacer(Modifier.weight(1f))
-        Image(
-            painter = painterResource(id = R.drawable.dice_1),
-            contentDescription = null
-        )
-        Spacer(Modifier.weight(0.3f))
-        Text(
-            text = stringResource(R.string.loading_title),
-            fontSize = 28.sp,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.weight(2f))
-    }
-}
-
-@Composable
-fun MainMenu() {
-    Button(
-        onClick = {}
-    ) {
-        Text(
-            text = stringResource(R.string.main_menu_button_cards)
-        )
-    }
-
-    Button(
-        onClick = {}
-    ) {
-        Text(
-            text = stringResource(R.string.main_menu_button_cards)
-        )
-    }
-
-    Button(
-        onClick = {}
-    ) {
-        Text(
-            text = stringResource(R.string.main_menu_button_cards)
-        )
-    }
-}
-
-@Composable
-fun DecksMenu() {}
-
-//TEMP
-@Composable
-fun DecksMenu_Open() {}
-
-@Composable
-fun DeckOverview() {}
-
-@Composable
-fun DeckContents() {}
-
-@Composable
-fun ImportCards() {}
-
-@Composable
-fun CreateCard() {}
-
-@Composable
-fun FlashcardSession() {}
-
-@Composable
-fun SessionSummary() {}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    FlashcardsTheme {
-        Loading(modifier = Modifier.fillMaxSize())
     }
 }
