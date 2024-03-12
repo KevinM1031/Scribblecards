@@ -49,6 +49,7 @@ fun FlashcardApp(
             DashboardScreen(
                 viewModel,
                 onDeckButtonClicked = { navController.navigate(FlashcardScreen.Deck.name) },
+                onBackButtonClicked = { navController.navigateUp() }
             )
         }
         composable(route = FlashcardScreen.Deck.name) {

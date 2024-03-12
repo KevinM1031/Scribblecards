@@ -28,6 +28,7 @@ data class Bundle(
     override val name: String = "Bundle",
     override val decks: List<Deck> = listOf(),
 ) : Cards(name = name, decks = decks)
+
 data class Deck(
     override val name: String = "Deck",
     override val cards: List<Card> = listOf(),
