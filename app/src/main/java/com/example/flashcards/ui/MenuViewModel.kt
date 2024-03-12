@@ -1,5 +1,9 @@
 package com.example.flashcards.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.flashcards.data.Bundle
 import com.example.flashcards.data.Card
@@ -16,47 +20,63 @@ class MenuViewModel: ViewModel() {
     private val _uiState = MutableStateFlow(MenuUiState(DataSource.cards))
     val uiState: StateFlow<MenuUiState> = _uiState.asStateFlow()
 
-    init {
-        reset()
+    var isBundleOpen by mutableStateOf(false); private set
+    var isCreateOptionsOpen by mutableStateOf(false); private set
+    var isBundleCreatorOpen by mutableStateOf(false); private set
+
+    var numSelectedDecks by mutableStateOf(0); private set
+    var numSelectedBundles by mutableStateOf(0); private set
+
+
+    fun openCreateOptions() {
+        isCreateOptionsOpen = true
     }
 
-    fun reset() {
-        deselect()
+    fun closeCreateOptions() {
+        isCreateOptionsOpen = false
     }
 
-    fun selectDeck(deck: Deck) {
-        _uiState.value = copyOfUiState(currentDeck = deck)
+    fun toggleCreateOptions() {
+        isCreateOptionsOpen = !isCreateOptionsOpen
     }
 
-    fun selectBundle(bundle: Bundle) {
-        _uiState.value = copyOfUiState(currentBundle = bundle)
+    fun openBundleCreator() {
+        isBundleCreatorOpen = true
+        isCreateOptionsOpen = false
     }
 
-    fun deselect() {
-        _uiState.value = copyOfUiState()
+    fun closeBundleCreator() {
+        isBundleCreatorOpen = false
     }
 
-    fun createBundle(name: String = "Bundle", decks: List<Deck> = listOf()) {
-        val cards = _uiState.value.cards.toMutableList()
-        val bundle = Bundle(name, decks)
-        cards.add(bundle)
-        _uiState.value = copyOfUiState(cards = cards)
+    fun openDeck(deckIndex: Int) {
+        _uiState.value = copyOfUiState(currentDeckIndex = deckIndex)
     }
 
-    fun createDeck(name: String, cards: List<Card>) {
-
+    fun closeDeck() {
+        _uiState.value = copyOfUiState(currentDeckIndex = null)
     }
 
-    fun copyOfUiState(
+    fun openBundle(bundleIndex: Int) {
+        _uiState.value = copyOfUiState(currentBundleIndex = bundleIndex)
+        isBundleOpen = true
+    }
+
+    fun closeBundle() {
+        _uiState.value = copyOfUiState(currentBundleIndex = null)
+        isBundleOpen = false
+    }
+
+    private fun copyOfUiState(
         cards: List<Cards> = _uiState.value.cards,
-        currentDeck: Deck? = _uiState.value.currentDeck,
-        currentBundle: Bundle? = _uiState.value.currentBundle,
+        currentDeckIndex: Int? = _uiState.value.currentDeckIndex,
+        currentBundleIndex: Int? = _uiState.value.currentBundleIndex,
         ) : MenuUiState {
 
         return MenuUiState(
             cards = cards,
-            currentDeck = currentDeck,
-            currentBundle = currentBundle,
+            currentDeckIndex = currentDeckIndex,
+            currentBundleIndex = currentBundleIndex,
         )
     }
 }

@@ -8,6 +8,7 @@ abstract class Cards(
     open val name: String,
     open val decks: List<Deck>? = null,
     open val cards: List<Card>? = null,
+    private var isSelected: Boolean = false,
 ) {
     fun toBundle(): Bundle {
         if (decks == null) throw NullPointerException("List of Decks for the Bundle was never assigned")
@@ -21,6 +22,18 @@ abstract class Cards(
 
     fun isBundle(): Boolean {
         return decks != null
+    }
+
+    fun toggleSelection() {
+        isSelected = !isSelected
+    }
+
+    fun deselect() {
+        isSelected = false
+    }
+
+    fun isSelected(): Boolean {
+        return isSelected
     }
 }
 

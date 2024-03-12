@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,6 +47,7 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,6 +80,8 @@ import com.example.flashcards.data.Cards
 import com.example.flashcards.data.DataSource
 import com.example.flashcards.data.Deck
 import com.example.flashcards.ui.theme.FlashcardsTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -84,9 +89,6 @@ import kotlin.math.roundToInt
 private const val BOX_SIZE = 110
 private const val BOX_SIZE_IN_BUNDLE = 100
 
-private var isBundleOpen by mutableStateOf(false)
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: MenuViewModel,
@@ -95,93 +97,71 @@ fun DashboardScreen(
 ) {
 
     val configuration = LocalConfiguration.current
-    val smallPadding = dimensionResource(R.dimen.padding_small)
-
-    var showAddOptions by remember { mutableStateOf(false) }
+    val cardsFlow = remember { MutableStateFlow(viewModel.uiState.value.cards) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = "Dashboard") },
-                colors = TopAppBarDefaults.mediumTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                navigationIcon = {
-                    IconButton(onClick = onBackButtonClicked) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = ""
-                        )
-                    }
-                }
-            )
+            if (viewModel.isBundleCreatorOpen) {
+                BundleCreatorTopAppBar(viewModel = viewModel)
+            } else {
+                DashboardTopAppBar(onBackButtonClicked = onBackButtonClicked)
+            }
         },
         floatingActionButton = {
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
-                if (showAddOptions) {
-                    Column(
-                        horizontalAlignment = Alignment.End
-
-                    ) {
-                        FloatingActionButton(
-                            onClick = {
-
-                            },
-                            modifier = Modifier.padding(smallPadding)
-                        ) {
-                            Text(text = "Create new deck", modifier = Modifier.padding(smallPadding))
-                        }
-                        FloatingActionButton(
-                            onClick = {
-                                viewModel.createBundle("New Bundle")
-                            },
-                            modifier = Modifier.padding(smallPadding)
-                        ) {
-                            Text(text = "Create new bundle", modifier = Modifier.padding(smallPadding))
-                        }
-                    }
-                }
-                FloatingActionButton(
-                    onClick = {
-                        showAddOptions = !showAddOptions
-                    },
-                    modifier = Modifier
-                        .padding(dimensionResource(R.dimen.padding_small))
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
-                }
+            if (!viewModel.isBundleCreatorOpen) {
+                CreateOptionButton(viewModel = viewModel)
             }
         },
     ) { inderPadding ->
 
         Box(
-            modifier = Modifier.padding(inderPadding)
+            modifier = Modifier
+                .padding(inderPadding)
         ) {
-            DeckList(
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures { if (viewModel.isBundleOpen) viewModel.closeBundle() }
+                    }
+            )
+
+            CardsList(
                 onDeckButtonClicked = onDeckButtonClicked,
                 viewModel = viewModel,
                 deckIconSize = BOX_SIZE,
-                blur = isBundleOpen,
-                cards = viewModel.uiState.collectAsState().value.cards,
+                blur = viewModel.isBundleOpen,
+                cardsFlow = cardsFlow,
+                onCardsChange = { modifiedCard, index ->
+                    cardsFlow.value = cardsFlow.value.toMutableList().apply {
+                        this[index] = modifiedCard
+                    }
+                }
             )
 
-            if (isBundleOpen) {
+            if (viewModel.isBundleOpen) {
                 OpenBundle(
                     configuration = configuration,
                     viewModel = viewModel,
                     onDeckButtonClicked = onDeckButtonClicked,
+                    cardsFlow = cardsFlow,
+                    onCardsChange = { modifiedCard, index ->
+                        cardsFlow.value = cardsFlow.value.toMutableList().apply {
+                            this[index] = modifiedCard
+                        }
+                    }
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DraggableComposable(
-    cards: Cards,
+    cardsFlow: StateFlow<List<Cards>>,
+    cardsIndex: Int,
+    onCardsChange: (Cards, Int) -> Unit,
     onDeckButtonClicked: () -> Unit,
     viewModel: MenuViewModel,
     size: Int,
@@ -221,14 +201,21 @@ fun DraggableComposable(
                 }
             }
     ) {
+
+        val cards = cardsFlow.collectAsState().value[cardsIndex]
+
         if (cards.isBundle()) {
             BundleComponent(
-                bundle = cards.toBundle(),
+                cardsFlow = cardsFlow,
+                bundleIndex = cardsIndex,
+                onBundleChange = onCardsChange,
                 viewModel = viewModel,
             )
         } else {
             DeckComponent(
-                deck = cards.toDeck(),
+                cardsFlow = cardsFlow,
+                deckIndex = cardsIndex,
+                onDeckChange = onCardsChange,
                 onDeckButtonClicked = onDeckButtonClicked,
                 viewModel = viewModel,
             )
@@ -238,21 +225,26 @@ fun DraggableComposable(
 
 @Composable
 fun BundleComponent(
-    bundle: Bundle,
+    cardsFlow: StateFlow<List<Cards>>,
+    bundleIndex: Int,
+    onBundleChange: (Cards, Int) -> Unit,
     viewModel: MenuViewModel,
 ) {
+
+    val bundle = cardsFlow.collectAsState().value[bundleIndex]
+    var modifiedBundle by remember { mutableStateOf(bundle) }
+
     OutlinedButton(
         onClick = {
-            viewModel.selectBundle(bundle)
-            isBundleOpen = true
+            viewModel.openBundle(bundleIndex)
         },
         shape = RoundedCornerShape(10),
         contentPadding = PaddingValues(4.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.tertiary,
-            disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            disabledContentColor = MaterialTheme.colorScheme.secondary,
+            containerColor = if (bundle.isSelected()) MaterialTheme.colorScheme.tertiary
+                else MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = if (bundle.isSelected()) MaterialTheme.colorScheme.tertiaryContainer
+                else MaterialTheme.colorScheme.tertiary,
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -271,33 +263,28 @@ fun OpenBundle(
     configuration: Configuration,
     onDeckButtonClicked: () -> Unit,
     viewModel: MenuViewModel,
+    cardsFlow: StateFlow<List<Cards>>,
+    onCardsChange: (Cards, Int) -> Unit,
 ) {
+/*
+    val cards = cardsFlow.collectAsState().value
 
     // overall constants
     val uiState by viewModel.uiState.collectAsState()
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val overlayHeight = configuration.screenWidthDp.dp-mediumPadding
-    val decks = uiState.currentBundle!!.decks
 
     // deck list constants
     val heightLimit = overlayHeight.value.toInt()
     val numColumn = (configuration.screenWidthDp / (BOX_SIZE + smallPadding.value)).toInt()
     val numRows = (heightLimit / (BOX_SIZE + smallPadding.value)).toInt()
-        .coerceAtMost((decks.size / numColumn).toInt())
+        .coerceAtMost((cards[i].size / numColumn).toInt())
     val decksPerPage = numColumn*numRows
 
     val pagerState = rememberPagerState(pageCount = {
         ceil((decks.size.toDouble()/decksPerPage)).toInt()
     })
-
-    Button(
-        shape = RoundedCornerShape(0),
-        onClick = { isBundleOpen = false },
-        modifier = Modifier
-            .fillMaxSize()
-            .alpha(0f)
-    ) {}
 
     Card(
         modifier = Modifier
@@ -320,7 +307,7 @@ fun OpenBundle(
                         )
             )
 
-            DeckList(
+            CardsList(
                 cards = currentDeck,
                 viewModel = viewModel,
                 onDeckButtonClicked = onDeckButtonClicked,
@@ -328,26 +315,42 @@ fun OpenBundle(
             )
         }
     }
+
+ */
 }
 
 @Composable
 fun DeckComponent(
-    deck: Deck,
+    cardsFlow: StateFlow<List<Cards>>,
+    deckIndex: Int,
+    onDeckChange: (Cards, Int) -> Unit,
     onDeckButtonClicked: () -> Unit,
     viewModel: MenuViewModel,
 ) {
 
+    val deck = cardsFlow.collectAsState().value[deckIndex]
+    val modifiedDeck by remember { mutableStateOf(deck) }
+    var isPressed by remember { mutableStateOf(false) }
+
     OutlinedButton(
         onClick = {
-            viewModel.selectDeck(deck)
-            onDeckButtonClicked()
+            isPressed = modifiedDeck.isSelected()
+            if (viewModel.isBundleCreatorOpen) {
+                modifiedDeck.toggleSelection()
+                onDeckChange(modifiedDeck, deckIndex)
+                val x = modifiedDeck.isSelected()
+                Log.d("Test", "$x")
+            } else {
+                viewModel.openDeck(deckIndex)
+                onDeckButtonClicked()
+            }
         },
         shape = RoundedCornerShape(10),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.primaryContainer,
-            disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            disabledContentColor = MaterialTheme.colorScheme.secondary,
+            containerColor = if (isPressed) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.primary,
+            contentColor = if (isPressed) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.primaryContainer,
         ),
         contentPadding = PaddingValues(4.dp),
         modifier = Modifier
@@ -373,8 +376,9 @@ fun EmptyComponent() {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DeckList(
-    cards: List<Cards>,
+fun CardsList(
+    cardsFlow: StateFlow<List<Cards>>,
+    onCardsChange: (Cards, Int) -> Unit,
     onDeckButtonClicked: () -> Unit,
     viewModel: MenuViewModel,
     deckIconSize: Int,
@@ -390,13 +394,106 @@ fun DeckList(
             .blur(if (blur) 12.dp else 0.dp)
     ) {
 
+        val cards = cardsFlow.collectAsState().value
+
         for (i in 1..cards.size) {
             DraggableComposable(
-                cards = cards[i-1],
+                cardsFlow = cardsFlow,
+                cardsIndex = i-1,
+                onCardsChange = onCardsChange,
                 onDeckButtonClicked = onDeckButtonClicked,
                 viewModel = viewModel,
                 size = deckIconSize,
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardTopAppBar(
+    onBackButtonClicked: () -> Unit
+) {
+    TopAppBar(
+        title = { Text(text = "Dashboard") },
+        colors = TopAppBarDefaults.mediumTopAppBarColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        navigationIcon = {
+            IconButton(onClick = onBackButtonClicked) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = ""
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BundleCreatorTopAppBar(
+    viewModel: MenuViewModel
+) {
+    val numSelected = viewModel.numSelectedDecks + viewModel.numSelectedBundles
+
+    TopAppBar(
+        title = { Text(text = "$numSelected Selected") },
+        colors = TopAppBarDefaults.mediumTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        navigationIcon = {
+            IconButton(onClick = {
+                viewModel.closeBundleCreator()
+            }) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = ""
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun CreateOptionButton(
+    viewModel: MenuViewModel
+) {
+    val smallPadding = dimensionResource(R.dimen.padding_small)
+
+    Column(
+        horizontalAlignment = Alignment.End
+    ) {
+        if (viewModel.isCreateOptionsOpen) {
+            Column(
+                horizontalAlignment = Alignment.End
+
+            ) {
+                FloatingActionButton(
+                    onClick = {
+
+                    },
+                    modifier = Modifier.padding(smallPadding)
+                ) {
+                    Text(text = "Create new deck", modifier = Modifier.padding(smallPadding))
+                }
+                FloatingActionButton(
+                    onClick = {
+                        viewModel.openBundleCreator()
+                    },
+                    modifier = Modifier.padding(smallPadding)
+                ) {
+                    Text(text = "Create new bundle", modifier = Modifier.padding(smallPadding))
+                }
+            }
+        }
+        FloatingActionButton(
+            onClick = {
+                viewModel.toggleCreateOptions()
+            },
+            modifier = Modifier.padding(smallPadding)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add")
         }
     }
 }
