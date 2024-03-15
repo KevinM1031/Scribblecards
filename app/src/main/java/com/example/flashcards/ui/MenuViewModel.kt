@@ -27,6 +27,9 @@ class MenuViewModel: ViewModel() {
     var numSelectedDecks by mutableStateOf(0); private set
     var numSelectedBundles by mutableStateOf(0); private set
 
+    val cardsList = remember { mutableStateOf(viewModel.uiState.value.cardsList) }
+
+
 
     fun openCreateOptions() {
         isCreateOptionsOpen = true
@@ -57,6 +60,27 @@ class MenuViewModel: ViewModel() {
         _uiState.value = copyOfUiState(currentDeckIndex = null)
     }
 
+    fun toggleSelection(cards: Cards, cardsIndex: Int, onChange: (Cards, Int) -> Unit) {
+        cards.toggleSelection()
+        onChange(cards, cardsIndex)
+        if (cards.isSelected()) numSelectedDecks++ else numSelectedDecks--
+    }
+
+    fun deselectAll(cardsList: List<Cards>) : List<Cards> {
+        for (i in cardsList.indices) {
+            val cards = cardsList[i]
+            if (cards.isBundle()) {
+                for (deck in cards.decks!!) {
+                    deck.deselect()
+                }
+            } else {
+                cards.deselect()
+            }
+        }
+        numSelectedDecks = 0
+        return cardsList
+    }
+
     fun openBundle(bundleIndex: Int) {
         _uiState.value = copyOfUiState(currentBundleIndex = bundleIndex)
         isBundleOpen = true
@@ -68,13 +92,13 @@ class MenuViewModel: ViewModel() {
     }
 
     private fun copyOfUiState(
-        cards: List<Cards> = _uiState.value.cards,
+        cardsList: List<Cards> = _uiState.value.cardsList,
         currentDeckIndex: Int? = _uiState.value.currentDeckIndex,
         currentBundleIndex: Int? = _uiState.value.currentBundleIndex,
         ) : MenuUiState {
 
         return MenuUiState(
-            cards = cards,
+            cardsList = cardsList,
             currentDeckIndex = currentDeckIndex,
             currentBundleIndex = currentBundleIndex,
         )

@@ -45,10 +45,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -97,12 +100,25 @@ fun DashboardScreen(
 ) {
 
     val configuration = LocalConfiguration.current
-    val cardsFlow = remember { MutableStateFlow(viewModel.uiState.value.cards) }
+    val cardsListFlow = remember { MutableStateFlow(viewModel.uiState.value.cardsList) }
+    val cardsList = remember { mutableStateOf(viewModel.uiState.value.cardsList) }
+
+    Log.d("Test", "Scaffold recomposed")
+
 
     Scaffold(
         topBar = {
             if (viewModel.isBundleCreatorOpen) {
-                BundleCreatorTopAppBar(viewModel = viewModel)
+                BundleCreatorTopAppBar(
+                    cardsList = cardsList,
+                    viewModel = viewModel,
+                    cardsListFlow = cardsListFlow,
+                    onCardsChange = { modifiedCard, index ->
+                        cardsListFlow.value = cardsListFlow.value.toMutableList().apply {
+                            this[index] = modifiedCard
+                        }
+                    }
+                )
             } else {
                 DashboardTopAppBar(onBackButtonClicked = onBackButtonClicked)
             }
@@ -132,9 +148,9 @@ fun DashboardScreen(
                 viewModel = viewModel,
                 deckIconSize = BOX_SIZE,
                 blur = viewModel.isBundleOpen,
-                cardsFlow = cardsFlow,
+                cardsListFlow = cardsListFlow,
                 onCardsChange = { modifiedCard, index ->
-                    cardsFlow.value = cardsFlow.value.toMutableList().apply {
+                    cardsListFlow.value = cardsListFlow.value.toMutableList().apply {
                         this[index] = modifiedCard
                     }
                 }
@@ -145,9 +161,9 @@ fun DashboardScreen(
                     configuration = configuration,
                     viewModel = viewModel,
                     onDeckButtonClicked = onDeckButtonClicked,
-                    cardsFlow = cardsFlow,
+                    cardsListFlow = cardsListFlow,
                     onCardsChange = { modifiedCard, index ->
-                        cardsFlow.value = cardsFlow.value.toMutableList().apply {
+                        cardsListFlow.value = cardsListFlow.value.toMutableList().apply {
                             this[index] = modifiedCard
                         }
                     }
@@ -159,7 +175,7 @@ fun DashboardScreen(
 
 @Composable
 fun DraggableComposable(
-    cardsFlow: StateFlow<List<Cards>>,
+    cardsListFlow: StateFlow<List<Cards>>,
     cardsIndex: Int,
     onCardsChange: (Cards, Int) -> Unit,
     onDeckButtonClicked: () -> Unit,
@@ -168,8 +184,8 @@ fun DraggableComposable(
 ) {
 
     var isDragging by remember { mutableStateOf(false) }
-    var xOff by remember { mutableStateOf(0f) }
-    var yOff by remember { mutableStateOf(0f) }
+    var xOff by remember { mutableFloatStateOf(0f) }
+    var yOff by remember { mutableFloatStateOf(0f) }
     val d = LocalDensity.current
 
     Box(
@@ -202,18 +218,18 @@ fun DraggableComposable(
             }
     ) {
 
-        val cards = cardsFlow.collectAsState().value[cardsIndex]
+        val cardsList = cardsListFlow.collectAsState().value[cardsIndex]
 
-        if (cards.isBundle()) {
+        if (cardsList.isBundle()) {
             BundleComponent(
-                cardsFlow = cardsFlow,
+                cardsListFlow = cardsListFlow,
                 bundleIndex = cardsIndex,
                 onBundleChange = onCardsChange,
                 viewModel = viewModel,
             )
         } else {
             DeckComponent(
-                cardsFlow = cardsFlow,
+                cardsListFlow = cardsListFlow,
                 deckIndex = cardsIndex,
                 onDeckChange = onCardsChange,
                 onDeckButtonClicked = onDeckButtonClicked,
@@ -225,13 +241,13 @@ fun DraggableComposable(
 
 @Composable
 fun BundleComponent(
-    cardsFlow: StateFlow<List<Cards>>,
+    cardsListFlow: StateFlow<List<Cards>>,
     bundleIndex: Int,
     onBundleChange: (Cards, Int) -> Unit,
     viewModel: MenuViewModel,
 ) {
 
-    val bundle = cardsFlow.collectAsState().value[bundleIndex]
+    val bundle = cardsListFlow.collectAsState().value[bundleIndex]
     var modifiedBundle by remember { mutableStateOf(bundle) }
 
     OutlinedButton(
@@ -263,7 +279,7 @@ fun OpenBundle(
     configuration: Configuration,
     onDeckButtonClicked: () -> Unit,
     viewModel: MenuViewModel,
-    cardsFlow: StateFlow<List<Cards>>,
+    cardsListFlow: StateFlow<List<Cards>>,
     onCardsChange: (Cards, Int) -> Unit,
 ) {
 /*
@@ -321,25 +337,24 @@ fun OpenBundle(
 
 @Composable
 fun DeckComponent(
-    cardsFlow: StateFlow<List<Cards>>,
+    cardsListFlow: StateFlow<List<Cards>>,
     deckIndex: Int,
     onDeckChange: (Cards, Int) -> Unit,
     onDeckButtonClicked: () -> Unit,
     viewModel: MenuViewModel,
 ) {
 
-    val deck = cardsFlow.collectAsState().value[deckIndex]
+    Log.d("Test", "Deck button recomposed")
+
+    val deck = cardsListFlow.collectAsState().value[deckIndex]
     val modifiedDeck by remember { mutableStateOf(deck) }
-    var isPressed by remember { mutableStateOf(false) }
+    var isPressed by remember { mutableStateOf(deck.isSelected()) }
 
     OutlinedButton(
         onClick = {
-            isPressed = modifiedDeck.isSelected()
             if (viewModel.isBundleCreatorOpen) {
-                modifiedDeck.toggleSelection()
-                onDeckChange(modifiedDeck, deckIndex)
-                val x = modifiedDeck.isSelected()
-                Log.d("Test", "$x")
+                viewModel.toggleSelection(modifiedDeck, deckIndex, onDeckChange)
+                isPressed = modifiedDeck.isSelected()
             } else {
                 viewModel.openDeck(deckIndex)
                 onDeckButtonClicked()
@@ -377,7 +392,7 @@ fun EmptyComponent() {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CardsList(
-    cardsFlow: StateFlow<List<Cards>>,
+    cardsListFlow: StateFlow<List<Cards>>,
     onCardsChange: (Cards, Int) -> Unit,
     onDeckButtonClicked: () -> Unit,
     viewModel: MenuViewModel,
@@ -394,11 +409,11 @@ fun CardsList(
             .blur(if (blur) 12.dp else 0.dp)
     ) {
 
-        val cards = cardsFlow.collectAsState().value
+        val cards = cardsListFlow.collectAsState().value
 
         for (i in 1..cards.size) {
             DraggableComposable(
-                cardsFlow = cardsFlow,
+                cardsListFlow = cardsListFlow,
                 cardsIndex = i-1,
                 onCardsChange = onCardsChange,
                 onDeckButtonClicked = onDeckButtonClicked,
@@ -433,9 +448,13 @@ fun DashboardTopAppBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BundleCreatorTopAppBar(
-    viewModel: MenuViewModel
+    cardsList: MutableState<List<Cards>>,
+    viewModel: MenuViewModel,
+    cardsListFlow: StateFlow<List<Cards>>,
+    onCardsChange: (Cards, Int) -> Unit,
 ) {
     val numSelected = viewModel.numSelectedDecks + viewModel.numSelectedBundles
+    //val cardsList = cardsListFlow.collectAsState().value
 
     TopAppBar(
         title = { Text(text = "$numSelected Selected") },
@@ -444,6 +463,7 @@ fun BundleCreatorTopAppBar(
         ),
         navigationIcon = {
             IconButton(onClick = {
+                cardsList.value = viewModel.deselectAll(cardsList.value)
                 viewModel.closeBundleCreator()
             }) {
                 Icon(
