@@ -4,25 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-abstract class Cards(
+abstract class CardCollection(
     open val name: String,
-    open val decks: List<Deck>? = null,
-    open val cards: List<Card>? = null,
     private var isSelected: Boolean = false,
 ) {
-    fun toBundle(): Bundle {
-        if (decks == null) throw NullPointerException("List of Decks for the Bundle was never assigned")
-        else return Bundle(name, decks!!)
-    }
-
-    fun toDeck(): Deck {
-        if (cards == null) throw NullPointerException("List of Cards for the Deck was never assigned")
-        else return Deck(name, cards!!)
-    }
-
-    fun isBundle(): Boolean {
-        return decks != null
-    }
 
     fun toggleSelection() {
         isSelected = !isSelected
@@ -39,13 +24,13 @@ abstract class Cards(
 
 data class Bundle(
     override val name: String = "Bundle",
-    override val decks: List<Deck> = listOf(),
-) : Cards(name = name, decks = decks)
+    val decks: List<Deck> = listOf(),
+) : CardCollection(name = name)
 
 data class Deck(
     override val name: String = "Deck",
-    override val cards: List<Card> = listOf(),
-) : Cards(name = name, cards = cards)
+    val cards: List<Card> = listOf(),
+) : CardCollection(name = name)
 
 data class Card(
     val questionText: String,

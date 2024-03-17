@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    //FlashcardApp()
+                    FlashcardApp()
                 }
             }
         }

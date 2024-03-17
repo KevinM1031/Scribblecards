@@ -18,23 +18,7 @@ package com.example.flashcards.data
 import com.example.flashcards.R
 
 object DataSource {
-    val cards = listOf(
-        Deck(
-            name = "Addition and Subtraction",
-            cards = listOf(
-                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
-                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
-                Card(questionText = "4-4", answerText = "0", hintText = "zero", exampleText = "example"),
-                Card(questionText = "4+2", answerText = "6", hintText = "six", exampleText = "example"),
-                Card(questionText = "3-2", answerText = "1", hintText = "one", exampleText = "example"),
-                Card(questionText = "1+1", answerText = "2", hintText = "two", exampleText = "example"),
-                Card(questionText = "4+5", answerText = "9", hintText = "nine", exampleText = "example"),
-                Card(questionText = "8-3", answerText = "5", hintText = "five", exampleText = "example"),
-                Card(questionText = "0+2", answerText = "2", hintText = "two", exampleText = "example"),
-                Card(questionText = "9-8", answerText = "1", hintText = "one", exampleText = "example"),
-                Card(questionText = "4+1", answerText = "5", hintText = "five", exampleText = "example"),
-            )
-        ),
+    var bundles = listOf(
         Bundle(
             name = "Animals",
             decks = listOf(
@@ -168,6 +152,24 @@ object DataSource {
                         Card(questionText = "Salamander", answerText = "Amphibian"),
                     )
                 )
+            )
+        ),
+    )
+    var decks = listOf(
+        Deck(
+            name = "Addition and Subtraction",
+            cards = listOf(
+                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
+                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
+                Card(questionText = "4-4", answerText = "0", hintText = "zero", exampleText = "example"),
+                Card(questionText = "4+2", answerText = "6", hintText = "six", exampleText = "example"),
+                Card(questionText = "3-2", answerText = "1", hintText = "one", exampleText = "example"),
+                Card(questionText = "1+1", answerText = "2", hintText = "two", exampleText = "example"),
+                Card(questionText = "4+5", answerText = "9", hintText = "nine", exampleText = "example"),
+                Card(questionText = "8-3", answerText = "5", hintText = "five", exampleText = "example"),
+                Card(questionText = "0+2", answerText = "2", hintText = "two", exampleText = "example"),
+                Card(questionText = "9-8", answerText = "1", hintText = "one", exampleText = "example"),
+                Card(questionText = "4+1", answerText = "5", hintText = "five", exampleText = "example"),
             )
         ),
         Deck(
