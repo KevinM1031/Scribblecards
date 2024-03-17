@@ -8,6 +8,8 @@ data class MenuUiState (
     val isBundleOpen: Boolean = false,
     val isCreateOptionsOpen: Boolean = false,
     val isBundleCreatorOpen: Boolean = false,
+    val isBundleCreatorDialogOpen: Boolean = false,
     val numSelectedDecks: Int = 0,
     val numSelectedBundles: Int = 0,
-)
+    val userInput: String? = null,
+    )

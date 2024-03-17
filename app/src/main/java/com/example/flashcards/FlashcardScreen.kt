@@ -33,7 +33,7 @@ fun FlashcardApp(
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = FlashcardScreen.valueOf(backStackEntry?.destination?.route ?: FlashcardScreen.MainMenu.name)
-    
+
     NavHost(
         navController = navController,
         startDestination = FlashcardScreen.MainMenu.name
@@ -42,19 +42,20 @@ fun FlashcardApp(
             MainMenuScreen(
                 onCardButtonClicked = { navController.navigate(FlashcardScreen.Dashboard.name) },
                 onTutorialButtonClicked = { navController.navigate(FlashcardScreen.Tutorial.name) },
-                onSettingsButtonClicked = { navController.navigate(FlashcardScreen.Settings.name) }
+                onSettingsButtonClicked = { navController.navigate(FlashcardScreen.Settings.name) },
             )
         }
         composable(route = FlashcardScreen.Dashboard.name) {
             DashboardScreen(
                 viewModel,
                 onDeckButtonClicked = { navController.navigate(FlashcardScreen.Deck.name) },
-                onBackButtonClicked = { navController.navigateUp() }
+                onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(route = FlashcardScreen.Deck.name) {
             DeckScreen(
                 viewModel,
+                onBackButtonClicked = { navController.navigateUp() },
                 onStartButtonClicked = { navController.navigate(FlashcardScreen.Session.name) },
                 onCreateButtonClicked = { navController.navigate(FlashcardScreen.CreateCard.name) },
                 onImportButtonClicked = { navController.navigate(FlashcardScreen.ImportCards.name) },

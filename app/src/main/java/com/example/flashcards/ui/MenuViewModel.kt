@@ -40,8 +40,9 @@ class MenuViewModel: ViewModel() {
 
         closeBundle()
         closeDeck()
-        //closeBundleCreator()
+        closeBundleCreator()
         closeCreateOptions()
+        closeBundleCreatorDialog()
     }
 
     fun saveCards() {
@@ -77,7 +78,7 @@ class MenuViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 isBundleCreatorOpen = true,
-                isCreateOptionsOpen = false
+                isCreateOptionsOpen = false,
             )
         }
     }
@@ -85,10 +86,37 @@ class MenuViewModel: ViewModel() {
     fun closeBundleCreator() {
         _uiState.update { currentState ->
             currentState.copy(
-                isBundleCreatorOpen = false
+                isBundleCreatorOpen = false,
+                isBundleCreatorDialogOpen = false,
             )
         }
         deselectAll()
+    }
+
+    fun openBundleCreatorDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCreatorDialogOpen = true,
+                userInput = null,
+            )
+        }
+    }
+
+    fun closeBundleCreatorDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCreatorDialogOpen = false,
+                userInput = null,
+            )
+        }
+    }
+
+    fun setUserInput(input: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                userInput = input,
+            )
+        }
     }
 
     fun openBundle(bundleIndex: Int) {
