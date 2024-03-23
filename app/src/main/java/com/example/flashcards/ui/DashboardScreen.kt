@@ -5,6 +5,8 @@ import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -106,21 +108,6 @@ fun DashboardScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    if ( uiState.isBundleCreatorDialogOpen ) {
-        CreateBundleDialog(
-            onDismissRequest = { viewModel.closeBundleCreatorDialog() },
-            onCreateClicked = {
-                viewModel.createBundle(it)
-                viewModel.closeBundleCreator()
-                viewModel.closeBundle()
-                viewModel.closeBundleCreatorDialog()
-                viewModel.saveCards()
-            },
-            setUserInput = { viewModel.setUserInput(it) },
-            userInput = uiState.userInput,
-        )
-    }
-
     Scaffold(
         topBar = {
             val currentBundleIndex = uiState.currentBundleIndex
@@ -163,12 +150,12 @@ fun DashboardScreen(
 
             CardsList(
                 onDeckOpened = { viewModel.openDeck(it); onDeckButtonClicked() },
-                onDeckSelected = { viewModel.toggleDeckSelection(it) } ,
+                onDeckSelected = { viewModel.toggleDeckSelection(it) },
                 getDeck = { viewModel.getDeck(it) },
                 getNumDecks = { viewModel.getNumDecks() },
 
                 onBundleOpened = { viewModel.openBundle(it) },
-                onBundleSelected = { viewModel.toggleBundleSelection(it) } ,
+                onBundleSelected = { viewModel.toggleBundleSelection(it) },
                 getBundle = { viewModel.getBundle(it) },
                 getNumBundles = { viewModel.getNumBundles() },
 
@@ -198,6 +185,21 @@ fun DashboardScreen(
                 )
             }
         }
+    }
+
+    if ( uiState.isBundleCreatorDialogOpen ) {
+        CreateBundleDialog(
+            onDismissRequest = { viewModel.closeBundleCreatorDialog() },
+            onCreateClicked = {
+                viewModel.createBundle(it)
+                viewModel.closeBundleCreator()
+                viewModel.closeBundle()
+                viewModel.closeBundleCreatorDialog()
+                viewModel.saveCards()
+            },
+            setUserInput = { viewModel.setUserInput(it) },
+            userInput = uiState.userInput,
+        )
     }
 }
 
@@ -297,7 +299,7 @@ fun DraggableComposable(
                         isDragging = false
                         xOff = 0f
                         yOff = 0f
-                    }
+                    },
                 ) { change, dragAmount ->
                     change.consume()
                     xOff += dragAmount.x
@@ -318,10 +320,9 @@ fun DraggableComposable(
         } else {
             if (onDeckOpened != null && onDeckSelected != null && getDeck != null) {
                 DeckComponent(
-                    deckIndex = index,
-                    onDeckOpened = onDeckOpened,
-                    onDeckSelected = onDeckSelected,
-                    getDeck = getDeck,
+                    onDeckOpened = { onDeckOpened(index) },
+                    onDeckSelected = { onDeckSelected(index) },
+                    getDeck = { getDeck(index) },
                     isBundleCreatorOpen = isBundleCreatorOpen,
                 )
             }
@@ -364,21 +365,20 @@ fun BundleComponent(
 
 @Composable
 fun DeckComponent(
-    deckIndex: Int,
-    onDeckOpened: (Int) -> Unit,
-    onDeckSelected: (Int) -> Unit,
-    getDeck: (Int) -> Deck,
+    onDeckOpened: () -> Unit,
+    onDeckSelected: () -> Unit,
+    getDeck: () -> Deck,
     isBundleCreatorOpen: Boolean,
 ) {
 
-    val deck = getDeck(deckIndex)
+    val deck = getDeck()
 
     OutlinedButton(
         onClick = {
             if (isBundleCreatorOpen) {
-                onDeckSelected(deckIndex)
+                onDeckSelected()
             } else {
-                onDeckOpened(deckIndex)
+                onDeckOpened()
             }
         },
         shape = RoundedCornerShape(10),
@@ -597,6 +597,9 @@ fun CreateBundleDialog(
     setUserInput: (String) -> Unit,
     userInput: String?,
 ) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -627,7 +630,7 @@ fun CreateBundleDialog(
                     textAlign = TextAlign.Center,
                 )
                 OutlinedTextField(
-                    value = userInput ?: "",
+                    value = userInput ?: "New Bundle",
                     onValueChange = { setUserInput(it) },
                     label = { Text("Label") },
                     modifier = Modifier

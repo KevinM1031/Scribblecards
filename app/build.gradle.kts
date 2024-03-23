@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.flashcards"
-        minSdk = 24
+        minSdk = 25
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation(libs.androidx.room.common)
+    implementation(libs.androidx.compose.material)
 
     testImplementation(libs.junit)
 

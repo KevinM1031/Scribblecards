@@ -55,7 +55,10 @@ fun FlashcardApp(
         composable(route = FlashcardScreen.Deck.name) {
             DeckScreen(
                 viewModel,
-                onBackButtonClicked = { navController.navigateUp() },
+                onBackButtonClicked = {
+                    navController.navigateUp()
+                    viewModel.deselectAllCards()
+                },
                 onStartButtonClicked = { navController.navigate(FlashcardScreen.Session.name) },
                 onCreateButtonClicked = { navController.navigate(FlashcardScreen.CreateCard.name) },
                 onImportButtonClicked = { navController.navigate(FlashcardScreen.ImportCards.name) },
