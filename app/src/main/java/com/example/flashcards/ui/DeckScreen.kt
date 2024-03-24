@@ -74,7 +74,7 @@ import java.util.Date
 fun DeckScreen (
     viewModel: MenuViewModel,
     onBackButtonClicked: () -> Unit,
-    onStartButtonClicked: () -> Unit,
+    onStartButtonClicked: (String) -> Unit,
     onCreateButtonClicked: () -> Unit,
     onImportButtonClicked: () -> Unit,
 ) {
@@ -129,7 +129,13 @@ fun DeckScreen (
                         ) {
                             Spacer(modifier = Modifier.weight(1f))
                             Button(
-                                onClick = { onStartButtonClicked() },
+                                onClick = {
+                                    if (viewModel.isBundleOpen()) {
+                                        onStartButtonClicked("${uiState.currentBundleIndex!!}&${uiState.currentDeckIndex!!}")
+                                    } else {
+                                        onStartButtonClicked("${uiState.currentDeckIndex!!}")
+                                    }
+                                },
                                 modifier = Modifier
                                     .width(160.dp),
                             ) {
@@ -594,6 +600,6 @@ fun TipDialog(
 @Composable
 fun DeckScreenPreview() {
     FlashcardsTheme() {
-        DeckScreen(viewModel(), {}, {}, {}, {})
+        DeckScreen(viewModel(), {}, {a -> {a}}, {}, {})
     }
 }

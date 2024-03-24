@@ -5,10 +5,12 @@ import androidx.compose.runtime.getValue
 import com.example.flashcards.ui.MenuViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.flashcards.ui.CreateCardScreen
 import com.example.flashcards.ui.DashboardScreen
 import com.example.flashcards.ui.DeckScreen
@@ -38,7 +40,6 @@ fun FlashcardApp(
 ) {
 
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentScreen = FlashcardScreen.valueOf(backStackEntry?.destination?.route ?: FlashcardScreen.MainMenu.name)
 
     NavHost(
         navController = navController,
@@ -62,10 +63,10 @@ fun FlashcardApp(
             DeckScreen(
                 menuViewModel,
                 onBackButtonClicked = { navController.navigateUp() },
-                onStartButtonClicked = { navController.navigate(FlashcardScreen.Session.name) },
+                onStartButtonClicked = {navController.navigate("${FlashcardScreen.Session.name}/$it") },
                 onCreateButtonClicked = { navController.navigate(FlashcardScreen.CreateCard.name) },
                 onImportButtonClicked = { navController.navigate(FlashcardScreen.ImportCards.name) },
-                )
+            )
         }
         composable(route = FlashcardScreen.CreateCard.name) {
             CreateCardScreen(
@@ -79,10 +80,18 @@ fun FlashcardApp(
                 onBackButtonClicked = { navController.navigateUp() },
             )
         }
-        composable(route = FlashcardScreen.Session.name) {
+        composable(
+            route = "${FlashcardScreen.Session.name}/{index}",
+            arguments = listOf(
+                navArgument("index") { type = NavType.StringType },
+            )
+        ) {
+            val param = it.arguments?.getString("index") ?: ""
             SessionScreen(
                 sessionViewModel,
+                param,
                 onBackButtonClicked = { navController.navigateUp() },
+
             )
         }
         composable(route = FlashcardScreen.Summary.name) {
