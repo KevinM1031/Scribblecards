@@ -9,9 +9,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.flashcards.ui.CreateCardScreen
 import com.example.flashcards.ui.DashboardScreen
 import com.example.flashcards.ui.DeckScreen
+import com.example.flashcards.ui.ImportCardsScreen
 import com.example.flashcards.ui.MainMenuScreen
+import com.example.flashcards.ui.SessionScreen
+import com.example.flashcards.ui.SessionViewModel
+import com.example.flashcards.ui.SummaryScreen
 
 enum class FlashcardScreen() {
     MainMenu,
@@ -27,7 +32,8 @@ enum class FlashcardScreen() {
 
 @Composable
 fun FlashcardApp(
-    viewModel: MenuViewModel = viewModel(),
+    menuViewModel: MenuViewModel = viewModel(),
+    sessionViewModel: SessionViewModel = viewModel(),
     navController: NavHostController = rememberNavController()
 ) {
 
@@ -47,22 +53,43 @@ fun FlashcardApp(
         }
         composable(route = FlashcardScreen.Dashboard.name) {
             DashboardScreen(
-                viewModel,
+                menuViewModel,
                 onDeckButtonClicked = { navController.navigate(FlashcardScreen.Deck.name) },
                 onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(route = FlashcardScreen.Deck.name) {
             DeckScreen(
-                viewModel,
-                onBackButtonClicked = {
-                    navController.navigateUp()
-                    viewModel.deselectAllCards()
-                },
+                menuViewModel,
+                onBackButtonClicked = { navController.navigateUp() },
                 onStartButtonClicked = { navController.navigate(FlashcardScreen.Session.name) },
                 onCreateButtonClicked = { navController.navigate(FlashcardScreen.CreateCard.name) },
                 onImportButtonClicked = { navController.navigate(FlashcardScreen.ImportCards.name) },
                 )
+        }
+        composable(route = FlashcardScreen.CreateCard.name) {
+            CreateCardScreen(
+                menuViewModel,
+                onBackButtonClicked = { navController.navigateUp() },
+            )
+        }
+        composable(route = FlashcardScreen.ImportCards.name) {
+            ImportCardsScreen(
+                menuViewModel,
+                onBackButtonClicked = { navController.navigateUp() },
+            )
+        }
+        composable(route = FlashcardScreen.Session.name) {
+            SessionScreen(
+                sessionViewModel,
+                onBackButtonClicked = { navController.navigateUp() },
+            )
+        }
+        composable(route = FlashcardScreen.Summary.name) {
+            SummaryScreen(
+                sessionViewModel,
+                onBackButtonClicked = { navController.navigateUp() },
+            )
         }
     }
 }

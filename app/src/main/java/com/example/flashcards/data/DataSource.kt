@@ -27,8 +27,7 @@ object DataSource {
             name = "Animals",
             decks = listOf(
                 Deck(
-                    name = "Desert",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Desert", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Rattlesnake", answerText = "Reptile"),
                         Card(questionText = "Shrew", answerText = "Mammal"),
@@ -38,8 +37,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Ocean",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Ocean", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Eel", answerText = "Fish"),
                         Card(questionText = "Sardine", answerText = "Fish"),
@@ -49,8 +47,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -60,8 +57,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -71,8 +67,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -82,8 +77,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -93,8 +87,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -104,8 +97,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -115,8 +107,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -126,8 +117,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -137,8 +127,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -148,8 +137,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -159,8 +147,7 @@ object DataSource {
                     )
                 ),
                 Deck(
-                    name = "Forest",
-                    dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
                     cards = listOf(
                         Card(questionText = "Frog", answerText = "Amphibian"),
                         Card(questionText = "Turtle", answerText = "Reptile"),
@@ -174,8 +161,7 @@ object DataSource {
     )
     var decks = listOf(
         Deck(
-            name = "Addition and Subtraction",
-            dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+            data = DeckData(name = "Addition and Subtraction", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
             cards = listOf(
                 Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
                 Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -191,8 +177,7 @@ object DataSource {
             )
         ),
         Deck(
-            name = "Math 2",
-            dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+            data = DeckData(name = "Math 2", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
             cards = listOf(
                 Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
                 Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -208,8 +193,7 @@ object DataSource {
             )
         ),
         Deck(
-            name = "Math 3",
-            dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+            data = DeckData(name = "Math 3", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
             cards = listOf(
                 Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
                 Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -225,8 +209,7 @@ object DataSource {
             )
         ),
         Deck(
-            name = "Math 4",
-            dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+            data = DeckData(name = "Math 4", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
             cards = listOf(
                 Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
                 Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -242,8 +225,7 @@ object DataSource {
             )
         ),
         Deck(
-            name = "Math 5",
-            dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+            data = DeckData(name = "Math 5", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
             cards = listOf(
                 Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
                 Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -259,8 +241,7 @@ object DataSource {
             )
         ),
         Deck(
-            name = "Math 6",
-            dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+            data = DeckData(name = "Math 6", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
             cards = listOf(
                 Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
                 Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -276,8 +257,7 @@ object DataSource {
             )
         ),
         Deck(
-            name = "Math 7",
-            dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
+            data = DeckData(name = "Math 7", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
             cards = listOf(
                 Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
                 Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),

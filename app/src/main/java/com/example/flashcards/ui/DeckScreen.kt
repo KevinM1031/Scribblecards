@@ -2,19 +2,12 @@ package com.example.flashcards.ui
 
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.ScrollableDefaults
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,55 +17,43 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,12 +63,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.wear.compose.material.dialog.Dialog
 import com.example.flashcards.R
 import com.example.flashcards.data.Card
 import com.example.flashcards.data.DataSource
 import com.example.flashcards.data.Deck
-import kotlinx.coroutines.launch
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,11 +79,10 @@ fun DeckScreen (
     onImportButtonClicked: () -> Unit,
 ) {
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
     val uiState by viewModel.uiState.collectAsState()
 
-    val deckIndex = uiState.currentDeckIndex ?: 1 //TODO remove ?:
-    val deck = uiState.currentDeck ?: DataSource.decks[1] //TODO remove ?:
+    val deck = viewModel.getCurrentDeck()
+    val deckIndex = uiState.currentDeckIndex ?: 1 // TODO remove ?: null
 
     Scaffold(
         topBar = {
@@ -115,7 +93,7 @@ fun DeckScreen (
                 ),
                 title = {
                     Text(
-                        text = deck.name,
+                        text = deck.data.name,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -132,7 +110,7 @@ fun DeckScreen (
                     IconButton(onClick = { /* do something */ }) {
                         Icon(
                             imageVector = Icons.Filled.Delete,
-                            contentDescription = "Delete Deck"
+                            contentDescription = "Delete deck"
                         )
                     }
                 },
@@ -178,29 +156,22 @@ fun DeckScreen (
                 )
                 if (uiState.isSessionOptionsOpen) {
                     SessionOptions(
-                        showHints = deck.showHints,
-                        showExamples = deck.showExamples,
-                        flipQnA = deck.flipQnA,
-                        doubleDifficulty = deck.doubleDifficulty,
+                        getDeck = { viewModel.getCurrentDeck() },
                         setShowHints = {
-                            val temp = deck.copy()
-                            temp.showHints = it
-                            viewModel.updateDeck(deckIndex, temp)
+                            deck.data.showHints = it
+                            viewModel.update()
                         },
                         setShowExamples = {
-                            val temp = deck.copy()
-                            temp.showExamples = it
-                            viewModel.updateDeck(deckIndex, temp)
+                            deck.data.showExamples = it
+                            viewModel.update()
                         },
                         setFlipQnA = {
-                            val temp = deck.copy()
-                            temp.flipQnA = it
-                            viewModel.updateDeck(deckIndex, temp)
+                            deck.data.flipQnA = it
+                            viewModel.update()
                         },
                         setDoubleDifficulty = {
-                            val temp = deck.copy()
-                            temp.doubleDifficulty = it
-                            viewModel.updateDeck(deckIndex, temp)
+                            deck.data.doubleDifficulty = it
+                            viewModel.update()
                         },
                         onTipButtonClicked = {
                             viewModel.setTipText("In \"Double Difficulty\" mode, a card isn't considered completed until you have guessed it correctly two times in a row.",)
@@ -212,47 +183,57 @@ fun DeckScreen (
         },
     ) { innerPadding ->
 
-        val scrollAmount = rememberLazyListState() // State for the first Row, X
-        val scope = rememberCoroutineScope()
-        val scrollState = rememberScrollableState { delta ->
-            scope.launch {
-                scrollAmount.scrollBy(-delta)
-            }
-            delta
+        val scrollState = rememberScrollState()
+        val deckStatsHeightDp = 300.dp
+        val deckStatsHeightPx = with(LocalDensity.current) { deckStatsHeightDp.toPx() }.toInt()
+        var hidden by remember { mutableStateOf(true) }
+
+        if (!hidden && scrollState.value >= deckStatsHeightPx) {
+            hidden = true
+
+        } else if (hidden && scrollState.value < deckStatsHeightPx) {
+            hidden = false
+        }
+
+        val customCardEditorBar = @Composable {
+            CardEditorBar(
+                onAllCardsSelected = { viewModel.selectAllCardsInCurrentDeck() },
+                onAllCardsDeselected = { viewModel.deselectAllCardsInCurrentDeck() },
+                onCardSelectorOpened = { viewModel.openCardSelector() },
+                onCardSelectorClosed = { viewModel.closeCardSelector() },
+                numCards = viewModel.getNumCardsInCurrentDeck(),
+                numSelectedCards = uiState.numSelectedCards,
+                isCardSelectorOpen = uiState.isCardSelectorOpen,
+                onCreateButtonClicked = onCreateButtonClicked,
+                onCardDeleteButtonClicked = { viewModel.deleteSelectedCardsInCurrentDeck() }
+            )
         }
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
                 .padding(innerPadding)
-                .scrollable(scrollState, Orientation.Horizontal, flingBehavior = ScrollableDefaults.flingBehavior())
         ) {
+            if (hidden) customCardEditorBar()
 
-            DeckStats(
-                deck = deck,
-            )
-            TopAppBar(
-                colors = topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                title = {
-                    Text(
-                        text = "Card Manager",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {  },
-                actions = {  },
-            )
-            CardList(
-                getNumCards = { viewModel.getNumCardsInCurrentDeck() },
-                getCard = { viewModel.getCardFromCurrentDeck(it) },
-                onCardSelected = { viewModel.toggleCardSelection(deckIndex, it) },
+            Column(
                 modifier = Modifier
-                    .verticalScroll(rememberScrollState()),
-            )
+                    .verticalScroll(scrollState)
+            ) {
+                DeckStats(
+                    deck = deck,
+                    modifier = Modifier
+                        .height(deckStatsHeightDp)
+                )
+                if (!hidden) customCardEditorBar()
+                CardList(
+                    getNumCards = { viewModel.getNumCardsInCurrentDeck() },
+                    getCard = { viewModel.getCardFromCurrentDeck(it) },
+                    onCardSelected = {
+                        viewModel.toggleCardSelection(deckIndex, it)
+                        viewModel.openCardSelector()
+                    },
+                )
+            }
         }
     }
 
@@ -262,6 +243,85 @@ fun DeckScreen (
             onDismissRequest = { viewModel.closeTip() }
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CardEditorBar(
+    onAllCardsSelected: () -> Unit,
+    onAllCardsDeselected: () -> Unit,
+    onCardSelectorOpened: () -> Unit,
+    onCardSelectorClosed: () -> Unit,
+    numCards: Int,
+    numSelectedCards: Int,
+    isCardSelectorOpen: Boolean,
+    onCreateButtonClicked: () -> Unit,
+    onCardDeleteButtonClicked: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val mediumPadding = dimensionResource(R.dimen.padding_medium_small)
+
+    TopAppBar(
+        colors = topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            titleContentColor = MaterialTheme.colorScheme.primary,
+        ),
+        title = {
+            Text(
+                text = if (isCardSelectorOpen)
+                    "$numSelectedCards / $numCards Selected"
+                    else if (numCards == 1) "$numCards Card total"
+                    else "$numCards Cards total",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        navigationIcon = {
+            if (isCardSelectorOpen) {
+                IconButton(onClick = onCardSelectorClosed) {
+                    Icon(
+                        imageVector = Icons.Filled.Clear,
+                        contentDescription = "Quit selector"
+                    )
+                }
+            }
+        },
+        actions = {
+            IconButton(onClick = onCreateButtonClicked) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Add"
+                )
+            }
+            if (isCardSelectorOpen) {
+                IconButton(
+                    onClick = onCardDeleteButtonClicked,
+                    enabled = numCards > 0 && numSelectedCards > 0,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete card"
+                    )
+                }
+            }
+            Checkbox(
+                onCheckedChange = {
+                    if (numCards == numSelectedCards) {
+                        onAllCardsDeselected()
+                    } else {
+                        onCardSelectorOpened()
+                        onAllCardsSelected()
+                    }
+                },
+                checked = numCards > 0 && numCards == numSelectedCards,
+                enabled = numCards > 0,
+                modifier = Modifier
+                    .padding(end = mediumPadding)
+            )
+        },
+        modifier = modifier
+            .wrapContentHeight(Alignment.CenterVertically)
+    )
 }
 
 @Composable
@@ -331,18 +391,20 @@ fun CardComponent(
 @Composable
 fun DeckStats(
     deck: Deck,
+    modifier: Modifier = Modifier,
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val circleSize = 164.dp
 
-    val masteryLevel = deck.getMasteryLevel()
-    val dateStudied = Date(System.currentTimeMillis() - deck.dateStudied.time)
+    val masteryLevel = deck.data.masteryLevel
+    val dateStudied = Date(System.currentTimeMillis() - deck.data.dateStudied.time)
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .background(color = MaterialTheme.colorScheme.tertiaryContainer)
             .fillMaxWidth()
             .wrapContentWidth(Alignment.CenterHorizontally)
+            .wrapContentHeight(Alignment.CenterVertically)
             .padding(mediumPadding)
     ) {
         Column(
@@ -397,10 +459,7 @@ fun DeckStats(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SessionOptions(
-    showHints: Boolean,
-    showExamples: Boolean,
-    flipQnA: Boolean,
-    doubleDifficulty: Boolean,
+    getDeck: () -> Deck,
     setShowHints: (Boolean) -> Unit,
     setShowExamples: (Boolean) -> Unit,
     setFlipQnA: (Boolean) -> Unit,
@@ -408,6 +467,9 @@ fun SessionOptions(
     onTipButtonClicked: () -> Unit,
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
+    val deck = getDeck()
+
+    Log.d("debug", "updated")
 
     Column(
         verticalArrangement = Arrangement.SpaceEvenly,
@@ -419,14 +481,14 @@ fun SessionOptions(
     ) {
         CustomSwitch(
             label = "Display hints by default",
-            checked = showHints,
+            checked = deck.data.showHints,
             onChecked = setShowHints,
             modifier = Modifier
                 .padding(horizontal = smallPadding)
         )
         CustomSwitch(
             label = "Display examples by default",
-            checked = showExamples,
+            checked = deck.data.showExamples,
             onChecked = setShowExamples,
             modifier = Modifier
                 .padding(horizontal = smallPadding)
@@ -434,7 +496,7 @@ fun SessionOptions(
         )
         CustomSwitch(
             label = "Flip questions and answers",
-            checked = flipQnA,
+            checked = deck.data.flipQnA,
             onChecked = setFlipQnA,
             modifier = Modifier
                 .padding(horizontal = smallPadding)
@@ -442,7 +504,7 @@ fun SessionOptions(
         )
         CustomSwitch(
             label = "Double Difficulty",
-            checked = doubleDifficulty,
+            checked = deck.data.doubleDifficulty,
             onChecked = setDoubleDifficulty,
             showTip = true,
             onTipButtonClicked = onTipButtonClicked,

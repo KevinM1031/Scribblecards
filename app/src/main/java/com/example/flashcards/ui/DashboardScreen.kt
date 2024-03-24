@@ -107,6 +107,7 @@ fun DashboardScreen(
     viewModel.softReset()
 
     val uiState by viewModel.uiState.collectAsState()
+    val isBundleOpen = viewModel.isBundleOpen()
 
     Scaffold(
         topBar = {
@@ -119,7 +120,7 @@ fun DashboardScreen(
                     onCreateClicked = { viewModel.openBundleCreatorDialog() },
                 )
 
-            } else if (uiState.isBundleOpen && currentBundleIndex != null) {
+            } else if (isBundleOpen && currentBundleIndex != null) {
                 DashboardTopAppBar(
                     onBackButtonClicked = { viewModel.closeBundle() },
                     title = viewModel.getBundle(currentBundleIndex).name
@@ -152,20 +153,20 @@ fun DashboardScreen(
                 onDeckOpened = { viewModel.openDeck(it); onDeckButtonClicked() },
                 onDeckSelected = { viewModel.toggleDeckSelection(it) },
                 getDeck = { viewModel.getDeck(it) },
-                getNumDecks = { viewModel.getNumDecks() },
+                numDecks = viewModel.getNumDecks(),
 
                 onBundleOpened = { viewModel.openBundle(it) },
                 onBundleSelected = { viewModel.toggleBundleSelection(it) },
                 getBundle = { viewModel.getBundle(it) },
-                getNumBundles = { viewModel.getNumBundles() },
+                numBundles = viewModel.getNumBundles(),
 
                 isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                 cardIconSize = BOX_SIZE_DP,
                 padding = dimensionResource(R.dimen.padding_medium),
-                blur = uiState.isBundleOpen,
+                blur = isBundleOpen,
             )
 
-            if (uiState.isBundleOpen) {
+            if (isBundleOpen) {
 
                 Box(
                     modifier = Modifier
@@ -178,7 +179,7 @@ fun DashboardScreen(
                     onDeckOpened = { viewModel.openDeck(it); onDeckButtonClicked() },
                     onDeckSelected = { viewModel.toggleDeckSelection(it) } ,
                     getDeck = { viewModel.getDeckFromCurrentBundle(it) },
-                    getNumDecks = { viewModel.getNumDecksInCurrentBundle() },
+                    numDecks = viewModel.getNumDecksInCurrentBundle(),
                     getBundle = { viewModel.getBundle(it) },
                     isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                     cardIconSize = BOX_SIZE_IN_BUNDLE_DP,
@@ -209,12 +210,12 @@ fun CardsList(
     onDeckOpened: (Int) -> Unit,
     onDeckSelected: (Int) -> Unit,
     getDeck: (Int) -> Deck,
-    getNumDecks: () -> Int,
+    numDecks: Int,
 
     onBundleOpened: (Int) -> Unit,
     onBundleSelected: (Int) -> Unit,
     getBundle: (Int) -> Bundle,
-    getNumBundles: () -> Int,
+    numBundles: Int,
 
     isBundleCreatorOpen: Boolean,
     cardIconSize: Int,
@@ -232,7 +233,7 @@ fun CardsList(
             .wrapContentSize(Alignment.TopCenter)
     ) {
 
-        for (i in 0..<getNumBundles()) {
+        for (i in 0..<numBundles) {
             DraggableComposable(
                 index = i,
                 onBundleOpened = onBundleOpened,
@@ -244,7 +245,7 @@ fun CardsList(
             )
         }
 
-        for (i in 0..<getNumDecks()) {
+        for (i in 0..<numDecks) {
             DraggableComposable(
                 index = i,
                 onDeckOpened = onDeckOpened,
@@ -394,7 +395,7 @@ fun DeckComponent(
 
     ) {
         Text(
-            text = deck.name,
+            text = deck.data.name,
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
         )
@@ -404,7 +405,7 @@ fun DeckComponent(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OpenBundle(
-    getNumDecks: () -> Int,
+    numDecks: Int,
     configuration: Configuration,
     cardIconSize: Int,
     onDeckOpened: ((Int) -> Unit)? = null,
@@ -427,7 +428,6 @@ fun OpenBundle(
             configuration.screenHeightDp - mediumPadding.value*2
         else
             configuration.screenWidthDp - mediumPadding.value*2
-    val numDecks = getNumDecks()
 
     Card(
         modifier = Modifier

@@ -29,7 +29,8 @@ class MenuViewModel: ViewModel() {
     }
 
     fun softReset() {
-
+        deselectAllCards()
+        closeCardSelector()
     }
 
     fun reset() {
@@ -116,6 +117,23 @@ class MenuViewModel: ViewModel() {
         }
     }
 
+    fun openCardSelector() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isCardSelectorOpen = true,
+            )
+        }
+    }
+
+    fun closeCardSelector() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isCardSelectorOpen = false,
+            )
+        }
+        deselectAllCards()
+    }
+
     fun setUserInput(input: String) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -152,7 +170,6 @@ class MenuViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 currentBundleIndex = bundleIndex,
-                isBundleOpen = true
             )
         }
     }
@@ -161,9 +178,12 @@ class MenuViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 currentBundleIndex = null,
-                isBundleOpen = false
             )
         }
+    }
+
+    fun isBundleOpen(): Boolean {
+        return _uiState.value.currentBundleIndex != null
     }
 
     /**
@@ -210,17 +230,32 @@ class MenuViewModel: ViewModel() {
         }
     }
 
+    fun getCurrentDeck(): Deck {
+        return if (isBundleOpen()) {
+            _uiState.value.bundles[_uiState.value.currentBundleIndex!!].decks[_uiState.value.currentDeckIndex!!]
+        } else {
+            _uiState.value.decks[_uiState.value.currentDeckIndex!!]
+        }
+
+        /* TODO remove
+        return if (isBundleOpen()) {
+            _uiState.value.bundles[_uiState.value.currentBundleIndex!!].decks[_uiState.value.currentDeckIndex!!]
+        } else {
+            _uiState.value.decks[1]
+        }
+
+         */
+    }
+
     fun openDeck(index: Int) {
         _uiState.update { currentState ->
-            if (currentState.isBundleOpen) {
+            if (isBundleOpen()) {
                 currentState.copy(
                     currentDeckIndex = index,
-                    currentDeck = currentState.bundles[currentState.currentBundleIndex!!].decks[index],
                 )
             } else {
                 currentState.copy(
                     currentDeckIndex = index,
-                    currentDeck = currentState.decks[index],
                 )
             }
         }
@@ -230,51 +265,15 @@ class MenuViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 currentDeckIndex = null,
-                currentDeck = null,
             )
         }
     }
 
-    fun updateDeck(
-        index: Int,
-        newDeck: Deck,
-    ) {
+    fun update() {
         _uiState.update { currentState ->
-            if (currentState.isBundleOpen) {
-                val newBundles = currentState.bundles.toMutableList()
-                val newDecks = newBundles[currentState.currentBundleIndex!!].decks.toMutableList()
-                newDecks[index] = newDeck
-                newBundles[currentState.currentBundleIndex] = Bundle(
-                    name = newBundles[currentState.currentBundleIndex].name,
-                    decks = newDecks,
-                )
-
-                if (index == currentState.currentDeckIndex) {
-                    currentState.copy(
-                        currentDeck = newDeck,
-                        bundles = newBundles,
-                    )
-                } else {
-                    currentState.copy(
-                        bundles = newBundles,
-                    )
-                }
-
-            } else {
-                val newDecks = currentState.decks.toMutableList()
-                newDecks[index] = newDeck
-
-                if (index == currentState.currentDeckIndex) {
-                    currentState.copy(
-                        currentDeck = newDeck,
-                        decks = newDecks,
-                    )
-                } else {
-                    currentState.copy(
-                        decks = newDecks,
-                    )
-                }
-            }
+            currentState.copy(
+                lastUpdated = System.currentTimeMillis(),
+            )
         }
     }
 
@@ -367,7 +366,33 @@ class MenuViewModel: ViewModel() {
         }
     }
 
+    fun selectAllCardsInCurrentDeck() {
+        deselectAllCards()
+        val cards = getCurrentDeck().cards
+        for (card in cards) {
+            card.select()
+        }
+        _uiState.update { currentState ->
+            currentState.copy(
+                numSelectedCards = cards.size,
+            )
+        }
+    }
+
+    fun deselectAllCardsInCurrentDeck() {
+        val cards = getCurrentDeck().cards
+        for (card in cards) {
+            card.deselect()
+        }
+        _uiState.update { currentState ->
+            currentState.copy(
+                numSelectedCards = 0,
+            )
+        }
+    }
+
     fun deselectAllCards() {
+        if (_uiState.value.numSelectedCards == 0) return
         for (bundle in _uiState.value.bundles) {
             for (deck in bundle.decks) {
                 for (card in deck.cards) {
@@ -385,6 +410,17 @@ class MenuViewModel: ViewModel() {
                 numSelectedCards = 0,
             )
         }
+    }
+
+    fun deleteSelectedCardsInCurrentDeck() {
+        val deck = getCurrentDeck()
+        val newCards = mutableListOf<Card>()
+        for (card in deck.cards) {
+            if (!card.isSelected())
+                newCards.add(card)
+        }
+        update()
+        deselectAllCardsInCurrentDeck()
     }
 
     fun getNumDecks() : Int {
@@ -408,12 +444,12 @@ class MenuViewModel: ViewModel() {
     }
 
     fun getNumCardsInCurrentDeck() : Int {
-        return DataSource.decks[1].cards.size //TODO remove
-        //return _uiState.value.currentDeck?.cards?.size ?: 0
+        //return DataSource.decks[1].cards.size //TODO remove
+        return getCurrentDeck().cards.size
     }
 
     fun getCardFromCurrentDeck(index: Int) : Card {
-        return DataSource.decks[1].cards[index] //TODO remove
-        //return _uiState.value.currentDeck?.cards!![index]
+        //return DataSource.decks[1].cards[index] //TODO remove
+        return getCurrentDeck().cards[index]
     }
 }

@@ -10,15 +10,19 @@ abstract class Selectable(
     private var isSelected: Boolean = false,
     ) {
 
-    fun toggleSelection() {
+    open fun toggleSelection() {
         isSelected = !isSelected
     }
 
-    fun deselect() {
+    open fun select() {
+        isSelected = true
+    }
+
+    open fun deselect() {
         isSelected = false
     }
 
-    fun isSelected(): Boolean {
+    open fun isSelected(): Boolean {
         return isSelected
     }
 }
@@ -30,8 +34,47 @@ data class Bundle(
 ) : Selectable()
 
 data class Deck(
-    val name: String = "Deck",
     val cards: List<Card> = listOf(),
+    val data: DeckData,
+
+) : Selectable() {
+
+    init {
+        updateValues()
+    }
+
+    fun updateValues() {
+        updateMasteryLevel()
+        updateNumSelected()
+    }
+
+    fun updateMasteryLevel() {
+        if (cards.isEmpty()) {
+            data.masteryLevel = 0f
+        } else {
+            var sum = 0f
+            for (card in cards) {
+                sum += card.getMasteryLevel()
+            }
+            data.masteryLevel = sum / cards.size
+        }
+    }
+
+    fun updateNumSelected() {
+        if (cards.isEmpty()) {
+            data.numSelected = 0
+        } else {
+            var num = 0
+            for (card in cards) {
+                if (card.isSelected()) num++
+            }
+            data.numSelected = num
+        }
+    }
+}
+
+data class DeckData(
+    val name: String = "Deck",
     var dateCreated: Date,
     var dateUpdated: Date,
     var dateStudied: Date,
@@ -41,29 +84,9 @@ data class Deck(
     var flipQnA: Boolean = false,
     var doubleDifficulty: Boolean = false,
 
-    private var masteryLevel: Float? = null,
-
-) : Selectable() {
-
-    init {
-        masteryLevel = getMasteryLevel()
-    }
-
-    fun getMasteryLevel(): Float {
-        if (masteryLevel == null) {
-            updateMasteryLevel()
-        }
-        return masteryLevel!!
-    }
-
-    fun updateMasteryLevel() {
-        var sum = 0f
-        for (card in cards) {
-            sum += card.getMasteryLevel()
-        }
-        masteryLevel = sum / cards.size
-    }
-}
+    var masteryLevel: Float = 0f,
+    var numSelected: Int = 0,
+)
 
 data class Card(
     val questionText: String,
@@ -173,7 +196,7 @@ class SessionManager(
         for (card in deck.cards) {
             card.endStudying()
         }
-        deck.dateStudied = Date(System.currentTimeMillis())
+        deck.data.dateStudied = Date(System.currentTimeMillis())
     }
 
     fun quitSession() {
@@ -182,6 +205,6 @@ class SessionManager(
         for (card in deck.cards) {
             card.quitStudying()
         }
-        deck.dateStudied = Date(System.currentTimeMillis())
+        deck.data.dateStudied = Date(System.currentTimeMillis())
     }
 }
