@@ -136,6 +136,7 @@ fun DeckScreen (
                                         onStartButtonClicked("${uiState.currentDeckIndex!!}")
                                     }
                                 },
+                                enabled = deck.cards.isNotEmpty(),
                                 modifier = Modifier
                                     .width(160.dp),
                             ) {

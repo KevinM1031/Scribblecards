@@ -24,8 +24,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
@@ -44,6 +47,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
@@ -61,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -70,8 +75,10 @@ import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Card
+import com.example.flashcards.data.CardHistory
 import com.example.flashcards.data.DataSource
 import com.example.flashcards.data.Deck
+import java.time.format.TextStyle
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,7 +92,11 @@ fun SessionScreen (
     viewModel.setup(param)
 
     val uiState by viewModel.uiState.collectAsState()
-    val deck = uiState.deck
+    val deck = viewModel.getCurrentDeck()
+
+    if (uiState.isSessionCompleted) {
+        Text(text = "FINISHED", fontSize = 128.sp)
+    }
 
     Column(
         modifier = Modifier
@@ -96,11 +107,17 @@ fun SessionScreen (
             isFlipped = uiState.isFlipped,
             isHintShown = uiState.isHintShown,
             isExampleShown = uiState.isExampleShown,
+            isHistoryShown = uiState.isHistoryShown,
             flipQnA = deck.data.flipQnA,
-            onHintButtonClicked = { viewModel.toggleHint() },
-            onExampleButtonClicked = { viewModel.toggleExample() },
+            onHintButtonClicked = { viewModel.showHint() },
+            onExampleButtonClicked = { viewModel.showExample() },
+            onInfoButtonClicked = { viewModel.toggleInfo() },
+            onSkipButtonClicked = { viewModel.skipCard() },
+            currentCardHistory = uiState.cardHistory[uiState.currentCardIndex]!!,
         )
-        FlipBar()
+        FlipBar(
+            nextCard = { viewModel.nextCard(it) }
+        )
         Notepad()
     }
 }
@@ -111,34 +128,77 @@ fun Flashcard(
     isFlipped: Boolean,
     isHintShown: Boolean,
     isExampleShown: Boolean,
+    isHistoryShown: Boolean,
     flipQnA: Boolean,
     onHintButtonClicked: () -> Unit,
     onExampleButtonClicked: () -> Unit,
+    onInfoButtonClicked: () -> Unit,
+    onSkipButtonClicked: () -> Unit,
+    currentCardHistory: CardHistory,
     ) {
 
     val cardText = if (isFlipped || flipQnA) card.answerText else card.questionText
+    val historyList = currentCardHistory.getHistory()
 
     Box(
         modifier = Modifier
             .background(color = MaterialTheme.colorScheme.primaryContainer)
     ) {
-        Column(
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
         ) {
-            IconButton(
-                onClick = {}
+            Column(
             ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Show cards"
-                )
+                IconButton(
+                    onClick = {}
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Show cards"
+                    )
+                }
+                IconButton(
+                    onClick = onSkipButtonClicked
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = "Skip"
+                    )
+                }
             }
-            IconButton(
-                onClick = {}
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowForward,
-                    contentDescription = "Skip"
-                )
+                if (isHistoryShown)
+                if (historyList.isEmpty()) {
+                    Text("This is a new card!")
+                } else {
+                    for (wasCorrect in currentCardHistory.getHistory()) {
+                        if (wasCorrect) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Correct",
+                                tint = Color.Green,
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Wrong",
+                                tint = Color.Red,
+                            )
+                        }
+                    }
+                }
+                IconButton(
+                    onClick = onInfoButtonClicked,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Show card info"
+                    )
+                }
             }
         }
         Column(
@@ -166,44 +226,36 @@ fun Flashcard(
             ) {
                 if (isFlipped || flipQnA) {
                     if (isExampleShown) {
-                        OutlinedButton(
-                            onClick = onExampleButtonClicked,
-                            enabled = card.exampleText != null,
-                        ) {
-                            Text("Hide example")
-                        }
-                    } else {
-                        Button(
-                            onClick = onExampleButtonClicked,
-                            enabled = card.exampleText != null,
-                        ) {
-                            Text("Show example")
-                        }
                         Text(
                             text = card.exampleText ?: "",
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.weight(1f).wrapContentHeight(Alignment.CenterVertically),
+                            modifier = Modifier
+                                .weight(1f)
+                                .wrapContentHeight(Alignment.CenterVertically),
                         )
+                    } else {
+                        TextButton(
+                            onClick = onExampleButtonClicked,
+                            enabled = card.exampleText != null,
+                        ) {
+                            Text(text = "Example", textDecoration = TextDecoration.Underline, fontSize = 16.sp)
+                        }
                     }
                 } else {
                     if (isHintShown) {
-                        OutlinedButton(
-                            onClick = onHintButtonClicked,
-                            enabled = card.hintText != null,
-                        ) {
-                            Text("Hide hint")
-                        }
                         Text(
                             text = card.hintText ?: "",
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.weight(1f).wrapContentHeight(Alignment.CenterVertically),
+                            modifier = Modifier
+                                .weight(1f)
+                                .wrapContentHeight(Alignment.CenterVertically),
                         )
                     } else {
-                        Button(
+                        TextButton(
                             onClick = onHintButtonClicked,
                             enabled = card.hintText != null,
                         ) {
-                            Text("Show hint")
+                            Text(text = "Hint", textDecoration = TextDecoration.Underline, fontSize = 16.sp)
                         }
                     }
                 }
@@ -213,14 +265,34 @@ fun Flashcard(
 }
 
 @Composable
-fun FlipBar() {
-    Box(
+fun FlipBar(
+    nextCard: (Boolean) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .background(color = MaterialTheme.colorScheme.inversePrimary)
             .fillMaxWidth()
             .height(64.dp)
+            .padding(dimensionResource(R.dimen.padding_small))
     ) {
-
+        IconButton(
+            onClick = { nextCard(false) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "Wrong"
+            )
+        }
+        IconButton(
+            onClick = { nextCard(true) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Correct"
+            )
+        }
     }
 }
 
