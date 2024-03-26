@@ -31,10 +31,31 @@ class SessionViewModel: ViewModel() {
     }
 
     fun softReset() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isFlipped = false,
+                isHintShown = false,
+                isExampleShown = false,
+                isAnswerSeen = false,
+                )
+        }
     }
 
     fun reset() {
         softReset()
+
+        _uiState.update { currentState ->
+            currentState.copy(
+                deck = null,
+                isHistoryShown = false,
+                isMenuOpen = false,
+                isSessionCompleted = false,
+                currentCardIndex = 0,
+                usedCards = listOf(),
+                completedCards = listOf(),
+                cardHistory = mapOf(),
+            )
+        }
     }
 
     fun update() {
@@ -65,6 +86,31 @@ class SessionViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 isHistoryShown = !currentState.isHistoryShown
+            )
+        }
+    }
+
+    fun flipCard() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isFlipped = !currentState.isFlipped,
+                isAnswerSeen = true,
+            )
+        }
+    }
+
+    fun openMenu() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isMenuOpen = true,
+            )
+        }
+    }
+
+    fun closeMenu() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isMenuOpen = false,
             )
         }
     }
@@ -150,6 +196,7 @@ class SessionViewModel: ViewModel() {
                 usedCards = usedCards,
             )
         }
+        softReset()
     }
 
     fun nextCard(isCorrect: Boolean) {
@@ -199,7 +246,7 @@ class SessionViewModel: ViewModel() {
                 completedCards = completedCards,
             )
         }
-        update()
+        softReset()
     }
 
 }

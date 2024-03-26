@@ -12,6 +12,8 @@ data class SessionUiState(
     val isHintShown: Boolean = false,
     val isExampleShown: Boolean = false,
     val isHistoryShown: Boolean = false,
+    val isAnswerSeen: Boolean = false,
+    val isMenuOpen: Boolean = false,
 
     val activeCards: List<Int> = listOf(),
     val usedCards: List<Int> = listOf(),
