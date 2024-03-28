@@ -36,8 +36,7 @@ class SessionViewModel: ViewModel() {
                 isFlipped = false,
                 isHintShown = false,
                 isExampleShown = false,
-                isAnswerSeen = false,
-                )
+            )
         }
     }
 
@@ -48,8 +47,9 @@ class SessionViewModel: ViewModel() {
             currentState.copy(
                 deck = null,
                 isHistoryShown = false,
-                isMenuOpen = false,
                 isSessionCompleted = false,
+                isQuitDialogOpen = false,
+                isRestartDialogOpen = false,
                 currentCardIndex = 0,
                 usedCards = listOf(),
                 completedCards = listOf(),
@@ -90,74 +90,71 @@ class SessionViewModel: ViewModel() {
         }
     }
 
+    fun toggleQuitDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isQuitDialogOpen = !currentState.isQuitDialogOpen
+            )
+        }
+    }
+
+    fun toggleRestartDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isRestartDialogOpen = !currentState.isRestartDialogOpen
+            )
+        }
+    }
+
     fun flipCard() {
         _uiState.update { currentState ->
             currentState.copy(
                 isFlipped = !currentState.isFlipped,
-                isAnswerSeen = true,
-            )
-        }
-    }
-
-    fun openMenu() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isMenuOpen = true,
-            )
-        }
-    }
-
-    fun closeMenu() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isMenuOpen = false,
             )
         }
     }
 
     fun startSession(param: String) {
-        if (_uiState.value.deck == null) {
-            val deck: Deck
-            val splitter = param.indexOf('&')
-            deck = if (splitter == -1) {
-                DataSource.decks[param.toInt()]
-            } else {
-                DataSource.bundles[param.substring(0..<splitter)
-                    .toInt()].decks[param.substring(splitter + 1).toInt()]
-            }
-            if (deck.data.showHints) showHint()
-            if (deck.data.showExamples) showExample()
+        reset()
+        val deck: Deck
+        val splitter = param.indexOf('&')
+        deck = if (splitter == -1) {
+            DataSource.decks[param.toInt()]
+        } else {
+            DataSource.bundles[param.substring(0..<splitter)
+                .toInt()].decks[param.substring(splitter + 1).toInt()]
+        }
+        if (deck.data.showHints) showHint()
+        if (deck.data.showExamples) showExample()
 
-            val activeCards = (0..<deck.cards.size).toMutableList()
-            val usedCards = mutableListOf<Int>()
-            val completedCards = mutableListOf<Int>()
+        val activeCards = (0..<deck.cards.size).toMutableList()
+        val usedCards = mutableListOf<Int>()
+        val completedCards = mutableListOf<Int>()
 
-            val cardHistory = mutableMapOf<Int, CardHistory>()
-            for (i in activeCards) {
-                cardHistory[i] = CardHistory()
-            }
+        val cardHistory = mutableMapOf<Int, CardHistory>()
+        for (i in activeCards) {
+            cardHistory[i] = CardHistory()
+        }
 
-            activeCards.shuffle()
-            val currentCardIndex = activeCards.removeFirst()
+        activeCards.shuffle()
+        val currentCardIndex = activeCards.removeFirst()
 
-            _uiState.update { currentState ->
-                currentState.copy(
-                    deck = deck,
-                    currentCardIndex = currentCardIndex,
-                    activeCards = activeCards,
-                    usedCards = usedCards,
-                    completedCards = completedCards,
-                    cardHistory = cardHistory,
-                )
-            }
-            update()
+        _uiState.update { currentState ->
+            currentState.copy(
+                deck = deck,
+                currentCardIndex = currentCardIndex,
+                activeCards = activeCards,
+                usedCards = usedCards,
+                completedCards = completedCards,
+                cardHistory = cardHistory,
+                param = param,
+            )
         }
     }
 
     fun endSession() {
         _uiState.update { currentState ->
             currentState.copy(
-                deck = null,
                 isSessionCompleted = true,
             )
         }

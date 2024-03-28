@@ -626,7 +626,7 @@ fun CreateBundleDialog(
             ) {
                 Text(
                     text = "Name for the bundle:",
-                    fontSize = 20.sp,
+                    fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
                 OutlinedTextField(

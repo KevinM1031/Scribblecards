@@ -3,6 +3,7 @@ package com.example.flashcards.data
 import java.util.Date
 
 data class SessionUiState(
+    val param: String = "",
     val deck: Deck? = null,
     val isSessionCompleted: Boolean = false,
 
@@ -12,8 +13,8 @@ data class SessionUiState(
     val isHintShown: Boolean = false,
     val isExampleShown: Boolean = false,
     val isHistoryShown: Boolean = false,
-    val isAnswerSeen: Boolean = false,
-    val isMenuOpen: Boolean = false,
+    val isQuitDialogOpen: Boolean = false,
+    val isRestartDialogOpen: Boolean = false,
 
     val activeCards: List<Int> = listOf(),
     val usedCards: List<Int> = listOf(),

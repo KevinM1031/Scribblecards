@@ -91,7 +91,6 @@ fun FlashcardApp(
                 sessionViewModel,
                 param,
                 onBackButtonClicked = { navController.navigateUp() },
-
             )
         }
         composable(route = FlashcardScreen.Summary.name) {

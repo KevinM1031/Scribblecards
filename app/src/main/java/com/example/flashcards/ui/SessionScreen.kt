@@ -40,12 +40,14 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -53,11 +55,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -127,21 +131,32 @@ fun SessionScreen (
     onBackButtonClicked: () -> Unit,
 ) {
 
-    viewModel.setup(param)
+    var isSetupDone by remember { mutableStateOf(false) }
+    if (!isSetupDone) {
+        viewModel.setup(param)
+        isSetupDone = true
+    }
 
     val uiState by viewModel.uiState.collectAsState()
     val deck = viewModel.getCurrentDeck()
-
-    if (uiState.isSessionCompleted) {
-        Text(text = "FINISHED", fontSize = 128.sp)
-    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet { /* Drawer content */ }
+            ModalDrawerSheet {
+                SessionMenu(
+                    deck = deck,
+                    currentCardIndex = uiState.currentCardIndex,
+                    activeCardIndices = uiState.activeCards,
+                    usedCardIndices = uiState.usedCards,
+                    completedCardIndices = uiState.completedCards,
+                    cardHistory = uiState.cardHistory,
+                    onQuitButtonClicked = { viewModel.toggleQuitDialog() },
+                    onRestartButtonClicked = { viewModel.toggleRestartDialog() },
+                )
+            }
         },
     ) {
         Column(
@@ -171,14 +186,328 @@ fun SessionScreen (
             )
             FlipBar(
                 nextCard = { viewModel.nextCard(it) },
-                enabled = uiState.isAnswerSeen,
+                enabled = uiState.isFlipped,
             )
             Notepad()
         }
     }
+
+    if (uiState.isQuitDialogOpen) {
+        QuitDialog(
+            onDismissRequest = { viewModel.toggleQuitDialog() },
+            onQuitButtonClicked = {
+                viewModel.toggleQuitDialog()
+                viewModel.endSession()
+                onBackButtonClicked()
+            },
+        )
+    }
+
+    if (uiState.isRestartDialogOpen) {
+        RestartDialog(
+            onDismissRequest = { viewModel.toggleRestartDialog() },
+            onRestartButtonClicked = {
+                scope.launch {
+                    drawerState.close()
+                }
+                viewModel.toggleRestartDialog()
+                viewModel.startSession(uiState.param)
+            },
+        )
+    }
+
 }
 
-@OptIn(ExperimentalWearMaterialApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun QuitDialog(
+    onDismissRequest: () -> Unit,
+    onQuitButtonClicked: () -> Unit,
+) {
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127)))
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(mediumPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxSize()
+
+
+            ) {
+                Text(
+                    text = "Quit Session?",
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "Current session record will be lost.",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismissRequest
+                    ) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            onQuitButtonClicked()
+                        }
+                    ) { Text("Quit") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RestartDialog(
+    onDismissRequest: () -> Unit,
+    onRestartButtonClicked: () -> Unit,
+) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127))) {}
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+
+        val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(mediumPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxSize()
+
+
+            ) {
+                Text(
+                    text = "Restart Session?",
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "Current session record will be lost.",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismissRequest
+                    ) { Text("Cancel") }
+                    Button(
+                        onClick = onRestartButtonClicked
+                    ) { Text("Restart") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SessionMenu(
+    deck: Deck,
+    currentCardIndex : Int,
+    activeCardIndices: List<Int>,
+    usedCardIndices: List<Int>,
+    completedCardIndices: List<Int>,
+    cardHistory: Map<Int, CardHistory>,
+    onRestartButtonClicked: () -> Unit,
+    onQuitButtonClicked: () -> Unit,
+    ) {
+
+    val smallPadding = dimensionResource(R.dimen.padding_small)
+    val progress = completedCardIndices.size.toFloat() / deck.cards.size
+
+    Column(
+        modifier = Modifier
+            .width(300.dp)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(smallPadding)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(smallPadding)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    IconButton(
+                        onClick = onRestartButtonClicked
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Restart"
+                        )
+                    }
+                    IconButton(
+                        onClick = onQuitButtonClicked
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Quit"
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = deck.data.name,
+                    fontSize = 24.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 2,
+                    lineHeight = 24.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .height(62.dp)
+                        .wrapContentHeight(Alignment.CenterVertically)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "${(progress*100).roundToInt()}% Completed ",
+                    fontSize = 14.sp
+                )
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(smallPadding)
+                        .height(8.dp),
+                )
+            }
+        }
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+        ) {
+            CardComponent(
+                card = deck.cards[currentCardIndex],
+                cardHistory = cardHistory[currentCardIndex]!!,
+                flipQnA = deck.data.flipQnA,
+            )
+            for (i in activeCardIndices) {
+                CardComponent(
+                    card = deck.cards[i],
+                    cardHistory = cardHistory[i]!!,
+                    flipQnA = deck.data.flipQnA,
+                )
+            }
+            for (i in usedCardIndices) {
+                CardComponent(
+                    card = deck.cards[i],
+                    cardHistory = cardHistory[i]!!,
+                    flipQnA = deck.data.flipQnA,
+                )
+            }
+            for (i in completedCardIndices) {
+                CardComponent(
+                    card = deck.cards[i],
+                    cardHistory = cardHistory[i]!!,
+                    flipQnA = deck.data.flipQnA,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CardComponent(
+    card: Card,
+    cardHistory: CardHistory,
+    flipQnA: Boolean,
+    modifier: Modifier = Modifier,
+) {
+
+    val smallPadding = dimensionResource(R.dimen.padding_small)
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val cardHistoryList = cardHistory.getHistory()
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .padding(start = smallPadding, end = smallPadding, bottom = smallPadding)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = mediumPadding)
+        ) {
+            Text(
+                text = if (flipQnA) card.answerText else card.questionText,
+                fontSize = 18.sp,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(0.7f)
+                    .padding(end = mediumPadding)
+            )
+            if (cardHistoryList.isEmpty()) {
+                Text("New")
+            } else {
+                for (wasCorrect in cardHistoryList) {
+                    if (wasCorrect) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Correct",
+                            tint = Color.Green,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Wrong",
+                            tint = Color.Red,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Flashcard(
     card: Card,
