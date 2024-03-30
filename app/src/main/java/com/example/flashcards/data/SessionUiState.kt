@@ -1,7 +1,5 @@
 package com.example.flashcards.data
 
-import java.util.Date
-
 data class SessionUiState(
     val param: String = "",
     val deck: Deck? = null,
@@ -49,5 +47,10 @@ class CardHistory {
         } else {
             !history.isEmpty() && history.last()
         }
+    }
+
+    fun isPerfect(): Boolean {
+        val history = getHistory()
+        return history.isNotEmpty() && !history.contains(false)
     }
 }

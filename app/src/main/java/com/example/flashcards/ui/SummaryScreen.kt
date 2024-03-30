@@ -68,56 +68,95 @@ import com.example.flashcards.data.Card
 import com.example.flashcards.data.DataSource
 import com.example.flashcards.data.Deck
 import java.util.Date
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummaryScreen (
     viewModel: SessionViewModel,
     onBackButtonClicked: () -> Unit,
 ) {
 
+    //TODO delete below
+    var isSetupDone by remember { mutableStateOf(false) }
+    if (!isSetupDone) {
+        viewModel.setup("0")
+        isSetupDone = true
+    }
+
     val uiState by viewModel.uiState.collectAsState()
+    val deck = viewModel.getCurrentDeck()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                colors = topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                title = {
-                    Text(
-                        text = "Create Card",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onBackButtonClicked() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* do something */ }) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = "Delete deck"
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
 
-        Column(
+        val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        val circleSize = 240.dp
+
+        val numCards = deck.cards.size
+        val numPerfect = viewModel.getNumPerfect()
+        val oldMasteryLevel = numPerfect.toFloat()/numCards + 0.8f
+        val newMasteryLevel = numPerfect.toFloat()/numCards + 0.94f
+
+        Spacer(modifier = Modifier.weight(0.2f))
+        Text(
+            text = deck.data.name,
+            fontSize = 32.sp,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 3,
+            lineHeight = 34.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(0.9f)
+        )
+        Spacer(modifier = Modifier.weight(0.1f))
+        Text(
+            text = "Session Summary",
+        )
+        Spacer(modifier = Modifier.weight(0.5f))
+        Row(
+            verticalAlignment = Alignment.Bottom,
             modifier = Modifier
-                .padding(innerPadding)
+                .padding(bottom = mediumPadding)
         ) {
-
+            Box(modifier = Modifier
+                .height(circleSize)
+                .wrapContentSize(Alignment.Center)
+            ) {
+                CircularProgressIndicator(
+                    progress = newMasteryLevel,
+                    modifier = Modifier.size(circleSize),
+                    strokeWidth = 12.dp,
+                )
+                CircularProgressIndicator(
+                    progress = oldMasteryLevel,
+                    modifier = Modifier.size(circleSize),
+                    strokeWidth = 12.dp,
+                    trackColor = Color.Gray
+                )
+                Box(modifier = Modifier
+                    .size(circleSize)
+                    .wrapContentSize(Alignment.Center)
+                ) {
+                    Text(
+                        text = "${Math.round(newMasteryLevel*100)}%",
+                        fontSize = 80.sp,
+                    )
+                }
+            }
         }
+        Spacer(modifier = Modifier.weight(0.5f))
+        Text(
+            text = "Total Cards: $numCards",
+            fontSize = 24.sp,
+        )
+        Spacer(modifier = Modifier.weight(0.2f))
+        Text(
+            text = "Perfect: $numPerfect",
+            fontSize = 24.sp,
+        )
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

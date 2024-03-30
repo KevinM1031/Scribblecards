@@ -168,6 +168,16 @@ class SessionViewModel: ViewModel() {
         return getCurrentDeck().cards[_uiState.value.currentCardIndex]
     }
 
+    fun getNumPerfect(): Int {
+        var num = 0
+        for (history in _uiState.value.cardHistory) {
+            if (history.value.isPerfect()) {
+                num++
+            }
+        }
+        return num
+    }
+
     fun skipCard() {
         var currentCardIndex = _uiState.value.currentCardIndex
         val activeCards = _uiState.value.activeCards.toMutableList()

@@ -39,8 +39,6 @@ fun FlashcardApp(
     navController: NavHostController = rememberNavController()
 ) {
 
-    val backStackEntry by navController.currentBackStackEntryAsState()
-
     NavHost(
         navController = navController,
         startDestination = FlashcardScreen.MainMenu.name

@@ -123,7 +123,6 @@ import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionScreen (
     viewModel: SessionViewModel,
@@ -138,9 +137,13 @@ fun SessionScreen (
     }
 
     val uiState by viewModel.uiState.collectAsState()
-    val deck = viewModel.getCurrentDeck()
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    if (uiState.isSessionCompleted) {
+        onBackButtonClicked()
+    }
+
+    val deck = viewModel.getCurrentDeck()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
     val scope = rememberCoroutineScope()
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -198,7 +201,6 @@ fun SessionScreen (
             onQuitButtonClicked = {
                 viewModel.toggleQuitDialog()
                 viewModel.endSession()
-                onBackButtonClicked()
             },
         )
     }
@@ -215,7 +217,6 @@ fun SessionScreen (
             },
         )
     }
-
 }
 
 @Composable
@@ -700,7 +701,7 @@ fun Flashcard(
 }
 
 @SuppressLint("RememberReturnType")
-@OptIn(ExperimentalWearMaterialApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FlipBar(
     nextCard: (Boolean) -> Unit,
@@ -834,8 +835,6 @@ fun Notepad() {
 @Preview(
     showBackground = true,
     device = "spec:width=393dp,height=808dp"
-    //device = "spec:width=650dp,height=900dp"
-    //device = "spec:orientation=landscape,width=393dp,height=808dp"
 )
 @Composable
 fun SessionScreenPreview() {
