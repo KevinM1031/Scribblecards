@@ -1,12 +1,8 @@
-package com.example.flashcards.ui
+package com.example.flashcards.ui.menu
 
-import android.content.Context
 import android.content.res.Configuration
 import android.util.Log
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -22,12 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -41,22 +33,18 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -68,11 +56,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -80,7 +65,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -89,18 +73,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Bundle
 import com.example.flashcards.data.Deck
-import com.example.flashcards.data.MenuUiState
+import com.example.flashcards.ui.AppViewModelProvider
 import com.example.flashcards.ui.theme.FlashcardsTheme
-import kotlinx.coroutines.flow.StateFlow
-import kotlin.math.ceil
 
 private const val BOX_SIZE_DP = 110
 private const val BOX_SIZE_IN_BUNDLE_DP = 100
 
 @Composable
 fun DashboardScreen(
-    viewModel: MenuViewModel,
-    onDeckButtonClicked: () -> Unit,
+    viewModel: DashboardViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    onDeckButtonClicked: (Int) -> Unit,
     onBackButtonClicked: () -> Unit,
 ) {
 
@@ -148,9 +130,11 @@ fun DashboardScreen(
             modifier = Modifier
                 .padding(innerPadding)
         ) {
-
             CardsList(
-                onDeckOpened = { viewModel.openDeck(it); onDeckButtonClicked() },
+                onDeckOpened = {
+                    viewModel.openDeck(it)
+                    onDeckButtonClicked(it)
+                },
                 onDeckSelected = { viewModel.toggleDeckSelection(it) },
                 getDeck = { viewModel.getDeck(it) },
                 numDecks = viewModel.getNumDecks(),
@@ -176,7 +160,10 @@ fun DashboardScreen(
 
                 OpenBundle(
                     configuration = LocalConfiguration.current,
-                    onDeckOpened = { viewModel.openDeck(it); onDeckButtonClicked() },
+                    onDeckOpened = {
+                        viewModel.openDeck(it)
+                        onDeckButtonClicked(it)
+                    },
                     onDeckSelected = { viewModel.toggleDeckSelection(it) } ,
                     getDeck = { viewModel.getDeckFromCurrentBundle(it) },
                     numDecks = viewModel.getNumDecksInCurrentBundle(),
@@ -197,6 +184,7 @@ fun DashboardScreen(
                 viewModel.closeBundle()
                 viewModel.closeBundleCreatorDialog()
                 viewModel.saveCards()
+                viewModel.loadCards()
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
@@ -321,7 +309,7 @@ fun DraggableComposable(
         } else {
             if (onDeckOpened != null && onDeckSelected != null && getDeck != null) {
                 DeckComponent(
-                    onDeckOpened = { onDeckOpened(index) },
+                    onDeckOpened = { onDeckOpened(it) },
                     onDeckSelected = { onDeckSelected(index) },
                     getDeck = { getDeck(index) },
                     isBundleCreatorOpen = isBundleCreatorOpen,
@@ -366,7 +354,7 @@ fun BundleComponent(
 
 @Composable
 fun DeckComponent(
-    onDeckOpened: () -> Unit,
+    onDeckOpened: (Int) -> Unit,
     onDeckSelected: () -> Unit,
     getDeck: () -> Deck,
     isBundleCreatorOpen: Boolean,
@@ -379,7 +367,7 @@ fun DeckComponent(
             if (isBundleCreatorOpen) {
                 onDeckSelected()
             } else {
-                onDeckOpened()
+                onDeckOpened(deck.entity.id)
             }
         },
         shape = RoundedCornerShape(10),

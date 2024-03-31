@@ -1,24 +1,19 @@
-package com.example.flashcards
+package com.example.flashcards.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import com.example.flashcards.ui.MenuViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.flashcards.ui.CreateCardScreen
-import com.example.flashcards.ui.DashboardScreen
-import com.example.flashcards.ui.DeckScreen
-import com.example.flashcards.ui.ImportCardsScreen
-import com.example.flashcards.ui.MainMenuScreen
-import com.example.flashcards.ui.SessionScreen
-import com.example.flashcards.ui.SessionViewModel
-import com.example.flashcards.ui.SummaryScreen
+import com.example.flashcards.ui.menu.CreateCardScreen
+import com.example.flashcards.ui.menu.DashboardScreen
+import com.example.flashcards.ui.menu.DeckScreen
+import com.example.flashcards.ui.menu.ImportCardsScreen
+import com.example.flashcards.ui.menu.MainMenuScreen
+import com.example.flashcards.ui.session.SessionScreen
+import com.example.flashcards.ui.session.SummaryScreen
 
 enum class FlashcardScreen() {
     MainMenu,
@@ -31,17 +26,15 @@ enum class FlashcardScreen() {
     Tutorial,
     Settings,
 }
-
 @Composable
-fun FlashcardApp(
-    menuViewModel: MenuViewModel = viewModel(),
-    sessionViewModel: SessionViewModel = viewModel(),
-    navController: NavHostController = rememberNavController()
+fun FlashcardNavHost(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
 ) {
-
     NavHost(
         navController = navController,
-        startDestination = FlashcardScreen.MainMenu.name
+        startDestination = FlashcardScreen.MainMenu.name,
+        modifier = modifier
     ) {
         composable(route = FlashcardScreen.MainMenu.name) {
             MainMenuScreen(
@@ -52,48 +45,40 @@ fun FlashcardApp(
         }
         composable(route = FlashcardScreen.Dashboard.name) {
             DashboardScreen(
-                menuViewModel,
-                onDeckButtonClicked = { navController.navigate(FlashcardScreen.Deck.name) },
+                onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
                 onBackButtonClicked = { navController.navigateUp() },
             )
         }
-        composable(route = FlashcardScreen.Deck.name) {
+        composable(
+            route = "${FlashcardScreen.Deck.name}/{id}",
+            arguments = listOf(
+                navArgument("id") { type = NavType.IntType },
+            )
+        ) {
             DeckScreen(
-                menuViewModel,
                 onBackButtonClicked = { navController.navigateUp() },
-                onStartButtonClicked = {navController.navigate("${FlashcardScreen.Session.name}/$it") },
+                onStartButtonClicked = { navController.navigate("${FlashcardScreen.Session.name}/$it") },
                 onCreateButtonClicked = { navController.navigate(FlashcardScreen.CreateCard.name) },
                 onImportButtonClicked = { navController.navigate(FlashcardScreen.ImportCards.name) },
             )
         }
         composable(route = FlashcardScreen.CreateCard.name) {
             CreateCardScreen(
-                menuViewModel,
                 onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(route = FlashcardScreen.ImportCards.name) {
             ImportCardsScreen(
-                menuViewModel,
                 onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(
-            route = "${FlashcardScreen.Session.name}/{index}",
+            route = "${FlashcardScreen.Session.name}/{id}",
             arguments = listOf(
-                navArgument("index") { type = NavType.StringType },
+                navArgument("id") { type = NavType.IntType },
             )
         ) {
-            val param = it.arguments?.getString("index") ?: ""
             SessionScreen(
-                sessionViewModel,
-                param,
-                onBackButtonClicked = { navController.navigateUp() },
-            )
-        }
-        composable(route = FlashcardScreen.Summary.name) {
-            SummaryScreen(
-                sessionViewModel,
                 onBackButtonClicked = { navController.navigateUp() },
             )
         }

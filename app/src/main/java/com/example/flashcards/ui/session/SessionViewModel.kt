@@ -1,33 +1,32 @@
-package com.example.flashcards.ui
+package com.example.flashcards.ui.session
 
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.example.flashcards.data.Bundle
+import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.Card
-import com.example.flashcards.data.CardHistory
-import com.example.flashcards.data.DataSource
+import com.example.flashcards.data.CardsRepository
 import com.example.flashcards.data.Deck
-import com.example.flashcards.data.DeckData
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.example.flashcards.data.MenuUiState
-import com.example.flashcards.data.SessionUiState
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.util.Date
+import kotlinx.coroutines.launch
 
-class SessionViewModel: ViewModel() {
+class SessionViewModel(
+    private val cardsRepository: CardsRepository,
+    savedStateHandle: SavedStateHandle,
+): ViewModel() {
 
     private val _uiState = MutableStateFlow(SessionUiState())
     val uiState: StateFlow<SessionUiState> = _uiState.asStateFlow()
 
     init {
         reset()
-    }
 
-    fun setup(param: String) {
-        startSession(param)
+        viewModelScope.launch {
+            startSession(checkNotNull(savedStateHandle["id"]))
+        }
     }
 
     fun softReset() {
@@ -114,16 +113,17 @@ class SessionViewModel: ViewModel() {
         }
     }
 
-    fun startSession(param: String) {
-        reset()
-        val deck: Deck
-        val splitter = param.indexOf('&')
-        deck = if (splitter == -1) {
-            DataSource.decks[param.toInt()]
-        } else {
-            DataSource.bundles[param.substring(0..<splitter)
-                .toInt()].decks[param.substring(splitter + 1).toInt()]
+    fun setContentFlip(flipContent: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                flipContent = flipContent,
+            )
         }
+    }
+
+    suspend fun startSession(param: Int) {
+        val deck = cardsRepository.getDeck(param).toDeck()
+
         if (deck.data.showHints) showHint()
         if (deck.data.showExamples) showExample()
 
@@ -147,7 +147,6 @@ class SessionViewModel: ViewModel() {
                 usedCards = usedCards,
                 completedCards = completedCards,
                 cardHistory = cardHistory,
-                param = param,
             )
         }
     }

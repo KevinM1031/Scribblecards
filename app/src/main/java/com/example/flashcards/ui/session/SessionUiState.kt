@@ -1,9 +1,9 @@
-package com.example.flashcards.data
+package com.example.flashcards.ui.session
+
+import com.example.flashcards.data.Deck
 
 data class SessionUiState(
-    val param: String = "",
     val deck: Deck? = null,
-    val isSessionCompleted: Boolean = false,
 
     val currentCardIndex: Int = 0,
 
@@ -13,6 +13,8 @@ data class SessionUiState(
     val isHistoryShown: Boolean = false,
     val isQuitDialogOpen: Boolean = false,
     val isRestartDialogOpen: Boolean = false,
+    val isSessionCompleted: Boolean = false,
+    val flipContent: Boolean = false,
 
     val activeCards: List<Int> = listOf(),
     val usedCards: List<Int> = listOf(),

@@ -1,4 +1,4 @@
-package com.example.flashcards.ui
+package com.example.flashcards.ui.menu
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

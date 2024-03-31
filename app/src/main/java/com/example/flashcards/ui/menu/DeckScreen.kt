@@ -1,4 +1,4 @@
-package com.example.flashcards.ui
+package com.example.flashcards.ui.menu
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -41,9 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,24 +63,23 @@ import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Card
-import com.example.flashcards.data.DataSource
 import com.example.flashcards.data.Deck
+import com.example.flashcards.ui.AppViewModelProvider
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeckScreen (
-    viewModel: MenuViewModel,
+    viewModel: DeckViewModel = viewModel(factory = AppViewModelProvider.Factory),
     onBackButtonClicked: () -> Unit,
-    onStartButtonClicked: (String) -> Unit,
+    onStartButtonClicked: (Int) -> Unit,
     onCreateButtonClicked: () -> Unit,
     onImportButtonClicked: () -> Unit,
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
 
-    val deck = viewModel.getCurrentDeck()
-    val deckIndex = uiState.currentDeckIndex ?: 1 // TODO remove ?: null
+    if (uiState.deck == null) return
 
     Scaffold(
         topBar = {
@@ -93,7 +90,7 @@ fun DeckScreen (
                 ),
                 title = {
                     Text(
-                        text = deck.data.name,
+                        text = uiState.deck!!.data.name,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -129,14 +126,8 @@ fun DeckScreen (
                         ) {
                             Spacer(modifier = Modifier.weight(1f))
                             Button(
-                                onClick = {
-                                    if (viewModel.isBundleOpen()) {
-                                        onStartButtonClicked("${uiState.currentBundleIndex!!}&${uiState.currentDeckIndex!!}")
-                                    } else {
-                                        onStartButtonClicked("${uiState.currentDeckIndex!!}")
-                                    }
-                                },
-                                enabled = deck.cards.isNotEmpty(),
+                                onClick = { onStartButtonClicked(uiState.deck!!.entity.id) },
+                                enabled = uiState.deck!!.cards.isNotEmpty(),
                                 modifier = Modifier
                                     .width(160.dp),
                             ) {
@@ -163,21 +154,21 @@ fun DeckScreen (
                 )
                 if (uiState.isSessionOptionsOpen) {
                     SessionOptions(
-                        getDeck = { viewModel.getCurrentDeck() },
+                        deck = uiState.deck!!,
                         setShowHints = {
-                            deck.data.showHints = it
+                            uiState.deck!!.data.showHints = it
                             viewModel.update()
                         },
                         setShowExamples = {
-                            deck.data.showExamples = it
+                            uiState.deck!!.data.showExamples = it
                             viewModel.update()
                         },
                         setFlipQnA = {
-                            deck.data.flipQnA = it
+                            uiState.deck!!.data.flipQnA = it
                             viewModel.update()
                         },
                         setDoubleDifficulty = {
-                            deck.data.doubleDifficulty = it
+                            uiState.deck!!.data.doubleDifficulty = it
                             viewModel.update()
                         },
                         onTipButtonClicked = {
@@ -227,7 +218,7 @@ fun DeckScreen (
                     .verticalScroll(scrollState)
             ) {
                 DeckStats(
-                    deck = deck,
+                    deck = uiState.deck!!,
                     modifier = Modifier
                         .height(deckStatsHeightDp)
                 )
@@ -236,7 +227,7 @@ fun DeckScreen (
                     getNumCards = { viewModel.getNumCardsInCurrentDeck() },
                     getCard = { viewModel.getCardFromCurrentDeck(it) },
                     onCardSelected = {
-                        viewModel.toggleCardSelection(deckIndex, it)
+                        viewModel.toggleCardSelection(it)
                         viewModel.openCardSelector()
                     },
                 )
@@ -404,7 +395,7 @@ fun DeckStats(
     val circleSize = 164.dp
 
     val masteryLevel = deck.data.masteryLevel
-    val dateStudied = Date(System.currentTimeMillis() - deck.data.dateStudied.time)
+    val dateStudied = Date(System.currentTimeMillis() - deck.data.dateStudied)
 
     Box(
         modifier = modifier
@@ -466,7 +457,7 @@ fun DeckStats(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SessionOptions(
-    getDeck: () -> Deck,
+    deck: Deck,
     setShowHints: (Boolean) -> Unit,
     setShowExamples: (Boolean) -> Unit,
     setFlipQnA: (Boolean) -> Unit,
@@ -474,7 +465,6 @@ fun SessionOptions(
     onTipButtonClicked: () -> Unit,
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
-    val deck = getDeck()
 
     Log.d("debug", "updated")
 

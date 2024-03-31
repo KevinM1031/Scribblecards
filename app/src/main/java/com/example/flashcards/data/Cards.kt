@@ -1,10 +1,8 @@
 package com.example.flashcards.data
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import java.util.Date
-import java.util.Queue
+import com.example.flashcards.data.entities.BundleEntity
+import com.example.flashcards.data.entities.CardEntity
+import com.example.flashcards.data.entities.DeckEntity
 
 abstract class Selectable(
     private var isSelected: Boolean = false,
@@ -30,14 +28,25 @@ abstract class Selectable(
 data class Bundle(
     val name: String = "Bundle",
     val decks: List<Deck> = listOf(),
+    val entity: BundleEntity,
 
-) : Selectable()
+) : Selectable() {
+
+    fun toEntity(): BundleEntity {
+        return entity.copy(
+            name = name,
+        )
+    }
+}
 
 data class Deck(
     val cards: List<Card> = listOf(),
     val data: DeckData,
+    val entity: DeckEntity,
 
 ) : Selectable() {
+
+    var numSelected: Int = 0
 
     init {
         updateValues()
@@ -62,22 +71,51 @@ data class Deck(
 
     fun updateNumSelected() {
         if (cards.isEmpty()) {
-            data.numSelected = 0
+            numSelected = 0
         } else {
             var num = 0
             for (card in cards) {
                 if (card.isSelected()) num++
             }
-            data.numSelected = num
+            numSelected = num
         }
+    }
+
+    fun toEntity(): DeckEntity {
+        return entity.copy(
+            name = data.name,
+            dateCreated = data.dateCreated,
+            dateUpdated = data.dateUpdated,
+            dateStudied = data.dateStudied,
+            showHints = data.showHints,
+            showExamples = data.showExamples,
+            flipQnA = data.flipQnA,
+            doubleDifficulty = data.doubleDifficulty,
+            masteryLevel = data.masteryLevel
+        )
+    }
+
+    fun toEntity(bundleId: Int): DeckEntity {
+        return entity.copy(
+            name = data.name,
+            bundleId = bundleId,
+            dateCreated = data.dateCreated,
+            dateUpdated = data.dateUpdated,
+            dateStudied = data.dateStudied,
+            showHints = data.showHints,
+            showExamples = data.showExamples,
+            flipQnA = data.flipQnA,
+            doubleDifficulty = data.doubleDifficulty,
+            masteryLevel = data.masteryLevel
+        )
     }
 }
 
 data class DeckData(
     val name: String = "Deck",
-    var dateCreated: Date,
-    var dateUpdated: Date,
-    var dateStudied: Date,
+    var dateCreated: Long,
+    var dateUpdated: Long,
+    var dateStudied: Long,
 
     var showHints: Boolean = false,
     var showExamples: Boolean = false,
@@ -85,7 +123,6 @@ data class DeckData(
     var doubleDifficulty: Boolean = false,
 
     var masteryLevel: Float = 0f,
-    var numSelected: Int = 0,
 )
 
 data class Card(
@@ -93,15 +130,14 @@ data class Card(
     val answerText: String,
     val hintText: String? = null,
     val exampleText: String? = null,
+    var numStudied: Int = 0,
+    var numPerfect: Int = 0,
+    var numCorrect: Int = 0,
+    var numIncorrect: Int = 0,
+    var entity: CardEntity,
 ) : Selectable() {
 
     private val MASTERY_STANDARD = 5
-
-    var numStudied by mutableStateOf(0); private set
-    var numPerfect by mutableStateOf(0); private set
-
-    var numCorrect by mutableStateOf(0); private set
-    var numIncorrect by mutableStateOf(0); private set
 
     private var isStudying = false
 
@@ -153,58 +189,18 @@ data class Card(
         numStudied = 0
         numPerfect = 0
     }
-}
 
-class SessionManager(
-    val deck: Deck,
-) {
-
-    private var activeQueue = ArrayDeque<Int>()
-    private var exhaustedQueue = ArrayDeque<Int>()
-    private var curr = 0
-    private var sessionStarted = false
-
-    fun startSession() {
-        if (sessionStarted) return
-
-        sessionStarted = true
-        activeQueue = ArrayDeque(deck.cards.indices.toList())
-        activeQueue.shuffle()
-        curr = activeQueue.removeFirst()
-        exhaustedQueue = ArrayDeque()
-
-        for (card in deck.cards) {
-            card.startStudying()
-        }
-    }
-
-    fun getNext() {
-        if (!sessionStarted) return
-        exhaustedQueue.addLast(curr)
-        curr = activeQueue.removeFirst()
-    }
-
-    fun jumpTo(index: Int) {
-        if (!sessionStarted) return
-        exhaustedQueue.addLast(curr)
-        curr = activeQueue.removeFirst()
-    }
-
-    fun endSession() {
-        if (!sessionStarted) return
-        sessionStarted = false
-        for (card in deck.cards) {
-            card.endStudying()
-        }
-        deck.data.dateStudied = Date(System.currentTimeMillis())
-    }
-
-    fun quitSession() {
-        if (!sessionStarted) return
-        sessionStarted = false
-        for (card in deck.cards) {
-            card.quitStudying()
-        }
-        deck.data.dateStudied = Date(System.currentTimeMillis())
+    fun toEntity(deckId: Int): CardEntity {
+        return entity.copy(
+            deckId = deckId,
+            questionText = questionText,
+            answerText = answerText,
+            hintText = hintText,
+            exampleText = exampleText,
+            numStudied = numStudied,
+            numPerfect = numPerfect,
+            numCorrect = numCorrect,
+            numIncorrect = numIncorrect,
+        )
     }
 }

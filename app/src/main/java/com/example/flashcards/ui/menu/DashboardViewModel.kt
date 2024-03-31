@@ -1,36 +1,76 @@
-package com.example.flashcards.ui
+package com.example.flashcards.ui.menu
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.Bundle
 import com.example.flashcards.data.Card
-import com.example.flashcards.data.DataSource
 import com.example.flashcards.data.Deck
+import com.example.flashcards.data.CardsRepository
+import com.example.flashcards.data.entities.BundleEntity
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.example.flashcards.data.MenuUiState
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class MenuViewModel: ViewModel() {
+class DashboardViewModel(
+    private val cardsRepository: CardsRepository,
+    ): ViewModel() {
 
-    private val _uiState = MutableStateFlow(MenuUiState())
-    val uiState: StateFlow<MenuUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
-        _uiState.update { currentState ->
-            currentState.copy(
-                decks = DataSource.decks,
-                bundles = DataSource.bundles,
-            )
-        }
-
+        loadCards()
         reset()
+    }
+
+    fun saveCards() {
+        viewModelScope.launch {
+            for (bundle in _uiState.value.bundles) {
+                cardsRepository.updateBundle(bundle.toEntity())
+                for (deck in bundle.decks) {
+                    cardsRepository.updateDeck(deck.toEntity(bundle.entity.id))
+                    for (card in deck.cards) {
+                        cardsRepository.updateCard(card.toEntity(deck.entity.id))
+                    }
+                }
+            }
+
+            for (deck in _uiState.value.decks) {
+                cardsRepository.updateDeck(deck.toEntity())
+                for (card in deck.cards) {
+                    cardsRepository.updateCard(card.toEntity(deck.entity.id))
+                }
+            }
+        }
+    }
+
+    fun loadCards() {
+        viewModelScope.launch {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    bundles = cardsRepository.getAllBundles().let {
+                        val bundles = mutableListOf<Bundle>()
+                        for (bundleEntity in it) {
+                            bundles.add(bundleEntity.toBundle())
+                        }
+                        bundles
+                    },
+                    decks = cardsRepository.getAllDecks().let {
+                        val decks = mutableListOf<Deck>()
+                        for (deckEntity in it) {
+                            decks.add(deckEntity.toDeck())
+                        }
+                        decks
+                    },
+                )
+            }
+        }
     }
 
     fun softReset() {
         deselectAllCards()
-        closeCardSelector()
     }
 
     fun reset() {
@@ -41,19 +81,6 @@ class MenuViewModel: ViewModel() {
         closeBundleCreator()
         closeCreateOptions()
         closeBundleCreatorDialog()
-    }
-
-    fun saveCards() {
-        DataSource.decks = _uiState.value.decks
-        DataSource.bundles = _uiState.value.bundles
-    }
-
-    fun openCreateOptions() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isCreateOptionsOpen = true
-            )
-        }
     }
 
     fun closeCreateOptions() {
@@ -68,14 +95,6 @@ class MenuViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 isCreateOptionsOpen = !_uiState.value.isCreateOptionsOpen
-            )
-        }
-    }
-
-    fun toggleSessionOptions() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isSessionOptionsOpen = !_uiState.value.isSessionOptionsOpen
             )
         }
     }
@@ -117,51 +136,10 @@ class MenuViewModel: ViewModel() {
         }
     }
 
-    fun openCardSelector() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isCardSelectorOpen = true,
-            )
-        }
-    }
-
-    fun closeCardSelector() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isCardSelectorOpen = false,
-            )
-        }
-        deselectAllCards()
-    }
-
     fun setUserInput(input: String) {
         _uiState.update { currentState ->
             currentState.copy(
                 userInput = input,
-            )
-        }
-    }
-
-    fun openTip() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isTipOpen = true,
-            )
-        }
-    }
-
-    fun closeTip() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isTipOpen = false,
-            )
-        }
-    }
-
-    fun setTipText(text: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                tipText = text,
             )
         }
     }
@@ -216,11 +194,11 @@ class MenuViewModel: ViewModel() {
             }
 
             if (remainingDecks.isNotEmpty()) {
-                tempBundles.add(Bundle(name = bundle.name, decks = remainingDecks))
+                tempBundles.add(bundle.copy(decks = remainingDecks))
             }
         }
 
-        tempBundles.add(Bundle(name, newDecks))
+        tempBundles.add(Bundle(name = name, decks = newDecks, entity = BundleEntity()))
 
         _uiState.update { currentState ->
             currentState.copy(
@@ -236,28 +214,13 @@ class MenuViewModel: ViewModel() {
         } else {
             _uiState.value.decks[_uiState.value.currentDeckIndex!!]
         }
-
-        /* TODO remove
-        return if (isBundleOpen()) {
-            _uiState.value.bundles[_uiState.value.currentBundleIndex!!].decks[_uiState.value.currentDeckIndex!!]
-        } else {
-            _uiState.value.decks[1]
-        }
-
-         */
     }
 
     fun openDeck(index: Int) {
         _uiState.update { currentState ->
-            if (isBundleOpen()) {
-                currentState.copy(
-                    currentDeckIndex = index,
-                )
-            } else {
-                currentState.copy(
-                    currentDeckIndex = index,
-                )
-            }
+            currentState.copy(
+                currentDeckIndex = index,
+            )
         }
     }
 
