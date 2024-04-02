@@ -2,16 +2,16 @@ package com.example.flashcards.ui.menu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.flashcards.data.Bundle
-import com.example.flashcards.data.Card
-import com.example.flashcards.data.Deck
 import com.example.flashcards.data.CardsRepository
-import com.example.flashcards.data.entities.BundleEntity
+import com.example.flashcards.data.entities.Bundle
+import com.example.flashcards.data.entities.Card
+import com.example.flashcards.data.entities.Deck
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.sql.DataSource
 
 class DashboardViewModel(
     private val cardsRepository: CardsRepository,
@@ -21,56 +21,67 @@ class DashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
-        loadCards()
+        viewModelScope.launch {
+            loadCards()
+        }
         reset()
     }
 
-    fun saveCards() {
-        viewModelScope.launch {
-            for (bundle in _uiState.value.bundles) {
-                cardsRepository.updateBundle(bundle.toEntity())
-                for (deck in bundle.decks) {
-                    cardsRepository.updateDeck(deck.toEntity(bundle.entity.id))
-                    for (card in deck.cards) {
-                        cardsRepository.updateCard(card.toEntity(deck.entity.id))
-                    }
-                }
-            }
+    suspend fun loadCards() {
 
-            for (deck in _uiState.value.decks) {
-                cardsRepository.updateDeck(deck.toEntity())
-                for (card in deck.cards) {
-                    cardsRepository.updateCard(card.toEntity(deck.entity.id))
-                }
-            }
+//        deleteAllCards()
+//        loadCardsFromDataSource()
+
+        _uiState.update { currentState ->
+            currentState.copy(
+                bundles = cardsRepository.getAllBundlesWithDecks(),
+                decks = cardsRepository.getAllDecksNotInBundle(),
+            )
         }
     }
 
-    fun loadCards() {
-        viewModelScope.launch {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    bundles = cardsRepository.getAllBundles().let {
-                        val bundles = mutableListOf<Bundle>()
-                        for (bundleEntity in it) {
-                            bundles.add(bundleEntity.toBundle())
-                        }
-                        bundles
-                    },
-                    decks = cardsRepository.getAllDecks().let {
-                        val decks = mutableListOf<Deck>()
-                        for (deckEntity in it) {
-                            decks.add(deckEntity.toDeck())
-                        }
-                        decks
-                    },
-                )
+    suspend fun loadCardsFromDataSource() {
+        val bID1 = cardsRepository.insertBundle(Bundle(name="Bundle 1"))
+        val bID2 = cardsRepository.insertBundle(Bundle(name="Bundle 2"))
+
+        val dID1 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID2 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID3 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID4 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID5 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID2)
+        val dID6 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+        val dID7 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+        val dID8 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+        val dID9 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID1)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID2)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID3)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID4)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID5)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID6)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID7)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID8)}
+        for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID9)}
+
+
+
+    }
+
+    suspend fun deleteAllCards() {
+        cardsRepository.getAllBundles().let {
+            for (bundle in it) {
+                cardsRepository.deleteBundle(bundle)
+            }
+        }
+        cardsRepository.getAllDecks().let {
+            for (deck in it) {
+                cardsRepository.deleteDeck(deck)
             }
         }
     }
 
     fun softReset() {
-        deselectAllCards()
     }
 
     fun reset() {
@@ -164,78 +175,59 @@ class DashboardViewModel(
         return _uiState.value.currentBundleIndex != null
     }
 
+    suspend fun deleteAllEmptyDecks() {
+        val bWDs = cardsRepository.getAllBundlesWithDecks()
+        val bWDsToDelete = mutableListOf<Bundle>()
+        for (bWD in bWDs) {
+            if (bWD.decks.isEmpty()) {
+                bWDsToDelete.add(bWD.bundle)
+            }
+        }
+        for (bWD in bWDsToDelete) {
+            cardsRepository.deleteBundle(bWD)
+        }
+    }
+
     /**
      * Uses selected decks to create a bundle.
      */
-    fun createBundle(name: String) {
-        val newDecks = mutableListOf<Deck>()
+    suspend fun createBundle(name: String) {
+
+        val bundleId = cardsRepository.insertBundle(Bundle(name = name))
 
         // searching for selected decks
-        val tempDecks = mutableListOf<Deck>()
         for (deck in _uiState.value.decks) {
-            if (deck.isSelected()) {
-                newDecks.add(deck)
-            } else {
-                tempDecks.add(deck)
+            if (deck.isSelected) {
+                deck.bundleId = bundleId
+                cardsRepository.updateDeck(deck)
             }
         }
 
         // searching for selected decks from bundles
-        val tempBundles = mutableListOf<Bundle>()
-        for (bundle in _uiState.value.bundles) {
-
-            val remainingDecks = mutableListOf<Deck>()
-            for (deck in bundle.decks) {
-                if (deck.isSelected()) {
-                    newDecks.add(deck)
-                } else {
-                    remainingDecks.add(deck)
+        for (bWD in _uiState.value.bundles) {
+            for (deck in bWD.decks) {
+                if (deck.isSelected) {
+                    deck.bundleId = bundleId
+                    cardsRepository.updateDeck(deck)
                 }
             }
-
-            if (remainingDecks.isNotEmpty()) {
-                tempBundles.add(bundle.copy(decks = remainingDecks))
-            }
         }
-
-        tempBundles.add(Bundle(name = name, decks = newDecks, entity = BundleEntity()))
 
         _uiState.update { currentState ->
             currentState.copy(
-                decks = tempDecks,
-                bundles = tempBundles,
-            )
+                currentBundleIndex = null,
+                currentDeckIndex = null,
+                )
         }
-    }
 
-    fun getCurrentDeck(): Deck {
-        return if (isBundleOpen()) {
-            _uiState.value.bundles[_uiState.value.currentBundleIndex!!].decks[_uiState.value.currentDeckIndex!!]
-        } else {
-            _uiState.value.decks[_uiState.value.currentDeckIndex!!]
-        }
-    }
-
-    fun openDeck(index: Int) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                currentDeckIndex = index,
-            )
-        }
+        deleteAllEmptyDecks()
+        loadCards()
     }
 
     fun closeDeck() {
         _uiState.update { currentState ->
             currentState.copy(
                 currentDeckIndex = null,
-            )
-        }
-    }
-
-    fun update() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                lastUpdated = System.currentTimeMillis(),
             )
         }
     }
@@ -248,7 +240,7 @@ class DashboardViewModel(
             _uiState.value.decks[index].toggleSelection()
             _uiState.update { currentState ->
                 currentState.copy(
-                    numSelectedDecks = if (currentState.decks[index].isSelected())
+                    numSelectedDecks = if (currentState.decks[index].isSelected)
                         num+1 else num-1
                 )
             }
@@ -257,31 +249,7 @@ class DashboardViewModel(
             _uiState.value.bundles[bundleIndex].decks[index].toggleSelection()
             _uiState.update { currentState ->
                 currentState.copy(
-                    numSelectedDecks = if (currentState.bundles[bundleIndex].decks[index].isSelected())
-                        num+1 else num-1
-                )
-            }
-        }
-    }
-
-    fun toggleCardSelection(deckIndex: Int, index: Int) {
-        val bundleIndex: Int? = _uiState.value.currentBundleIndex
-        val num = _uiState.value.numSelectedCards
-
-        if (bundleIndex == null) {
-            _uiState.value.decks[deckIndex].cards[index].toggleSelection()
-            _uiState.update { currentState ->
-                currentState.copy(
-                    numSelectedCards = if (currentState.decks[deckIndex].cards[index].isSelected())
-                        num+1 else num-1
-                )
-            }
-
-        } else {
-            _uiState.value.bundles[bundleIndex].decks[deckIndex].cards[index].toggleSelection()
-            _uiState.update { currentState ->
-                currentState.copy(
-                    numSelectedCards = if (currentState.bundles[bundleIndex].decks[deckIndex].cards[index].isSelected())
+                    numSelectedDecks = if (currentState.bundles[bundleIndex].decks[index].isSelected)
                         num+1 else num-1
                 )
             }
@@ -298,15 +266,15 @@ class DashboardViewModel(
     }
 
     fun getBundle(index: Int) : Bundle {
-        return _uiState.value.bundles[index]
+        return _uiState.value.bundles[index].bundle
     }
 
     fun toggleBundleSelection(index: Int) {
-        _uiState.value.bundles[index].toggleSelection()
+        _uiState.value.bundles[index].bundle.toggleSelection()
         val num = _uiState.value.numSelectedBundles
         _uiState.update { currentState ->
             currentState.copy(
-                numSelectedBundles = if (currentState.bundles[index].isSelected())
+                numSelectedBundles = if (currentState.bundles[index].bundle.isSelected)
                     num+1 else num-1
             )
         }
@@ -329,63 +297,6 @@ class DashboardViewModel(
         }
     }
 
-    fun selectAllCardsInCurrentDeck() {
-        deselectAllCards()
-        val cards = getCurrentDeck().cards
-        for (card in cards) {
-            card.select()
-        }
-        _uiState.update { currentState ->
-            currentState.copy(
-                numSelectedCards = cards.size,
-            )
-        }
-    }
-
-    fun deselectAllCardsInCurrentDeck() {
-        val cards = getCurrentDeck().cards
-        for (card in cards) {
-            card.deselect()
-        }
-        _uiState.update { currentState ->
-            currentState.copy(
-                numSelectedCards = 0,
-            )
-        }
-    }
-
-    fun deselectAllCards() {
-        if (_uiState.value.numSelectedCards == 0) return
-        for (bundle in _uiState.value.bundles) {
-            for (deck in bundle.decks) {
-                for (card in deck.cards) {
-                    card.deselect()
-                }
-            }
-        }
-        for (deck in _uiState.value.decks) {
-            for (card in deck.cards) {
-                card.deselect()
-            }
-        }
-        _uiState.update { currentState ->
-            currentState.copy(
-                numSelectedCards = 0,
-            )
-        }
-    }
-
-    fun deleteSelectedCardsInCurrentDeck() {
-        val deck = getCurrentDeck()
-        val newCards = mutableListOf<Card>()
-        for (card in deck.cards) {
-            if (!card.isSelected())
-                newCards.add(card)
-        }
-        update()
-        deselectAllCardsInCurrentDeck()
-    }
-
     fun getNumDecks() : Int {
         return _uiState.value.decks.size
     }
@@ -400,19 +311,5 @@ class DashboardViewModel(
 
     fun getNumBundles() : Int {
         return _uiState.value.bundles.size
-    }
-
-    fun getNumTotalCardCollection() : Int {
-        return getNumDecks() + getNumBundles()
-    }
-
-    fun getNumCardsInCurrentDeck() : Int {
-        //return DataSource.decks[1].cards.size //TODO remove
-        return getCurrentDeck().cards.size
-    }
-
-    fun getCardFromCurrentDeck(index: Int) : Card {
-        //return DataSource.decks[1].cards[index] //TODO remove
-        return getCurrentDeck().cards[index]
     }
 }

@@ -4,9 +4,10 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.flashcards.data.Card
 import com.example.flashcards.data.CardsRepository
-import com.example.flashcards.data.Deck
+import com.example.flashcards.data.entities.Card
+import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.relations.DeckWithCards
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +45,7 @@ class SessionViewModel(
 
         _uiState.update { currentState ->
             currentState.copy(
-                deck = null,
+                deck = DeckWithCards(Deck(), listOf()),
                 isHistoryShown = false,
                 isSessionCompleted = false,
                 isQuitDialogOpen = false,
@@ -121,11 +122,11 @@ class SessionViewModel(
         }
     }
 
-    suspend fun startSession(param: Int) {
-        val deck = cardsRepository.getDeck(param).toDeck()
+    suspend fun startSession(param: Long) {
+        val deck = cardsRepository.getDeckWithCards(param)
 
-        if (deck.data.showHints) showHint()
-        if (deck.data.showExamples) showExample()
+        if (deck.deck.showHints) showHint()
+        if (deck.deck.showExamples) showExample()
 
         val activeCards = (0..<deck.cards.size).toMutableList()
         val usedCards = mutableListOf<Int>()
@@ -159,8 +160,8 @@ class SessionViewModel(
         }
     }
 
-    fun getCurrentDeck(): Deck {
-        return _uiState.value.deck!!
+    fun getCurrentDeck(): DeckWithCards {
+        return _uiState.value.deck
     }
 
     fun getCurrentCard(): Card {
@@ -216,7 +217,7 @@ class SessionViewModel(
         currentCardHistory.add(isCorrect)
 
         // if current card is completed, move to completed cards
-        if (currentCardHistory.isComplete(isDoubleDifficulty = deck.data.doubleDifficulty)) {
+        if (currentCardHistory.isComplete(isDoubleDifficulty = deck.deck.doubleDifficulty)) {
             completedCards.add(currentCardIndex)
 
         // if current card is not completed, add to used cards

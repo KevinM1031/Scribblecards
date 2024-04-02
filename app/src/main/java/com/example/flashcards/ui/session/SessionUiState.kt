@@ -1,9 +1,10 @@
 package com.example.flashcards.ui.session
 
-import com.example.flashcards.data.Deck
+import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.relations.DeckWithCards
 
 data class SessionUiState(
-    val deck: Deck? = null,
+    val deck: DeckWithCards = DeckWithCards(Deck(), listOf()),
 
     val currentCardIndex: Int = 0,
 

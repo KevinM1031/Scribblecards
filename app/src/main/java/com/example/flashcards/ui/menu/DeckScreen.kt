@@ -62,8 +62,8 @@ import androidx.compose.ui.window.Dialog
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
-import com.example.flashcards.data.Card
-import com.example.flashcards.data.Deck
+import com.example.flashcards.data.entities.Card
+import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
 import java.util.Date
 
@@ -72,7 +72,7 @@ import java.util.Date
 fun DeckScreen (
     viewModel: DeckViewModel = viewModel(factory = AppViewModelProvider.Factory),
     onBackButtonClicked: () -> Unit,
-    onStartButtonClicked: (Int) -> Unit,
+    onStartButtonClicked: (Long) -> Unit,
     onCreateButtonClicked: () -> Unit,
     onImportButtonClicked: () -> Unit,
 ) {
@@ -90,7 +90,7 @@ fun DeckScreen (
                 ),
                 title = {
                     Text(
-                        text = uiState.deck!!.data.name,
+                        text = uiState.deck.deck.name,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -126,8 +126,8 @@ fun DeckScreen (
                         ) {
                             Spacer(modifier = Modifier.weight(1f))
                             Button(
-                                onClick = { onStartButtonClicked(uiState.deck!!.entity.id) },
-                                enabled = uiState.deck!!.cards.isNotEmpty(),
+                                onClick = { onStartButtonClicked(uiState.deck.deck.id) },
+                                enabled = uiState.deck.cards.isNotEmpty(),
                                 modifier = Modifier
                                     .width(160.dp),
                             ) {
@@ -154,21 +154,21 @@ fun DeckScreen (
                 )
                 if (uiState.isSessionOptionsOpen) {
                     SessionOptions(
-                        deck = uiState.deck!!,
+                        deck = uiState.deck,
                         setShowHints = {
-                            uiState.deck!!.data.showHints = it
+                            uiState.deck.deck.showHints = it
                             viewModel.update()
                         },
                         setShowExamples = {
-                            uiState.deck!!.data.showExamples = it
+                            uiState.deck.deck.showExamples = it
                             viewModel.update()
                         },
                         setFlipQnA = {
-                            uiState.deck!!.data.flipQnA = it
+                            uiState.deck.deck.flipQnA = it
                             viewModel.update()
                         },
                         setDoubleDifficulty = {
-                            uiState.deck!!.data.doubleDifficulty = it
+                            uiState.deck.deck.doubleDifficulty = it
                             viewModel.update()
                         },
                         onTipButtonClicked = {
@@ -380,7 +380,7 @@ fun CardComponent(
             )
             Checkbox(
                 onCheckedChange = { onCardSelected() },
-                checked = card.isSelected(),
+                checked = card.isSelected,
             )
         }
     }
@@ -388,14 +388,14 @@ fun CardComponent(
 
 @Composable
 fun DeckStats(
-    deck: Deck,
+    deck: DeckWithCards,
     modifier: Modifier = Modifier,
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val circleSize = 164.dp
 
-    val masteryLevel = deck.data.masteryLevel
-    val dateStudied = Date(System.currentTimeMillis() - deck.data.dateStudied)
+    val masteryLevel = deck.deck.masteryLevel
+    val dateStudied = Date(System.currentTimeMillis() - deck.deck.dateStudied)
 
     Box(
         modifier = modifier
@@ -457,7 +457,7 @@ fun DeckStats(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SessionOptions(
-    deck: Deck,
+    deck: DeckWithCards,
     setShowHints: (Boolean) -> Unit,
     setShowExamples: (Boolean) -> Unit,
     setFlipQnA: (Boolean) -> Unit,
@@ -478,14 +478,14 @@ fun SessionOptions(
     ) {
         CustomSwitch(
             label = "Display hints by default",
-            checked = deck.data.showHints,
+            checked = deck.deck.showHints,
             onChecked = setShowHints,
             modifier = Modifier
                 .padding(horizontal = smallPadding)
         )
         CustomSwitch(
             label = "Display examples by default",
-            checked = deck.data.showExamples,
+            checked = deck.deck.showExamples,
             onChecked = setShowExamples,
             modifier = Modifier
                 .padding(horizontal = smallPadding)
@@ -493,7 +493,7 @@ fun SessionOptions(
         )
         CustomSwitch(
             label = "Flip questions and answers",
-            checked = deck.data.flipQnA,
+            checked = deck.deck.flipQnA,
             onChecked = setFlipQnA,
             modifier = Modifier
                 .padding(horizontal = smallPadding)
@@ -501,7 +501,7 @@ fun SessionOptions(
         )
         CustomSwitch(
             label = "Double Difficulty",
-            checked = deck.data.doubleDifficulty,
+            checked = deck.deck.doubleDifficulty,
             onChecked = setDoubleDifficulty,
             showTip = true,
             onTipButtonClicked = onTipButtonClicked,

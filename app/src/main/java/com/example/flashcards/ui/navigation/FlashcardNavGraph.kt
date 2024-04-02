@@ -52,7 +52,7 @@ fun FlashcardNavHost(
         composable(
             route = "${FlashcardScreen.Deck.name}/{id}",
             arguments = listOf(
-                navArgument("id") { type = NavType.IntType },
+                navArgument("id") { type = NavType.LongType },
             )
         ) {
             DeckScreen(
@@ -75,7 +75,7 @@ fun FlashcardNavHost(
         composable(
             route = "${FlashcardScreen.Session.name}/{id}",
             arguments = listOf(
-                navArgument("id") { type = NavType.IntType },
+                navArgument("id") { type = NavType.LongType },
             )
         ) {
             SessionScreen(

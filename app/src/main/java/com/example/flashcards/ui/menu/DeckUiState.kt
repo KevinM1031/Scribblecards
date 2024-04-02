@@ -1,10 +1,10 @@
 package com.example.flashcards.ui.menu
 
-import com.example.flashcards.data.Bundle
-import com.example.flashcards.data.Deck
+import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.relations.DeckWithCards
 
 data class DeckUiState(
-    val deck: Deck? = null,
+    val deck: DeckWithCards = DeckWithCards(Deck(), listOf()),
 
     val numSelectedBundles: Int = 0,
     val numSelectedDecks: Int = 0,

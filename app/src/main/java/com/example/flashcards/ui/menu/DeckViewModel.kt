@@ -1,11 +1,10 @@
 package com.example.flashcards.ui.menu
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.flashcards.data.Card
 import com.example.flashcards.data.CardsRepository
+import com.example.flashcards.data.entities.Card
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,14 +20,12 @@ class DeckViewModel(
     val uiState: StateFlow<DeckUiState> = _uiState.asStateFlow()
 
     init {
-        val param: Int = checkNotNull(savedStateHandle["id"])
-
-        Log.d("debug", "$param")
+        val param: Long = checkNotNull(savedStateHandle["id"])
 
         viewModelScope.launch {
             _uiState.update { currentState ->
                 currentState.copy(
-                    deck = cardsRepository.getDeck(id = param).toDeck()
+                    deck = cardsRepository.getDeckWithCards(id = param)
                 )
             }
         }
@@ -105,10 +102,10 @@ class DeckViewModel(
     fun toggleCardSelection(index: Int) {
         val num = _uiState.value.numSelectedCards
 
-        _uiState.value.deck!!.cards[index].toggleSelection()
+        _uiState.value.deck.cards[index].toggleSelection()
         _uiState.update { currentState ->
             currentState.copy(
-                numSelectedCards = if (currentState.deck!!.cards[index].isSelected())
+                numSelectedCards = if (currentState.deck.cards[index].isSelected)
                     num+1 else num-1
             )
         }
@@ -116,7 +113,7 @@ class DeckViewModel(
 
     fun selectAllCardsInCurrentDeck() {
         deselectAllCards()
-        val cards = _uiState.value.deck!!.cards
+        val cards = _uiState.value.deck.cards
         for (card in cards) {
             card.select()
         }
@@ -128,7 +125,7 @@ class DeckViewModel(
     }
 
     fun deselectAllCardsInCurrentDeck() {
-        val cards = _uiState.value.deck!!.cards
+        val cards = _uiState.value.deck.cards
         for (card in cards) {
             card.deselect()
         }
@@ -141,7 +138,7 @@ class DeckViewModel(
 
     fun deselectAllCards() {
         if (_uiState.value.numSelectedCards == 0) return
-        for (card in _uiState.value.deck!!.cards) {
+        for (card in _uiState.value.deck.cards) {
             card.deselect()
         }
         _uiState.update { currentState ->
@@ -153,8 +150,8 @@ class DeckViewModel(
 
     fun deleteSelectedCardsInCurrentDeck() {
         val newCards = mutableListOf<Card>()
-        for (card in _uiState.value.deck!!.cards) {
-            if (!card.isSelected())
+        for (card in _uiState.value.deck.cards) {
+            if (!card.isSelected)
                 newCards.add(card)
         }
         update()
@@ -162,12 +159,10 @@ class DeckViewModel(
     }
 
     fun getNumCardsInCurrentDeck() : Int {
-        //return DataSource.decks[1].cards.size //TODO remove
-        return _uiState.value.deck!!.cards.size
+        return _uiState.value.deck.cards.size
     }
 
     fun getCardFromCurrentDeck(index: Int) : Card {
-        //return DataSource.decks[1].cards[index] //TODO remove
-        return _uiState.value.deck!!.cards[index]
+        return _uiState.value.deck.cards[index]
     }
 }

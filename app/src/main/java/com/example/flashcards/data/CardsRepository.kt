@@ -1,36 +1,61 @@
 package com.example.flashcards.data
 
-import com.example.flashcards.data.entities.BundleEntity
-import com.example.flashcards.data.entities.CardEntity
-import com.example.flashcards.data.entities.DeckEntity
+import com.example.flashcards.data.entities.Bundle
+import com.example.flashcards.data.entities.Card
+import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks
+import com.example.flashcards.data.relations.BundleWithDecksWithCards
 import com.example.flashcards.data.relations.DeckWithCards
 
 interface CardsRepository {
 
-    suspend fun insertBundle(bundle: BundleEntity)
+    suspend fun insertBundle(bundle: Bundle): Long
 
-    suspend fun insertDeck(deck: DeckEntity)
+    suspend fun insertDeck(deck: Deck): Long
 
-    suspend fun insertCard(card: CardEntity)
+    suspend fun insertDeckToBundle(deck: Deck, bundleId: Long): Long
 
-    suspend fun updateBundle(bundle: BundleEntity)
+    suspend fun insertCard(card: Card): Long
 
-    suspend fun updateDeck(deck: DeckEntity)
+    suspend fun insertCardToDeck(card: Card, deckId: Long): Long
 
-    suspend fun updateCard(card: CardEntity)
+    suspend fun updateBundle(bundle: Bundle)
 
-    suspend fun deleteBundle(bundle: BundleEntity)
+    suspend fun updateDeck(deck: Deck)
 
-    suspend fun deleteDeck(deck: DeckEntity)
+    suspend fun updateCard(card: Card)
 
-    suspend fun deleteCard(card: CardEntity)
+    suspend fun deleteBundle(bundle: Bundle)
 
-    suspend fun getBundle(id: Int): BundleWithDecks
+    suspend fun deleteDeck(deck: Deck)
 
-    suspend fun getAllBundles(): List<BundleWithDecks>
+    suspend fun deleteCard(card: Card)
 
-    suspend fun getDeck(id: Int): DeckWithCards
+    suspend fun getBundle(id: Long): Bundle
 
-    suspend fun getAllDecks(): List<DeckWithCards>
+    suspend fun getAllBundles(): List<Bundle>
+
+    suspend fun getBundleWithDecks(id: Long): BundleWithDecks
+
+    suspend fun getAllBundlesWithDecks(): List<BundleWithDecks>
+
+    suspend fun getBundleWithDecksWithCards(id: Long): BundleWithDecksWithCards
+
+    suspend fun getAllBundlesWithDecksWithCards(): List<BundleWithDecksWithCards>
+
+    suspend fun getDeck(id: Long): Deck
+
+    suspend fun getAllDecks(): List<Deck>
+
+    suspend fun getDeckNotInBundle(id: Long): Deck
+
+    suspend fun getAllDecksNotInBundle(): List<Deck>
+
+    suspend fun getDeckWithCards(id: Long): DeckWithCards
+
+    suspend fun getAllDecksWithCards(): List<DeckWithCards>
+
+    suspend fun getDeckNotInBundleWithCards(id: Long): DeckWithCards
+
+    suspend fun getAllDecksWithCardsNotInBundle(): List<DeckWithCards>
 }

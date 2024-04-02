@@ -77,8 +77,8 @@ import androidx.compose.ui.zIndex
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
-import com.example.flashcards.data.Card
-import com.example.flashcards.data.Deck
+import com.example.flashcards.data.entities.Card
+import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
 import kotlinx.coroutines.launch
 import kotlin.math.floor
@@ -129,7 +129,7 @@ fun SessionScreen (
                 isHintShown = uiState.isHintShown,
                 isExampleShown = uiState.isExampleShown,
                 isHistoryShown = uiState.isHistoryShown,
-                flipQnA = deck.data.flipQnA,
+                flipQnA = deck.deck.flipQnA,
                 flipContent = uiState.flipContent,
                 onHintButtonClicked = { viewModel.showHint() },
                 onExampleButtonClicked = { viewModel.showExample() },
@@ -300,7 +300,7 @@ fun RestartDialog(
 
 @Composable
 fun SessionMenu(
-    deck: Deck,
+    deck: DeckWithCards,
     currentCardIndex : Int,
     activeCardIndices: List<Int>,
     usedCardIndices: List<Int>,
@@ -353,7 +353,7 @@ fun SessionMenu(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = deck.data.name,
+                    text = deck.deck.name,
                     fontSize = 24.sp,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 2,
@@ -384,27 +384,27 @@ fun SessionMenu(
             CardComponent(
                 card = deck.cards[currentCardIndex],
                 cardHistory = cardHistory[currentCardIndex]!!,
-                flipQnA = deck.data.flipQnA,
+                flipQnA = deck.deck.flipQnA,
             )
             for (i in activeCardIndices) {
                 CardComponent(
                     card = deck.cards[i],
                     cardHistory = cardHistory[i]!!,
-                    flipQnA = deck.data.flipQnA,
+                    flipQnA = deck.deck.flipQnA,
                 )
             }
             for (i in usedCardIndices) {
                 CardComponent(
                     card = deck.cards[i],
                     cardHistory = cardHistory[i]!!,
-                    flipQnA = deck.data.flipQnA,
+                    flipQnA = deck.deck.flipQnA,
                 )
             }
             for (i in completedCardIndices) {
                 CardComponent(
                     card = deck.cards[i],
                     cardHistory = cardHistory[i]!!,
-                    flipQnA = deck.data.flipQnA,
+                    flipQnA = deck.deck.flipQnA,
                 )
             }
         }

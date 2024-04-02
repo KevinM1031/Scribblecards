@@ -1,7 +1,6 @@
 package com.example.flashcards.ui.menu
 
 import android.content.res.Configuration
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -50,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,10 +71,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
-import com.example.flashcards.data.Bundle
-import com.example.flashcards.data.Deck
+import com.example.flashcards.data.entities.Bundle
+import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.ui.AppViewModelProvider
 import com.example.flashcards.ui.theme.FlashcardsTheme
+import kotlinx.coroutines.launch
 
 private const val BOX_SIZE_DP = 110
 private const val BOX_SIZE_IN_BUNDLE_DP = 100
@@ -82,7 +83,7 @@ private const val BOX_SIZE_IN_BUNDLE_DP = 100
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    onDeckButtonClicked: (Int) -> Unit,
+    onDeckButtonClicked: (Long) -> Unit,
     onBackButtonClicked: () -> Unit,
 ) {
 
@@ -131,10 +132,7 @@ fun DashboardScreen(
                 .padding(innerPadding)
         ) {
             CardsList(
-                onDeckOpened = {
-                    viewModel.openDeck(it)
-                    onDeckButtonClicked(it)
-                },
+                onDeckOpened = { onDeckButtonClicked(it) },
                 onDeckSelected = { viewModel.toggleDeckSelection(it) },
                 getDeck = { viewModel.getDeck(it) },
                 numDecks = viewModel.getNumDecks(),
@@ -160,10 +158,7 @@ fun DashboardScreen(
 
                 OpenBundle(
                     configuration = LocalConfiguration.current,
-                    onDeckOpened = {
-                        viewModel.openDeck(it)
-                        onDeckButtonClicked(it)
-                    },
+                    onDeckOpened = { onDeckButtonClicked(it) },
                     onDeckSelected = { viewModel.toggleDeckSelection(it) } ,
                     getDeck = { viewModel.getDeckFromCurrentBundle(it) },
                     numDecks = viewModel.getNumDecksInCurrentBundle(),
@@ -176,15 +171,17 @@ fun DashboardScreen(
     }
 
     if ( uiState.isBundleCreatorDialogOpen ) {
+        val coroutineScope = rememberCoroutineScope()
         CreateBundleDialog(
             onDismissRequest = { viewModel.closeBundleCreatorDialog() },
             onCreateClicked = {
-                viewModel.createBundle(it)
+                coroutineScope.launch {
+                    viewModel.createBundle(it)
+                    viewModel.loadCards()
+                }
                 viewModel.closeBundleCreator()
                 viewModel.closeBundle()
                 viewModel.closeBundleCreatorDialog()
-                viewModel.saveCards()
-                viewModel.loadCards()
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
@@ -195,7 +192,7 @@ fun DashboardScreen(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CardsList(
-    onDeckOpened: (Int) -> Unit,
+    onDeckOpened: (Long) -> Unit,
     onDeckSelected: (Int) -> Unit,
     getDeck: (Int) -> Deck,
     numDecks: Int,
@@ -251,7 +248,7 @@ fun CardsList(
 @Composable
 fun DraggableComposable(
     index: Int,
-    onDeckOpened: ((Int) -> Unit)? = null,
+    onDeckOpened: ((Long) -> Unit)? = null,
     onDeckSelected: ((Int) -> Unit)? = null,
     getDeck: ((Int) -> Deck)? = null,
     onBundleOpened: ((Int) -> Unit)? = null,
@@ -336,9 +333,9 @@ fun BundleComponent(
         shape = RoundedCornerShape(10),
         contentPadding = PaddingValues(4.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (bundle.isSelected()) MaterialTheme.colorScheme.tertiary
+            containerColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiary
             else MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = if (bundle.isSelected()) MaterialTheme.colorScheme.tertiaryContainer
+            contentColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiaryContainer
             else MaterialTheme.colorScheme.tertiary,
         ),
         modifier = Modifier
@@ -354,7 +351,7 @@ fun BundleComponent(
 
 @Composable
 fun DeckComponent(
-    onDeckOpened: (Int) -> Unit,
+    onDeckOpened: (Long) -> Unit,
     onDeckSelected: () -> Unit,
     getDeck: () -> Deck,
     isBundleCreatorOpen: Boolean,
@@ -367,14 +364,14 @@ fun DeckComponent(
             if (isBundleCreatorOpen) {
                 onDeckSelected()
             } else {
-                onDeckOpened(deck.entity.id)
+                onDeckOpened(deck.id)
             }
         },
         shape = RoundedCornerShape(10),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (deck.isSelected()) MaterialTheme.colorScheme.primaryContainer
+            containerColor = if (deck.isSelected) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.primary,
-            contentColor = if (deck.isSelected()) MaterialTheme.colorScheme.primary
+            contentColor = if (deck.isSelected) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.primaryContainer,
         ),
         contentPadding = PaddingValues(4.dp),
@@ -383,7 +380,7 @@ fun DeckComponent(
 
     ) {
         Text(
-            text = deck.data.name,
+            text = deck.name,
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
         )
@@ -396,7 +393,7 @@ fun OpenBundle(
     numDecks: Int,
     configuration: Configuration,
     cardIconSize: Int,
-    onDeckOpened: ((Int) -> Unit)? = null,
+    onDeckOpened: ((Long) -> Unit)? = null,
     onDeckSelected: ((Int) -> Unit)? = null,
     getDeck: ((Int) -> Deck)? = null,
     getBundle: ((Int) -> Bundle)? = null,

@@ -57,7 +57,7 @@ fun SummaryScreen (
 
         Spacer(modifier = Modifier.weight(0.2f))
         Text(
-            text = deck.data.name,
+            text = deck.deck.name,
             fontSize = 32.sp,
             overflow = TextOverflow.Ellipsis,
             maxLines = 3,

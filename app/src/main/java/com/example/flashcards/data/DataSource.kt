@@ -1,5 +1,8 @@
 //package com.example.flashcards.data
 //
+//import com.example.flashcards.data.entities.Bundle
+//import com.example.flashcards.data.entities.Card
+//import com.example.flashcards.data.entities.Deck
 //import java.util.Date
 //
 //object DataSource {
@@ -7,12 +10,12 @@
 //    val d2 = System.currentTimeMillis()-86400000*2
 //    val d3 = System.currentTimeMillis()-500000*2
 //
-//    var bundles = listOf(
+//    var decks = listOf(
 //        Bundle(
 //            name = "Animals",
 //            decks = listOf(
 //                Deck(
-//                    data = DeckData(name = "Desert", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Desert", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Rattlesnake", answerText = "Reptile"),
 //                        Card(questionText = "Shrew", answerText = "Mammal"),
@@ -22,7 +25,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Ocean", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Ocean", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Eel", answerText = "Fish"),
 //                        Card(questionText = "Sardine", answerText = "Fish"),
@@ -32,7 +35,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -42,7 +45,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -52,7 +55,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -62,7 +65,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -72,7 +75,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -82,7 +85,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -92,7 +95,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -102,7 +105,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -112,7 +115,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -122,7 +125,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -132,7 +135,7 @@
 //                    )
 //                ),
 //                Deck(
-//                    data = DeckData(name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//                    name = "Forest", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //                    cards = listOf(
 //                        Card(questionText = "Frog", answerText = "Amphibian"),
 //                        Card(questionText = "Turtle", answerText = "Reptile"),
@@ -146,7 +149,7 @@
 //    )
 //    var decks = listOf(
 //        Deck(
-//            data = DeckData(name = "Addition and Subtraction", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//            name = "Addition and Subtraction", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //            cards = listOf(
 //                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
 //                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -162,7 +165,7 @@
 //            )
 //        ),
 //        Deck(
-//            data = DeckData(name = "Math 2", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//            name = "Math 2", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //            cards = listOf(
 //                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
 //                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -178,7 +181,7 @@
 //            )
 //        ),
 //        Deck(
-//            data = DeckData(name = "Math 3", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//            name = "Math 3", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //            cards = listOf(
 //                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
 //                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -194,7 +197,7 @@
 //            )
 //        ),
 //        Deck(
-//            data = DeckData(name = "Math 4", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//            name = "Math 4", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //            cards = listOf(
 //                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
 //                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -210,7 +213,7 @@
 //            )
 //        ),
 //        Deck(
-//            data = DeckData(name = "Math 5", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//            name = "Math 5", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //            cards = listOf(
 //                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
 //                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -226,7 +229,7 @@
 //            )
 //        ),
 //        Deck(
-//            data = DeckData(name = "Math 6", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//            name = "Math 6", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //            cards = listOf(
 //                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
 //                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),
@@ -242,7 +245,7 @@
 //            )
 //        ),
 //        Deck(
-//            data = DeckData(name = "Math 7", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f),
+//            name = "Math 7", dateCreated = d1, dateUpdated = d2, dateStudied = d3, masteryLevel = 0.73f,
 //            cards = listOf(
 //                Card(questionText = "1+2", answerText = "3", hintText = "three", exampleText = "example"),
 //                Card(questionText = "3-1", answerText = "2", hintText = "two", exampleText = "example"),

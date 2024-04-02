@@ -1,42 +1,53 @@
 package com.example.flashcards.data.relations
 
-import androidx.room.DatabaseView
 import androidx.room.Embedded
-import androidx.room.Entity
+import androidx.room.Junction
 import androidx.room.Relation
-import com.example.flashcards.data.Card
-import com.example.flashcards.data.Deck
-import com.example.flashcards.data.DeckData
-import com.example.flashcards.data.entities.CardEntity
-import com.example.flashcards.data.entities.DeckEntity
+import com.example.flashcards.data.entities.Card
+import com.example.flashcards.data.entities.DeckCardCrossRef
+import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.entities.Selectable
 
 data class DeckWithCards(
-    @Embedded val deck: DeckEntity,
+    @Embedded val deck: Deck,
     @Relation(
         parentColumn = "id",
         entityColumn = "deckId",
+        associateBy = Junction(DeckCardCrossRef::class),
     )
-    val cards: List<CardEntity>
+    val cards: List<Card>,
 ) {
-    fun toDeck(): Deck {
-        val cards = mutableListOf<Card>()
-        for (card in this.cards) {
-            cards.add(card.toCard())
+
+    init {
+        updateValues()
+    }
+
+    fun updateValues() {
+        updateMasteryLevel()
+        updateNumSelected()
+    }
+
+    fun updateMasteryLevel() {
+        if (cards.isEmpty()) {
+            deck.masteryLevel = 0f
+        } else {
+            var sum = 0f
+            for (card in cards) {
+                sum += card.getMasteryLevel()
+            }
+            deck.masteryLevel = sum / cards.size
         }
-        return Deck(
-            data = DeckData(
-                name = deck.name,
-                dateCreated = deck.dateCreated,
-                dateUpdated = deck.dateUpdated,
-                dateStudied = deck.dateStudied,
-                showHints = deck.showHints,
-                showExamples = deck.showExamples,
-                flipQnA = deck.flipQnA,
-                doubleDifficulty = deck.doubleDifficulty,
-                masteryLevel = deck.masteryLevel
-            ),
-            cards = cards,
-            entity = deck,
-        )
+    }
+
+    fun updateNumSelected() {
+        if (cards.isEmpty()) {
+            deck.numSelected = 0
+        } else {
+            var num = 0
+            for (card in cards) {
+                if (card.isSelected) num++
+            }
+            deck.numSelected = num
+        }
     }
 }

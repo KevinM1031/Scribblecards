@@ -4,8 +4,11 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "bundles")
-data class BundleEntity (
+data class Bundle (
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val name: String = "Deck",
-)
+    val id: Long = 0,
+    val name: String = "Bundle",
+
+    ): Selectable() {
+
+    }

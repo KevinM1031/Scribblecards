@@ -4,11 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.flashcards.data.entities.BundleEntity
-import com.example.flashcards.data.entities.CardEntity
-import com.example.flashcards.data.entities.DeckEntity
+import com.example.flashcards.data.entities.Bundle
+import com.example.flashcards.data.entities.Card
+import com.example.flashcards.data.entities.DeckCardCrossRef
+import com.example.flashcards.data.entities.Deck
 
-@Database(entities = [BundleEntity::class, DeckEntity::class, CardEntity::class], version = 1, exportSchema = false)
+@Database(entities = [Bundle::class, Deck::class, Card::class, DeckCardCrossRef::class], version = 3, exportSchema = false)
 abstract class CardsDatabase : RoomDatabase() {
 
     abstract fun cardsDao(): CardsDao
