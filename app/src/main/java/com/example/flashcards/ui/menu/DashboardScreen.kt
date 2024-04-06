@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -87,10 +89,9 @@ fun DashboardScreen(
     onBackButtonClicked: () -> Unit,
 ) {
 
-    viewModel.softReset()
-
     val uiState by viewModel.uiState.collectAsState()
     val isBundleOpen = viewModel.isBundleOpen()
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -121,6 +122,7 @@ fun DashboardScreen(
                 CreateOptionButton(
                     isCreateOptionsOpen = uiState.isCreateOptionsOpen,
                     openBundleCreator = { viewModel.openBundleCreator() },
+                    openDeckCreator = { viewModel.openDeckCreatorDialog() },
                     toggleCreateOptions = { viewModel.toggleCreateOptions() },
                 )
             }
@@ -170,18 +172,29 @@ fun DashboardScreen(
         }
     }
 
-    if ( uiState.isBundleCreatorDialogOpen ) {
-        val coroutineScope = rememberCoroutineScope()
+    if (uiState.isBundleCreatorDialogOpen) {
         CreateBundleDialog(
             onDismissRequest = { viewModel.closeBundleCreatorDialog() },
             onCreateClicked = {
                 coroutineScope.launch {
                     viewModel.createBundle(it)
-                    viewModel.loadCards()
                 }
                 viewModel.closeBundleCreator()
                 viewModel.closeBundle()
                 viewModel.closeBundleCreatorDialog()
+            },
+            setUserInput = { viewModel.setUserInput(it) },
+            userInput = uiState.userInput,
+        )
+
+    } else if (uiState.isDeckCreatorDialogOpen) {
+        CreateDeckDialog(
+            onDismissRequest = { viewModel.closeDeckCreatorDialog() },
+            onCreateClicked = {
+                coroutineScope.launch {
+                    viewModel.createDeck(it)
+                }
+                viewModel.closeDeckCreatorDialog()
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
@@ -530,6 +543,7 @@ fun BundleCreatorTopAppBar(
 fun CreateOptionButton(
     isCreateOptionsOpen: Boolean,
     openBundleCreator: () -> Unit,
+    openDeckCreator: () -> Unit,
     toggleCreateOptions: () -> Unit,
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -544,7 +558,7 @@ fun CreateOptionButton(
             ) {
                 FloatingActionButton(
                     onClick = {
-
+                        openDeckCreator()
                     },
                     modifier = Modifier.padding(smallPadding)
                 ) {
@@ -574,7 +588,6 @@ fun CreateOptionButton(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateBundleDialog(
     onDismissRequest: () -> Unit,
@@ -589,6 +602,7 @@ fun CreateBundleDialog(
 
         val smallPadding = dimensionResource(R.dimen.padding_small)
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        var isError by remember { mutableStateOf(false) }
 
         Card(
             colors = CardDefaults.cardColors(
@@ -597,7 +611,7 @@ fun CreateBundleDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp)
+                .height(if (isError) 280.dp else 240.dp)
                 .padding(mediumPadding)
         ) {
             Column(
@@ -614,13 +628,25 @@ fun CreateBundleDialog(
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
-                OutlinedTextField(
-                    value = userInput ?: "New Bundle",
-                    onValueChange = { setUserInput(it) },
-                    label = { Text("Label") },
-                    modifier = Modifier
-                        .padding(bottom = smallPadding)
-                )
+                Column(
+
+                ) {
+                    if (isError) {
+                        Text(
+                            text = "This field is required.",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = userInput ?: "",
+                        onValueChange = { setUserInput(it) },
+                        label = { Text("Bundle name") },
+                        isError = isError,
+                        modifier = Modifier
+                            .padding(bottom = smallPadding)
+                    )
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -631,7 +657,95 @@ fun CreateBundleDialog(
                         onClick = onDismissRequest
                     ) { Text("Cancel") }
                     Button(
-                        onClick = { onCreateClicked(userInput ?: "New Bundle") }
+                        onClick = {
+                            if (userInput.isNullOrBlank()) {
+                                isError = true
+                            } else {
+                                onCreateClicked(userInput)
+                            }
+                        }
+                    ) { Text("Create") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateDeckDialog(
+    onDismissRequest: () -> Unit,
+    onCreateClicked: (String) -> Unit,
+    setUserInput: (String) -> Unit,
+    userInput: String?,
+) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127))) {}
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+
+        val smallPadding = dimensionResource(R.dimen.padding_small)
+        val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        var isError by remember { mutableStateOf(false) }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (isError) 280.dp else 240.dp)
+                .padding(mediumPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxSize()
+
+
+            ) {
+                Text(
+                    text = "Name for the deck:",
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Column() {
+                    if (isError) {
+                        Text(
+                            text = "This field is required.",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Start,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = userInput ?: "",
+                        onValueChange = { setUserInput(it) },
+                        label = { Text("Deck name") },
+                        isError = isError,
+                        modifier = Modifier
+                            .padding(bottom = smallPadding)
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismissRequest
+                    ) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            if (userInput.isNullOrBlank()) {
+                                isError = true
+                            } else {
+                                onCreateClicked(userInput)
+                            }
+                        }
                     ) { Text("Create") }
                 }
             }

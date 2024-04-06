@@ -1,16 +1,19 @@
 package com.example.flashcards.ui.menu
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.sql.DataSource
 
 class DashboardViewModel(
@@ -44,15 +47,15 @@ class DashboardViewModel(
         val bID1 = cardsRepository.insertBundle(Bundle(name="Bundle 1"))
         val bID2 = cardsRepository.insertBundle(Bundle(name="Bundle 2"))
 
-        val dID1 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
-        val dID2 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
-        val dID3 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
-        val dID4 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
-        val dID5 = cardsRepository.insertDeckToBundle(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID2)
-        val dID6 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
-        val dID7 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
-        val dID8 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
-        val dID9 = cardsRepository.insertDeck(Deck(name = "Desert", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+        val dID1 = cardsRepository.insertDeckToBundle(Deck(name = "A", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID2 = cardsRepository.insertDeckToBundle(Deck(name = "B", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID3 = cardsRepository.insertDeckToBundle(Deck(name = "C", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID4 = cardsRepository.insertDeckToBundle(Deck(name = "D", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID1)
+        val dID5 = cardsRepository.insertDeckToBundle(Deck(name = "E", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f), bID2)
+        val dID6 = cardsRepository.insertDeck(Deck(name = "F", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+        val dID7 = cardsRepository.insertDeck(Deck(name = "G", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+        val dID8 = cardsRepository.insertDeck(Deck(name = "H", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
+        val dID9 = cardsRepository.insertDeck(Deck(name = "I", dateCreated = 0, dateUpdated = 0, dateStudied = 0, masteryLevel = 0.73f))
 
         for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID1)}
         for (i in 1..10) { cardsRepository.insertCardToDeck( Card(questionText = "Rattlesnake", answerText = "Reptile", hintText = "HINT", exampleText = "EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE",), dID2)}
@@ -79,19 +82,19 @@ class DashboardViewModel(
                 cardsRepository.deleteDeck(deck)
             }
         }
-    }
-
-    fun softReset() {
+        cardsRepository.getAllCards().let {
+            for (card in it) {
+                cardsRepository.deleteCard(card)
+            }
+        }
     }
 
     fun reset() {
-        softReset()
-
         closeBundle()
-        closeDeck()
         closeBundleCreator()
         closeCreateOptions()
         closeBundleCreatorDialog()
+        closeDeckCreatorDialog()
     }
 
     fun closeCreateOptions() {
@@ -126,7 +129,6 @@ class DashboardViewModel(
                 isBundleCreatorDialogOpen = false,
             )
         }
-        deselectAllDecks()
     }
 
     fun openBundleCreatorDialog() {
@@ -142,6 +144,24 @@ class DashboardViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 isBundleCreatorDialogOpen = false,
+                userInput = null,
+            )
+        }
+    }
+
+    fun openDeckCreatorDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isDeckCreatorDialogOpen = true,
+                userInput = null,
+            )
+        }
+    }
+
+    fun closeDeckCreatorDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isDeckCreatorDialogOpen = false,
                 userInput = null,
             )
         }
@@ -175,7 +195,7 @@ class DashboardViewModel(
         return _uiState.value.currentBundleIndex != null
     }
 
-    suspend fun deleteAllEmptyDecks() {
+    suspend fun deleteAllEmptyBundles() {
         val bWDs = cardsRepository.getAllBundlesWithDecks()
         val bWDsToDelete = mutableListOf<Bundle>()
         for (bWD in bWDs) {
@@ -193,21 +213,21 @@ class DashboardViewModel(
      */
     suspend fun createBundle(name: String) {
 
-        val bundleId = cardsRepository.insertBundle(Bundle(name = name))
+        val bundleId = cardsRepository.insertBundle(Bundle(name = name.trim()))
 
-        // searching for selected decks
         for (deck in _uiState.value.decks) {
             if (deck.isSelected) {
                 deck.bundleId = bundleId
+                deck.deselect()
                 cardsRepository.updateDeck(deck)
             }
         }
 
-        // searching for selected decks from bundles
-        for (bWD in _uiState.value.bundles) {
-            for (deck in bWD.decks) {
+        for (bundle in _uiState.value.bundles) {
+            for (deck in bundle.decks) {
                 if (deck.isSelected) {
                     deck.bundleId = bundleId
+                    deck.deselect()
                     cardsRepository.updateDeck(deck)
                 }
             }
@@ -217,17 +237,31 @@ class DashboardViewModel(
             currentState.copy(
                 currentBundleIndex = null,
                 currentDeckIndex = null,
-                )
+                numSelectedCards = 0,
+            )
         }
 
-        deleteAllEmptyDecks()
+        deleteAllEmptyBundles()
         loadCards()
     }
 
-    fun closeDeck() {
+    suspend fun createDeck(name: String) {
+
+        val deck = Deck(name = name.trim())
+
+        if (isBundleOpen()) {
+            cardsRepository.insertDeckToBundle(deck, _uiState.value.bundles[_uiState.value.currentBundleIndex!!].bundle.id)
+        } else {
+            cardsRepository.insertDeck(deck)
+        }
+
+        loadCards()
+    }
+
+    fun update() {
         _uiState.update { currentState ->
             currentState.copy(
-                currentDeckIndex = null,
+                lastUpdated = System.currentTimeMillis(),
             )
         }
     }

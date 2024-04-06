@@ -36,6 +36,7 @@ class SessionViewModel(
                 isFlipped = false,
                 isHintShown = false,
                 isExampleShown = false,
+                isAnswerSeen = false,
             )
         }
     }
@@ -45,15 +46,18 @@ class SessionViewModel(
 
         _uiState.update { currentState ->
             currentState.copy(
-                deck = DeckWithCards(Deck(), listOf()),
+                deck = DeckWithCards(Deck(), listOf(Card(questionText="",answerText=""))),
                 isHistoryShown = false,
                 isSessionCompleted = false,
                 isQuitDialogOpen = false,
                 isRestartDialogOpen = false,
+                isTipDialogOpen = false,
                 currentCardIndex = 0,
+                activeCards = listOf(),
                 usedCards = listOf(),
                 completedCards = listOf(),
-                cardHistory = mapOf(),
+                cardHistory = mapOf(0 to CardHistory()),
+                oldMasteryLevel = 0f,
             )
         }
     }
@@ -106,10 +110,41 @@ class SessionViewModel(
         }
     }
 
+    fun toggleTipDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isTipDialogOpen = !currentState.isTipDialogOpen
+            )
+        }
+    }
+
+    suspend fun applySessionData() {
+        for (i in 0..<_uiState.value.deck.cards.size) {
+            val card = _uiState.value.deck.cards[i]
+            card.applySessionResults(_uiState.value.cardHistory[i]!!.isPerfect())
+            cardsRepository.updateCard(card)
+        }
+
+        _uiState.value.deck.updateValues()
+        _uiState.value.deck.deck.dateUpdated = System.currentTimeMillis()
+        _uiState.value.deck.deck.dateStudied = System.currentTimeMillis()
+        cardsRepository.updateDeck(_uiState.value.deck.deck)
+    }
+
+    fun getNewMasteryLevel(): Float {
+        val cards = _uiState.value.deck.cards
+        var sum = 0f
+        for (i in 0..<cards.size) {
+            sum += (cards[i].numPerfect + if (_uiState.value.cardHistory[i]!!.isPerfect()) 1f else 0f) / Card.MASTERY_STANDARD
+        }
+        return sum / cards.size
+    }
+
     fun flipCard() {
         _uiState.update { currentState ->
             currentState.copy(
                 isFlipped = !currentState.isFlipped,
+                isAnswerSeen = true,
             )
         }
     }
@@ -124,6 +159,7 @@ class SessionViewModel(
 
     suspend fun startSession(param: Long) {
         val deck = cardsRepository.getDeckWithCards(param)
+        deck.updateValues()
 
         if (deck.deck.showHints) showHint()
         if (deck.deck.showExamples) showExample()
@@ -142,12 +178,14 @@ class SessionViewModel(
 
         _uiState.update { currentState ->
             currentState.copy(
+                param = param,
                 deck = deck,
                 currentCardIndex = currentCardIndex,
                 activeCards = activeCards,
                 usedCards = usedCards,
                 completedCards = completedCards,
                 cardHistory = cardHistory,
+                oldMasteryLevel = deck.deck.masteryLevel
             )
         }
     }
@@ -156,6 +194,16 @@ class SessionViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 isSessionCompleted = true,
+                newMasteryLevel = getNewMasteryLevel(),
+                numPerfect = getNumPerfect(),
+            )
+        }
+    }
+
+    fun setIsCorrect(isCorrect: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isCorrect = isCorrect,
             )
         }
     }
@@ -206,7 +254,7 @@ class SessionViewModel(
         softReset()
     }
 
-    fun nextCard(isCorrect: Boolean) {
+    fun nextCard(isCorrect: Boolean = _uiState.value.isCorrect) {
         val deck = getCurrentDeck()
         var currentCardIndex = _uiState.value.currentCardIndex
         val activeCards = _uiState.value.activeCards.toMutableList()
@@ -238,7 +286,16 @@ class SessionViewModel(
                 }
                 activeCards.shuffle()
                 usedCards.clear()
-                currentCardIndex = activeCards.removeFirst()
+
+                // ensure that same card will not appear consecutively, except when there is only one card left
+                var newCardIndex: Int
+                while (true) {
+                    newCardIndex = activeCards.removeFirst()
+                    if (newCardIndex == currentCardIndex && activeCards.size > 1) {
+                        activeCards.add(newCardIndex)
+                    } else break
+                }
+                currentCardIndex = newCardIndex
             }
 
         } else {
@@ -254,6 +311,22 @@ class SessionViewModel(
             )
         }
         softReset()
+    }
+
+    fun requestSlideAnim() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isSlideAnimRequested = true
+            )
+        }
+    }
+
+    fun completeSlideAnimRequest() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isSlideAnimRequested = false
+            )
+        }
     }
 
 }

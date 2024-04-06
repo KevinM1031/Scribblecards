@@ -13,7 +13,7 @@ data class DeckWithCards(
     @Relation(
         parentColumn = "id",
         entityColumn = "deckId",
-        associateBy = Junction(DeckCardCrossRef::class),
+        //associateBy = Junction(DeckCardCrossRef::class),
     )
     val cards: List<Card>,
 ) {

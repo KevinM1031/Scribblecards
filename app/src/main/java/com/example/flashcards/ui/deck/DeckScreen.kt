@@ -1,11 +1,10 @@
-package com.example.flashcards.ui.menu
+package com.example.flashcards.ui.deck
 
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Info
@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +67,7 @@ import com.example.flashcards.R
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
+import kotlinx.coroutines.launch
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,13 +76,12 @@ fun DeckScreen (
     viewModel: DeckViewModel = viewModel(factory = AppViewModelProvider.Factory),
     onBackButtonClicked: () -> Unit,
     onStartButtonClicked: (Long) -> Unit,
-    onCreateButtonClicked: () -> Unit,
-    onImportButtonClicked: () -> Unit,
+    onCreateButtonClicked: (Long) -> Unit,
+    onImportButtonClicked: (Long) -> Unit,
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
-
-    if (uiState.deck == null) return
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -105,6 +107,18 @@ fun DeckScreen (
                 },
                 actions = {
                     IconButton(onClick = { /* do something */ }) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Import cards"
+                        )
+                    }
+                    IconButton(onClick = { /* do something */ }) {
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = "Edit deck name"
+                        )
+                    }
+                    IconButton(onClick = { viewModel.toggleDeleteDeckDialog() }) {
                         Icon(
                             imageVector = Icons.Filled.Delete,
                             contentDescription = "Delete deck"
@@ -158,22 +172,26 @@ fun DeckScreen (
                         setShowHints = {
                             uiState.deck.deck.showHints = it
                             viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
                         },
                         setShowExamples = {
                             uiState.deck.deck.showExamples = it
                             viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
                         },
                         setFlipQnA = {
                             uiState.deck.deck.flipQnA = it
                             viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
                         },
                         setDoubleDifficulty = {
                             uiState.deck.deck.doubleDifficulty = it
                             viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
                         },
                         onTipButtonClicked = {
                             viewModel.setTipText("In \"Double Difficulty\" mode, a card isn't considered completed until you have guessed it correctly two times in a row.",)
-                            viewModel.openTip()
+                            viewModel.toggleTip()
                         },
                     )
                 }
@@ -196,14 +214,14 @@ fun DeckScreen (
         val customCardEditorBar = @Composable {
             CardEditorBar(
                 onAllCardsSelected = { viewModel.selectAllCardsInCurrentDeck() },
-                onAllCardsDeselected = { viewModel.deselectAllCardsInCurrentDeck() },
+                onAllCardsDeselected = { viewModel.deselectAllCards() },
                 onCardSelectorOpened = { viewModel.openCardSelector() },
                 onCardSelectorClosed = { viewModel.closeCardSelector() },
                 numCards = viewModel.getNumCardsInCurrentDeck(),
                 numSelectedCards = uiState.numSelectedCards,
                 isCardSelectorOpen = uiState.isCardSelectorOpen,
-                onCreateButtonClicked = onCreateButtonClicked,
-                onCardDeleteButtonClicked = { viewModel.deleteSelectedCardsInCurrentDeck() }
+                onCreateButtonClicked = { onCreateButtonClicked(uiState.deck.deck.id) },
+                onCardDeleteButtonClicked = { viewModel.toggleDeleteCardDialog() },
             )
         }
 
@@ -218,7 +236,7 @@ fun DeckScreen (
                     .verticalScroll(scrollState)
             ) {
                 DeckStats(
-                    deck = uiState.deck!!,
+                    deck = uiState.deck,
                     modifier = Modifier
                         .height(deckStatsHeightDp)
                 )
@@ -238,7 +256,31 @@ fun DeckScreen (
     if (uiState.isTipOpen) {
         TipDialog(
             tip = uiState.tipText,
-            onDismissRequest = { viewModel.closeTip() }
+            onDismissRequest = { viewModel.toggleTip() }
+        )
+
+    } else if (uiState.isDeleteCardDialogOpen) {
+        DeleteCardDialog(
+            onDismissRequest = { viewModel.toggleDeleteCardDialog() },
+            onDeleteButtonClicked = {
+                coroutineScope.launch {
+                    viewModel.deleteSelectedCardsInCurrentDeck()
+                    viewModel.toggleDeleteCardDialog()
+                }
+            },
+            isMultipleCardsSelected = uiState.numSelectedCards > 1,
+        )
+
+    } else if (uiState.isDeleteDeckDialogOpen) {
+        DeleteDeckDialog(
+            onDismissRequest = { viewModel.toggleDeleteDeckDialog() },
+            onDeleteButtonClicked = {
+                coroutineScope.launch {
+                    viewModel.deleteDeck()
+                    viewModel.toggleDeleteDeckDialog()
+                    onBackButtonClicked()
+                }
+            },
         )
     }
 }
@@ -288,7 +330,7 @@ fun CardEditorBar(
             IconButton(onClick = onCreateButtonClicked) {
                 Icon(
                     imageVector = Icons.Filled.Add,
-                    contentDescription = "Add"
+                    contentDescription = "Add card"
                 )
             }
             if (isCardSelectorOpen) {
@@ -365,19 +407,29 @@ fun CardComponent(
         ) {
             Text(
                 text = card.questionText,
-                fontSize = 22.sp,
+                fontSize = 16.sp,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .weight(0.7f)
-                    .padding(end = mediumPadding)
+                    .padding(end = smallPadding)
             )
             Text(
                 text = "${Math.round(card.getMasteryLevel()*100)}%",
-                fontSize = 22.sp,
-                overflow = TextOverflow.Ellipsis,
+                fontSize = 16.sp,
+                overflow = TextOverflow.Visible,
+                textAlign = TextAlign.End,
                 modifier = Modifier
-                    .weight(0.3f)
+                    .width(56.dp)
+                    .padding(end = smallPadding)
             )
+            IconButton(
+                onClick = {}
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = "Edit card"
+                )
+            }
             Checkbox(
                 onCheckedChange = { onCardSelected() },
                 checked = card.isSelected,
@@ -454,7 +506,6 @@ fun DeckStats(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SessionOptions(
     deck: DeckWithCards,
@@ -531,7 +582,7 @@ fun CustomSwitch(
             checked = checked,
             onCheckedChange = { onChecked(it) },
         )
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(dimensionResource(R.dimen.padding_medium)))
         Text(text = label, overflow = TextOverflow.Ellipsis)
 
         if (showTip) {
@@ -576,6 +627,129 @@ fun TipDialog(
                 Text(text = tip, textAlign = TextAlign.Center)
                 Button(onClick = { onDismissRequest() }) {
                     Text(text = "Close")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteDeckDialog(
+    onDismissRequest: () -> Unit,
+    onDeleteButtonClicked: () -> Unit,
+) {
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127)))
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(mediumPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxSize()
+
+
+            ) {
+                Text(
+                    text = "Delete this deck?",
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "This action cannot be undone.",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismissRequest
+                    ) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            onDeleteButtonClicked()
+                        }
+                    ) { Text("Delete") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteCardDialog(
+    onDismissRequest: () -> Unit,
+    onDeleteButtonClicked: () -> Unit,
+    isMultipleCardsSelected: Boolean,
+) {
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127)))
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(mediumPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxSize()
+
+
+            ) {
+                Text(
+                    text = "Delete selected card" + if (isMultipleCardsSelected) "s?" else "?",
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "This action cannot be undone.",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismissRequest
+                    ) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            onDeleteButtonClicked()
+                        }
+                    ) { Text("Delete") }
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.example.flashcards.data
 
+import android.util.Log
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
@@ -29,11 +30,20 @@ class OfflineCardsRepository(private val cardsDao: CardsDao) : CardsRepository {
 
     override suspend fun updateDeck(deck: Deck) = cardsDao.updateDeck(deck)
 
+    override suspend fun updateAllDecks(vararg deck: Deck) = cardsDao.updateAllDecks(*deck)
+
     override suspend fun updateCard(card: Card) = cardsDao.updateCard(card)
 
     override suspend fun deleteBundle(bundle: Bundle) = cardsDao.deleteBundle(bundle)
 
     override suspend fun deleteDeck(deck: Deck) = cardsDao.deleteDeck(deck)
+
+    override suspend fun deleteDeckWithCards(deckWithCards: DeckWithCards) = run {
+        for (card in deckWithCards.cards) {
+            cardsDao.deleteCard(card)
+        }
+        cardsDao.deleteDeck(deckWithCards.deck)
+    }
 
     override suspend fun deleteCard(card: Card) = cardsDao.deleteCard(card)
 
@@ -64,4 +74,8 @@ class OfflineCardsRepository(private val cardsDao: CardsDao) : CardsRepository {
     override suspend fun getDeckNotInBundleWithCards(id: Long): DeckWithCards = cardsDao.getDeckNotInBundleWithCards(id)
 
     override suspend fun getAllDecksWithCardsNotInBundle(): List<DeckWithCards> = cardsDao.getAllDecksNotInBundleWithCards()
+
+    override suspend fun getCard(id: Long): Card = cardsDao.getCard(id)
+
+    override suspend fun getAllCards(): List<Card> = cardsDao.getAllCards()
 }

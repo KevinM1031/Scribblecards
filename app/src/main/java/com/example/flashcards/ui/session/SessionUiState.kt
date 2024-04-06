@@ -1,26 +1,37 @@
 package com.example.flashcards.ui.session
 
+import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.DeckWithCards
 
 data class SessionUiState(
     val deck: DeckWithCards = DeckWithCards(Deck(), listOf()),
+    val param: Long = -1,
 
     val currentCardIndex: Int = 0,
 
     val isFlipped: Boolean = false,
     val isHintShown: Boolean = false,
     val isExampleShown: Boolean = false,
+    val isAnswerSeen: Boolean = false,
     val isHistoryShown: Boolean = false,
     val isQuitDialogOpen: Boolean = false,
     val isRestartDialogOpen: Boolean = false,
+    val isTipDialogOpen: Boolean = false,
     val isSessionCompleted: Boolean = false,
+    val isSlideAnimRequested: Boolean = false,
     val flipContent: Boolean = false,
 
     val activeCards: List<Int> = listOf(),
     val usedCards: List<Int> = listOf(),
     val completedCards: List<Int> = listOf(),
     val cardHistory: Map<Int, CardHistory> = mapOf(),
+
+    val tipText: String = "By saving session data, your performance during this session will be applied to calculate your mastery level for this deck.",
+    val oldMasteryLevel: Float = 0f,
+    val newMasteryLevel: Float = 0f,
+    val numPerfect: Int = 0,
+    val isCorrect: Boolean = false,
 
     val lastUpdated: Long = 0,
 )

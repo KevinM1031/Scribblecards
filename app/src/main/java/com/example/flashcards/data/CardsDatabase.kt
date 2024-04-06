@@ -9,7 +9,7 @@ import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.DeckCardCrossRef
 import com.example.flashcards.data.entities.Deck
 
-@Database(entities = [Bundle::class, Deck::class, Card::class, DeckCardCrossRef::class], version = 3, exportSchema = false)
+@Database(entities = [Bundle::class, Deck::class, Card::class, DeckCardCrossRef::class], version = 4, exportSchema = false)
 abstract class CardsDatabase : RoomDatabase() {
 
     abstract fun cardsDao(): CardsDao

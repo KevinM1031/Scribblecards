@@ -60,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
@@ -87,93 +88,108 @@ import kotlin.math.roundToInt
 @Composable
 fun SessionScreen (
     viewModel: SessionViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    onBackButtonClicked: () -> Unit,
+    onQuit: (Long) -> Unit,
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
     val deck = viewModel.getCurrentDeck()
+    val coroutineScope = rememberCoroutineScope()
 
     if (uiState.isSessionCompleted) {
         SummaryScreen(
             viewModel = viewModel,
-            onBackButtonClicked = onBackButtonClicked,
+            uiState = uiState,
+            coroutineScope = coroutineScope,
+            onExit = onQuit
         )
-    }
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
-    val scope = rememberCoroutineScope()
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                SessionMenu(
-                    deck = deck,
-                    currentCardIndex = uiState.currentCardIndex,
-                    activeCardIndices = uiState.activeCards,
-                    usedCardIndices = uiState.usedCards,
-                    completedCardIndices = uiState.completedCards,
-                    cardHistory = uiState.cardHistory,
-                    onQuitButtonClicked = { viewModel.toggleQuitDialog() },
-                    onRestartButtonClicked = { viewModel.toggleRestartDialog() },
-                )
-            }
-        },
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
+    } else {
+        val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                ModalDrawerSheet {
+                    SessionMenu(
+                        deck = deck,
+                        currentCardIndex = uiState.currentCardIndex,
+                        activeCardIndices = uiState.activeCards,
+                        usedCardIndices = uiState.usedCards,
+                        completedCardIndices = uiState.completedCards,
+                        cardHistory = uiState.cardHistory,
+                        onQuitButtonClicked = { viewModel.toggleQuitDialog() },
+                        onRestartButtonClicked = { viewModel.toggleRestartDialog() },
+                    )
+                }
+            },
         ) {
-            Flashcard(
-                card = viewModel.getCurrentCard(),
-                isFlipped = uiState.isFlipped,
-                isHintShown = uiState.isHintShown,
-                isExampleShown = uiState.isExampleShown,
-                isHistoryShown = uiState.isHistoryShown,
-                flipQnA = deck.deck.flipQnA,
-                flipContent = uiState.flipContent,
-                onHintButtonClicked = { viewModel.showHint() },
-                onExampleButtonClicked = { viewModel.showExample() },
-                onInfoButtonClicked = { viewModel.toggleInfo() },
-                onSkipButtonClicked = { viewModel.skipCard() },
-                onFlipButtonClicked = { viewModel.flipCard() },
-                setContentFlip = { viewModel.setContentFlip(it) },
-                onMenuButtonClicked = {
-                    scope.launch {
-                        drawerState.apply {
-                            if (isClosed) open() else close()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                Flashcard(
+                    card = viewModel.getCurrentCard(),
+                    isSlideAnimRequested = uiState.isSlideAnimRequested,
+                    isFlipped = uiState.isFlipped,
+                    isHintShown = uiState.isHintShown,
+                    isExampleShown = uiState.isExampleShown,
+                    isHistoryShown = uiState.isHistoryShown,
+                    flipQnA = deck.deck.flipQnA,
+                    flipContent = uiState.flipContent,
+                    completeSlideAnimRequest = { viewModel.completeSlideAnimRequest() },
+                    onHintButtonClicked = { viewModel.showHint() },
+                    onExampleButtonClicked = { viewModel.showExample() },
+                    onInfoButtonClicked = { viewModel.toggleInfo() },
+                    onSkipButtonClicked = { viewModel.skipCard() },
+                    onFlipButtonClicked = { viewModel.flipCard() },
+                    setContentFlip = { viewModel.setContentFlip(it) },
+                    nextCard = { viewModel.nextCard() },
+                    onMenuButtonClicked = {
+                        coroutineScope.launch {
+                            drawerState.apply {
+                                if (isClosed) open() else close()
+                            }
                         }
+                    },
+                    currentCardHistory = uiState.cardHistory[uiState.currentCardIndex]!!,
+                )
+                FlipBar(
+                    setIsCorrect = { viewModel.setIsCorrect(it) },
+                    enabled = uiState.isAnswerSeen,
+                    requestSlideAnim = { viewModel.requestSlideAnim() }
+                )
+                Notepad()
+            }
+        }
+
+        if (uiState.isQuitDialogOpen) {
+            QuitDialog(
+                onDismissRequest = { viewModel.toggleQuitDialog() },
+                onQuitButtonClicked = {
+                    viewModel.toggleQuitDialog()
+                    onQuit(uiState.param)
+                },
+            )
+        }
+
+        if (uiState.isRestartDialogOpen) {
+            RestartDialog(
+                onDismissRequest = { viewModel.toggleRestartDialog() },
+                onRestartButtonClicked = {
+                    viewModel.toggleRestartDialog()
+                    viewModel.reset()
+                    coroutineScope.launch {
+                        drawerState.close()
+                        viewModel.startSession(uiState.param)
                     }
                 },
-                currentCardHistory = uiState.cardHistory[uiState.currentCardIndex]!!,
             )
-            FlipBar(
-                nextCard = { viewModel.nextCard(it) },
-                enabled = uiState.isFlipped,
-            )
-            Notepad()
         }
     }
 
-    if (uiState.isQuitDialogOpen) {
-        QuitDialog(
-            onDismissRequest = { viewModel.toggleQuitDialog() },
-            onQuitButtonClicked = {
-                viewModel.toggleQuitDialog()
-                viewModel.endSession()
-            },
-        )
-    }
-
-    if (uiState.isRestartDialogOpen) {
-        RestartDialog(
-            onDismissRequest = { viewModel.toggleRestartDialog() },
-            onRestartButtonClicked = {
-                scope.launch {
-                    drawerState.close()
-                }
-                viewModel.toggleRestartDialog()
-                viewModel.reset()
-            },
+    if (uiState.isTipDialogOpen) {
+        TipDialog(
+            tip = uiState.tipText,
+            onDismissRequest = { viewModel.toggleTipDialog() }
         )
     }
 }
@@ -471,12 +487,14 @@ fun CardComponent(
 @Composable
 fun Flashcard(
     card: Card,
+    isSlideAnimRequested: Boolean,
     isFlipped: Boolean,
     isHintShown: Boolean,
     isExampleShown: Boolean,
     isHistoryShown: Boolean,
     flipQnA: Boolean,
     flipContent: Boolean,
+    completeSlideAnimRequest: () -> Unit,
     onHintButtonClicked: () -> Unit,
     onExampleButtonClicked: () -> Unit,
     onInfoButtonClicked: () -> Unit,
@@ -484,27 +502,43 @@ fun Flashcard(
     onFlipButtonClicked: () -> Unit,
     onMenuButtonClicked: () -> Unit,
     setContentFlip: (Boolean) -> Unit,
+    nextCard: () -> Unit,
     currentCardHistory: CardHistory,
     ) {
+
+    var verticalSlide by remember { mutableStateOf(false) }
+
+    val cardSkip = animateFloatAsState(
+        targetValue = if (verticalSlide || isSlideAnimRequested) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 250,
+            easing = FastOutSlowInEasing,
+        ),
+        finishedListener = {
+            if (isFlipped) onFlipButtonClicked()
+            if (isSlideAnimRequested) nextCard()
+            if (verticalSlide) onSkipButtonClicked()
+            completeSlideAnimRequest()
+            verticalSlide = false
+        }
+    )
 
     val contentRotation = animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(
-            durationMillis = 90,
+            durationMillis = if (cardSkip.value > 0) 0 else 90,
             easing = { fraction -> floor(fraction) }
         ),
         finishedListener = { setContentFlip(isFlipped) }
     )
 
-    val rotation = animateFloatAsState(
+    val cardRotation = animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(
-            durationMillis = 250,
+            durationMillis = if (cardSkip.value > 0) 0 else 250,
             easing = FastOutSlowInEasing,
         ),
     )
-
-    Log.d("debug", "$flipContent $flipQnA")
 
     val cardText = if (flipContent || flipQnA) card.answerText else card.questionText
     val historyList = currentCardHistory.getHistory()
@@ -512,17 +546,22 @@ fun Flashcard(
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.tertiary
+            contentColor = MaterialTheme.colorScheme.tertiary,
+            disabledContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            disabledContentColor = MaterialTheme.colorScheme.tertiary,
         ),
         onClick = {
             onFlipButtonClicked()
         },
+        enabled = cardSkip.value == 0f,
         modifier = Modifier
             .background(color = MaterialTheme.colorScheme.primaryContainer)
             .padding(dimensionResource(R.dimen.padding_small))
-            .zIndex(100f)
+            .zIndex(if (cardSkip.value > 0) -100f else 100f)
+            .offset(y = cardSkip.value.dp * 100f)
+            .alpha(1f - cardSkip.value)
             .graphicsLayer {
-                rotationY = rotation.value
+                rotationY = cardRotation.value
                 cameraDistance = 20f * density
             },
     ) {
@@ -535,7 +574,7 @@ fun Flashcard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                 ) {
                     IconButton(
                         onClick = onMenuButtonClicked
@@ -546,7 +585,7 @@ fun Flashcard(
                         )
                     }
                     IconButton(
-                        onClick = onSkipButtonClicked
+                        onClick = { verticalSlide = true }
                     ) {
                         Icon(
                             imageVector = Icons.Default.ArrowForward,
@@ -557,7 +596,7 @@ fun Flashcard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (isHistoryShown)
+                    if (isHistoryShown && cardSkip.value == 0f)
                         if (historyList.isEmpty()) {
                             Text("This is a new card!")
                         } else {
@@ -595,6 +634,7 @@ fun Flashcard(
                     .fillMaxHeight(0.4f)
                     .padding(dimensionResource(R.dimen.padding_medium))
             ) {
+                Spacer(modifier = Modifier.size(52.dp))
                 Text(
                     text = cardText,
                     fontSize = 30.sp,
@@ -603,7 +643,6 @@ fun Flashcard(
                         .weight(1f)
                         .wrapContentHeight(Alignment.CenterVertically),
                 )
-
                 Column(
                     verticalArrangement = Arrangement.Top,
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -665,9 +704,10 @@ fun Flashcard(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FlipBar(
-    nextCard: (Boolean) -> Unit,
+    setIsCorrect: (Boolean) -> Unit,
     enabled: Boolean,
-) {
+    requestSlideAnim: () -> Unit,
+    ) {
     val swiperSize = 48.dp
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
@@ -696,7 +736,8 @@ fun FlipBar(
         }
         SideEffect {
             if (!isOnSwipeCooldown && swipeableState.currentValue != 0) {
-                nextCard(swipeableState.currentValue == 1)
+                setIsCorrect(swipeableState.currentValue == 1)
+                requestSlideAnim()
                 isOnSwipeCooldown = true
             } else if (isOnSwipeCooldown && swipeableState.currentValue == 0) {
                 isOnSwipeCooldown = false
@@ -790,6 +831,43 @@ fun Notepad() {
             .fillMaxWidth()
     ) {
 
+    }
+}
+
+@Composable
+fun TipDialog(
+    onDismissRequest: () -> Unit,
+    tip: String,
+) {
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127))) {}
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(240.dp)
+                .padding(mediumPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxSize()
+            ) {
+                Text(text = tip, textAlign = TextAlign.Center)
+                Button(onClick = { onDismissRequest() }) {
+                    Text(text = "Close")
+                }
+            }
+        }
     }
 }
 

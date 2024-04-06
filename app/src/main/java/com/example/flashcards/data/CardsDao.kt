@@ -33,6 +33,9 @@ interface CardsDao {
     suspend fun updateDeck(deck: Deck)
 
     @Update
+    suspend fun updateAllDecks(vararg deck: Deck)
+
+    @Update
     suspend fun updateCard(card: Card)
 
     @Delete
@@ -99,4 +102,11 @@ interface CardsDao {
     @Transaction
     @Query("SELECT * FROM decks WHERE bundleId = -1")
     suspend fun getAllDecksNotInBundleWithCards(): List<DeckWithCards>
+
+    @Query("SELECT * FROM cards WHERE id = :id")
+    suspend fun getCard(id: Long): Card
+
+    @Transaction
+    @Query("SELECT * FROM cards")
+    suspend fun getAllCards(): List<Card>
 }

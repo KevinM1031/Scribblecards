@@ -1,5 +1,6 @@
-package com.example.flashcards.ui.menu
+package com.example.flashcards.ui.deck
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,9 +24,11 @@ class DeckViewModel(
         val param: Long = checkNotNull(savedStateHandle["id"])
 
         viewModelScope.launch {
+            val deck = cardsRepository.getDeckWithCards(id = param)
             _uiState.update { currentState ->
                 currentState.copy(
-                    deck = cardsRepository.getDeckWithCards(id = param)
+                    param = param,
+                    deck = deck,
                 )
             }
         }
@@ -40,6 +43,11 @@ class DeckViewModel(
 
     fun reset() {
         softReset()
+    }
+
+    suspend fun updateDeck() {
+        _uiState.value.deck.deck.dateUpdated = System.currentTimeMillis()
+        cardsRepository.updateDeck(_uiState.value.deck.deck)
     }
 
     fun toggleSessionOptions() {
@@ -67,18 +75,26 @@ class DeckViewModel(
         deselectAllCards()
     }
 
-    fun openTip() {
+    fun toggleTip() {
         _uiState.update { currentState ->
             currentState.copy(
-                isTipOpen = true,
+                isTipOpen = !currentState.isTipOpen,
             )
         }
     }
 
-    fun closeTip() {
+    fun toggleDeleteCardDialog() {
         _uiState.update { currentState ->
             currentState.copy(
-                isTipOpen = false,
+                isDeleteCardDialogOpen = !currentState.isDeleteCardDialogOpen,
+            )
+        }
+    }
+
+    fun toggleDeleteDeckDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isDeleteDeckDialogOpen = !currentState.isDeleteDeckDialogOpen,
             )
         }
     }
@@ -97,6 +113,10 @@ class DeckViewModel(
                 lastUpdated = System.currentTimeMillis(),
             )
         }
+    }
+
+    suspend fun deleteDeck() {
+        cardsRepository.deleteDeckWithCards(_uiState.value.deck)
     }
 
     fun toggleCardSelection(index: Int) {
@@ -124,18 +144,6 @@ class DeckViewModel(
         }
     }
 
-    fun deselectAllCardsInCurrentDeck() {
-        val cards = _uiState.value.deck.cards
-        for (card in cards) {
-            card.deselect()
-        }
-        _uiState.update { currentState ->
-            currentState.copy(
-                numSelectedCards = 0,
-            )
-        }
-    }
-
     fun deselectAllCards() {
         if (_uiState.value.numSelectedCards == 0) return
         for (card in _uiState.value.deck.cards) {
@@ -148,14 +156,19 @@ class DeckViewModel(
         }
     }
 
-    fun deleteSelectedCardsInCurrentDeck() {
-        val newCards = mutableListOf<Card>()
+    suspend fun deleteSelectedCardsInCurrentDeck() {
         for (card in _uiState.value.deck.cards) {
-            if (!card.isSelected)
-                newCards.add(card)
+            if (card.isSelected) {
+                cardsRepository.deleteCard(card)
+            }
         }
-        update()
-        deselectAllCardsInCurrentDeck()
+        updateDeck()
+        _uiState.update { currentState ->
+            currentState.copy(
+                deck = cardsRepository.getDeckWithCards(_uiState.value.param),
+                numSelectedCards = 0,
+            )
+        }
     }
 
     fun getNumCardsInCurrentDeck() : Int {

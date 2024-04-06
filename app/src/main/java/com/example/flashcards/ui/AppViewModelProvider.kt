@@ -7,7 +7,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.flashcards.FlashcardApplication
 import com.example.flashcards.ui.menu.DashboardViewModel
-import com.example.flashcards.ui.menu.DeckViewModel
+import com.example.flashcards.ui.deck.DeckViewModel
+import com.example.flashcards.ui.editor.CreateCardViewModel
 import com.example.flashcards.ui.session.SessionViewModel
 
 
@@ -26,6 +27,12 @@ object AppViewModelProvider {
         }
         initializer {
             SessionViewModel(
+                cardsRepository = flashcardApplication().container.cardsRepository,
+                savedStateHandle = this.createSavedStateHandle(),
+            )
+        }
+        initializer {
+            CreateCardViewModel(
                 cardsRepository = flashcardApplication().container.cardsRepository,
                 savedStateHandle = this.createSavedStateHandle(),
             )

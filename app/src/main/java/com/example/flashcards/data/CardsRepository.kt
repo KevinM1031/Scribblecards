@@ -23,11 +23,15 @@ interface CardsRepository {
 
     suspend fun updateDeck(deck: Deck)
 
+    suspend fun updateAllDecks(vararg deck: Deck)
+
     suspend fun updateCard(card: Card)
 
     suspend fun deleteBundle(bundle: Bundle)
 
     suspend fun deleteDeck(deck: Deck)
+
+    suspend fun deleteDeckWithCards(deckWithCards: DeckWithCards)
 
     suspend fun deleteCard(card: Card)
 
@@ -58,4 +62,8 @@ interface CardsRepository {
     suspend fun getDeckNotInBundleWithCards(id: Long): DeckWithCards
 
     suspend fun getAllDecksWithCardsNotInBundle(): List<DeckWithCards>
+
+    suspend fun getCard(id: Long): Card
+
+    suspend fun getAllCards(): List<Card>
 }
