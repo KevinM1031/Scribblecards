@@ -1,6 +1,7 @@
 package com.example.flashcards.ui.session
 
-import com.example.flashcards.data.entities.Card
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.DeckWithCards
 
@@ -32,6 +33,8 @@ data class SessionUiState(
     val newMasteryLevel: Float = 0f,
     val numPerfect: Int = 0,
     val isCorrect: Boolean = false,
+
+    val strokes: List<List<Line>> = mutableListOf(),
 
     val lastUpdated: Long = 0,
 )
@@ -68,3 +71,10 @@ class CardHistory {
         return history.isNotEmpty() && !history.contains(false)
     }
 }
+
+data class Line(
+    val start: Offset,
+    val end: Offset,
+    var color: Color = Color.Black,
+    var width: Float = 5f,
+)

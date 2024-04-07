@@ -1,18 +1,22 @@
 package com.example.flashcards.ui.session
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,10 +33,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
@@ -41,6 +49,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -54,6 +63,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,8 +71,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -85,6 +100,10 @@ import kotlinx.coroutines.launch
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
+private const val SWIPER_SIZE = 48
+private const val SWIPER_HEIGHT = 64
+private const val SMOOTHING_FACTOR = 0.4f
+
 @Composable
 fun SessionScreen (
     viewModel: SessionViewModel = viewModel(factory = AppViewModelProvider.Factory),
@@ -94,6 +113,7 @@ fun SessionScreen (
     val uiState by viewModel.uiState.collectAsState()
     val deck = viewModel.getCurrentDeck()
     val coroutineScope = rememberCoroutineScope()
+    val configuration = LocalConfiguration.current
 
     if (uiState.isSessionCompleted) {
         SummaryScreen(
@@ -122,42 +142,91 @@ fun SessionScreen (
                 }
             },
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-                Flashcard(
-                    card = viewModel.getCurrentCard(),
-                    isSlideAnimRequested = uiState.isSlideAnimRequested,
-                    isFlipped = uiState.isFlipped,
-                    isHintShown = uiState.isHintShown,
-                    isExampleShown = uiState.isExampleShown,
-                    isHistoryShown = uiState.isHistoryShown,
-                    flipQnA = deck.deck.flipQnA,
-                    flipContent = uiState.flipContent,
-                    completeSlideAnimRequest = { viewModel.completeSlideAnimRequest() },
-                    onHintButtonClicked = { viewModel.showHint() },
-                    onExampleButtonClicked = { viewModel.showExample() },
-                    onInfoButtonClicked = { viewModel.toggleInfo() },
-                    onSkipButtonClicked = { viewModel.skipCard() },
-                    onFlipButtonClicked = { viewModel.flipCard() },
-                    setContentFlip = { viewModel.setContentFlip(it) },
-                    nextCard = { viewModel.nextCard() },
-                    onMenuButtonClicked = {
-                        coroutineScope.launch {
-                            drawerState.apply {
-                                if (isClosed) open() else close()
-                            }
+            Column {
+                Row(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Flashcard(
+                            card = viewModel.getCurrentCard(),
+                            isSlideAnimRequested = uiState.isSlideAnimRequested,
+                            isFlipped = uiState.isFlipped,
+                            isHintShown = uiState.isHintShown,
+                            isExampleShown = uiState.isExampleShown,
+                            isHistoryShown = uiState.isHistoryShown,
+                            flipQnA = deck.deck.flipQnA,
+                            flipContent = uiState.flipContent,
+                            completeSlideAnimRequest = { viewModel.completeSlideAnimRequest() },
+                            onHintButtonClicked = { viewModel.showHint() },
+                            onExampleButtonClicked = { viewModel.showExample() },
+                            onInfoButtonClicked = { viewModel.toggleInfo() },
+                            onSkipButtonClicked = { viewModel.skipCard() },
+                            onFlipButtonClicked = { viewModel.flipCard() },
+                            setContentFlip = { viewModel.setContentFlip(it) },
+                            nextCard = {
+                                viewModel.nextCard()
+                                viewModel.clearStrokes()
+                            },
+                            onMenuButtonClicked = {
+                                coroutineScope.launch {
+                                    drawerState.apply {
+                                        if (isClosed) open() else close()
+                                    }
+                                }
+                            },
+                            currentCardHistory = uiState.cardHistory[uiState.currentCardIndex]!!,
+                            modifier = Modifier.weight(0.4f)
+                        )
+                        if (configuration.orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                            FlipBar(
+                                setIsCorrect = { viewModel.setIsCorrect(it) },
+                                enabled = uiState.isAnswerSeen,
+                                requestSlideAnim = { viewModel.requestSlideAnim() }
+                            )
+                            Notepad(
+                                strokes = uiState.strokes,
+                                onStroke = { viewModel.addStroke(it) },
+                                onUndo = {
+                                    viewModel.undoStroke()
+                                    viewModel.update()
+                                },
+                                onClear = {
+                                    viewModel.clearStrokes()
+                                    viewModel.update()
+                                },
+                                modifier = Modifier.weight(0.5f),
+                            )
                         }
-                    },
-                    currentCardHistory = uiState.cardHistory[uiState.currentCardIndex]!!,
-                )
-                FlipBar(
-                    setIsCorrect = { viewModel.setIsCorrect(it) },
-                    enabled = uiState.isAnswerSeen,
-                    requestSlideAnim = { viewModel.requestSlideAnim() }
-                )
-                Notepad()
+                    }
+                    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        Notepad(
+                            strokes = uiState.strokes,
+                            onStroke = { viewModel.addStroke(it) },
+                            onUndo = {
+                                viewModel.undoStroke()
+                                viewModel.update()
+                            },
+                            onClear = {
+                                viewModel.clearStrokes()
+                                viewModel.update()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    Box(
+                        modifier = Modifier.height(SWIPER_HEIGHT.dp)
+                    ) {
+                        FlipBar(
+                            setIsCorrect = { viewModel.setIsCorrect(it) },
+                            enabled = uiState.isAnswerSeen,
+                            requestSlideAnim = { viewModel.requestSlideAnim() }
+                        )
+                    }
+                }
             }
         }
 
@@ -324,7 +393,7 @@ fun SessionMenu(
     cardHistory: Map<Int, CardHistory>,
     onRestartButtonClicked: () -> Unit,
     onQuitButtonClicked: () -> Unit,
-    ) {
+) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val progress = completedCardIndices.size.toFloat() / deck.cards.size
@@ -504,6 +573,7 @@ fun Flashcard(
     setContentFlip: (Boolean) -> Unit,
     nextCard: () -> Unit,
     currentCardHistory: CardHistory,
+    modifier: Modifier = Modifier,
     ) {
 
     var verticalSlide by remember { mutableStateOf(false) }
@@ -554,7 +624,7 @@ fun Flashcard(
             onFlipButtonClicked()
         },
         enabled = cardSkip.value == 0f,
-        modifier = Modifier
+        modifier = modifier
             .background(color = MaterialTheme.colorScheme.primaryContainer)
             .padding(dimensionResource(R.dimen.padding_small))
             .zIndex(if (cardSkip.value > 0) -100f else 100f)
@@ -631,7 +701,6 @@ fun Flashcard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.4f)
                     .padding(dimensionResource(R.dimen.padding_medium))
             ) {
                 Spacer(modifier = Modifier.size(52.dp))
@@ -708,14 +777,13 @@ fun FlipBar(
     enabled: Boolean,
     requestSlideAnim: () -> Unit,
     ) {
-    val swiperSize = 48.dp
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     if (enabled) {
         val configuration = LocalConfiguration.current
         val density = LocalDensity.current
         val swipeRange =
-            with(density) { (configuration.screenWidthDp.dp - smallPadding * 2 - swiperSize).toPx() / 2 }
+            with(density) { (configuration.screenWidthDp.dp - smallPadding * 2 - SWIPER_SIZE.dp).toPx() / 2 }
         var isOnSwipeCooldown by remember { mutableStateOf(false) }
 
         val anchors = DraggableAnchors {
@@ -755,7 +823,7 @@ fun FlipBar(
             modifier = Modifier
                 .background(color = MaterialTheme.colorScheme.inversePrimary)
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(SWIPER_HEIGHT.dp)
                 .padding(smallPadding)
                 .anchoredDraggable(state = swipeableState, orientation = Orientation.Horizontal)
         ) {
@@ -764,7 +832,7 @@ fun FlipBar(
                 tint = Color.Red,
                 contentDescription = "Wrong",
                 modifier = Modifier
-                    .size(swiperSize)
+                    .size(SWIPER_SIZE.dp)
             )
             Icon(
                 imageVector = Icons.Default.AddCircle,
@@ -778,7 +846,7 @@ fun FlipBar(
                                 .toInt(), y = 0
                         )
                     }
-                    .size(swiperSize)
+                    .size(SWIPER_SIZE.dp)
                     .zIndex(10f)
             )
             Icon(
@@ -786,7 +854,7 @@ fun FlipBar(
                 tint = Color.Green,
                 contentDescription = "Correct",
                 modifier = Modifier
-                    .size(swiperSize)
+                    .size(SWIPER_SIZE.dp)
             )
         }
     } else {
@@ -804,34 +872,159 @@ fun FlipBar(
                 tint = Color.Gray,
                 contentDescription = "Wrong",
                 modifier = Modifier
-                    .size(swiperSize)
+                    .size(SWIPER_SIZE.dp)
             )
             Icon(
                 imageVector = Icons.Default.AddCircle,
                 tint = Color.Gray,
                 contentDescription = "Correct",
                 modifier = Modifier
-                    .size(swiperSize)
+                    .size(SWIPER_SIZE.dp)
             )
             Icon(
                 imageVector = Icons.Default.Check,
                 tint = Color.Gray,
                 contentDescription = "Correct",
                 modifier = Modifier
-                    .size(swiperSize)
+                    .size(SWIPER_SIZE.dp)
             )
         }
     }
 }
 
 @Composable
-fun Notepad() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
+fun Notepad(
+    strokes: List<List<Line>>,
+    onStroke: (List<Line>) -> Unit,
+    onUndo: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val newStroke = remember { mutableStateListOf<Line>() }
 
+    BoxWithConstraints(
+        modifier = modifier
+            .zIndex(-1000f)
+    ) {
+        val maxWidth = constraints.maxWidth.toFloat()
+        val maxHeight = constraints.maxHeight.toFloat()
+
+        var isDrawing by remember { mutableStateOf(false) }
+
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(true) {
+                    detectDragGestures(
+                        onDragStart = {
+                            isDrawing = true
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            val start = change.position - dragAmount
+                            var end = change.position
+                            if (isDrawing) {
+                                if (end.x < 0 || end.x > maxWidth || end.y < 0 || end.y > maxHeight) {
+                                    end = end.copy(
+                                        x = end.x.coerceAtLeast(0f).coerceAtMost(maxWidth),
+                                        y = end.y.coerceAtLeast(0f).coerceAtMost(maxHeight)
+                                    )
+                                    newStroke.add(Line(start, end))
+                                    onStroke(newStroke.toList())
+                                    isDrawing = false
+                                } else {
+                                    newStroke.add(Line(start, end))
+                                }
+                            }
+                        },
+                        onDragEnd = {
+                            onStroke(newStroke.toList())
+                            newStroke.clear()
+                            isDrawing = false
+                        }
+                    )
+                }
+        ) {
+            val pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 10f)
+            drawLine(color = Color.LightGray, start = Offset(size.width/2, size.height/2), end = Offset(size.width/2, 0f), pathEffect = pathEffect, strokeWidth = 2.dp.toPx(),)
+            drawLine(color = Color.LightGray, start = Offset(size.width/2, size.height/2), end = Offset(size.width/2, size.height), pathEffect = pathEffect, strokeWidth = 2.dp.toPx(),)
+            drawLine(color = Color.LightGray, start = Offset(size.width/2, size.height/2), end = Offset(0f, size.height/2), pathEffect = pathEffect, strokeWidth = 2.dp.toPx(),)
+            drawLine(color = Color.LightGray, start = Offset(size.width/2, size.height/2), end = Offset(size.width, size.height/2), pathEffect = pathEffect, strokeWidth = 2.dp.toPx(),)
+
+            val currStrokes = strokes.toMutableList()
+            if (newStroke.isNotEmpty()) {
+                currStrokes.add(newStroke)
+            }
+            for (stroke in currStrokes) {
+                if (stroke.isEmpty()) continue
+
+                val path = Path()
+                path.moveTo(stroke[0].start.x, stroke[0].start.y)
+
+                if (stroke.size == 1) {
+                    path.lineTo(stroke[0].end.x, stroke[0].end.y)
+
+                } else {
+
+                    val k = SMOOTHING_FACTOR
+                    var cp = getControlPoint(stroke[0].start, stroke[0].end, stroke[1].end, -k)
+                    path.quadraticBezierTo(cp.x, cp.y, stroke[0].end.x, stroke[0].end.y)
+
+                    for (i in 1..<stroke.size - 1) {
+                        val cp1 = getControlPoint(stroke[i].end, stroke[i].start, stroke[i-1].start, -k)
+                        val cp2 = getControlPoint(stroke[i].start, stroke[i].end, stroke[i + 1].end, -k)
+
+//                        drawLine(start = stroke[i].start, end = cp1, color = Color.Red, strokeWidth = 5f)
+//                        drawLine(start = stroke[i].end, end = cp2, color = Color.Blue, strokeWidth = 5f)
+//                        drawCircle(color = Color.Green, radius = 10f, center = stroke[i].start)
+//                        drawCircle(color = Color.Red, radius = 10f, center = cp1)
+//                        drawCircle(color = Color.Blue, radius = 10f, center = cp2)
+
+                        path.cubicTo(cp1.x, cp1.y, cp2.x, cp2.y, stroke[i].end.x, stroke[i].end.y,)
+                    }
+
+                    val i = stroke.size-1
+                    cp = getControlPoint(stroke[i].end, stroke[i].start, stroke[i].start, -k)
+                    path.quadraticBezierTo(cp.x, cp.y, stroke[i].end.x, stroke[i].end.y)
+                }
+                drawPath(
+                    path = path,
+                    color = Color.Black,
+                    style = Stroke(4.dp.toPx())
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            IconButton(
+                onClick = onClear
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Clear"
+                )
+            }
+            IconButton(
+                onClick = onUndo
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Undo"
+                )
+            }
+        }
     }
+}
+
+fun getControlPoint(p1: Offset, p2: Offset, p3: Offset, k: Float): Offset {
+    val l = (p3.x-p1.x)*(p3.x-p1.x) + (p3.y-p1.y)*(p3.y-p1.y)
+    val v1 = Offset(p2.x-p1.x, p2.y-p1.y)
+    val v2 = Offset(p3.x-p1.x, p3.y-p1.y)
+    val c = k * (v1.x*v2.x + v1.y*v2.y) / l
+    return Offset(p2.x + v2.x*c, p2.y + v2.y*c)
 }
 
 @Composable

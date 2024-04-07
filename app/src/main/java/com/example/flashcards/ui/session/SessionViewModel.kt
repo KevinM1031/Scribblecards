@@ -58,6 +58,7 @@ class SessionViewModel(
                 completedCards = listOf(),
                 cardHistory = mapOf(0 to CardHistory()),
                 oldMasteryLevel = 0f,
+                strokes = listOf(),
             )
         }
     }
@@ -329,4 +330,31 @@ class SessionViewModel(
         }
     }
 
+    fun addStroke(stroke: List<Line>) {
+        _uiState.update { currentState ->
+            val strokes = currentState.strokes.toMutableList()
+            strokes.add(stroke)
+            currentState.copy(
+                strokes = strokes
+            )
+        }
+    }
+
+    fun undoStroke() {
+        _uiState.update { currentState ->
+            val strokes = currentState.strokes.toMutableList()
+            if (strokes.isNotEmpty()) strokes.removeLast()
+            currentState.copy(
+                strokes = strokes
+            )
+        }
+    }
+
+    fun clearStrokes() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                strokes = listOf()
+            )
+        }
+    }
 }
