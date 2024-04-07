@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -37,6 +39,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -51,10 +54,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -76,12 +84,16 @@ fun DeckScreen (
     viewModel: DeckViewModel = viewModel(factory = AppViewModelProvider.Factory),
     onBackButtonClicked: () -> Unit,
     onStartButtonClicked: (Long) -> Unit,
-    onCreateButtonClicked: (Long) -> Unit,
-    onImportButtonClicked: (Long) -> Unit,
+    onCreateCardButtonClicked: (Long) -> Unit,
+    onEditCardButtonClicked: (Long) -> Unit,
+    onImportCardsButtonClicked: (Long) -> Unit,
 ) {
+
+    viewModel.softReset()
 
     val uiState by viewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
 
     Scaffold(
         topBar = {
@@ -106,13 +118,16 @@ fun DeckScreen (
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* do something */ }) {
+                    IconButton(onClick = { onImportCardsButtonClicked(uiState.param) }) {
                         Icon(
                             imageVector = Icons.Filled.Add,
                             contentDescription = "Import cards"
                         )
                     }
-                    IconButton(onClick = { /* do something */ }) {
+                    IconButton(onClick = {
+                        viewModel.setUserInput(uiState.deck.deck.name)
+                        viewModel.toggleEditDeckNameDialog()
+                    }) {
                         Icon(
                             imageVector = Icons.Filled.Edit,
                             contentDescription = "Edit deck name"
@@ -220,7 +235,7 @@ fun DeckScreen (
                 numCards = viewModel.getNumCardsInCurrentDeck(),
                 numSelectedCards = uiState.numSelectedCards,
                 isCardSelectorOpen = uiState.isCardSelectorOpen,
-                onCreateButtonClicked = { onCreateButtonClicked(uiState.deck.deck.id) },
+                onCreateButtonClicked = { onCreateCardButtonClicked(uiState.deck.deck.id) },
                 onCardDeleteButtonClicked = { viewModel.toggleDeleteCardDialog() },
             )
         }
@@ -248,6 +263,7 @@ fun DeckScreen (
                         viewModel.toggleCardSelection(it)
                         viewModel.openCardSelector()
                     },
+                    onEditCardButtonClicked = { onEditCardButtonClicked(it) }
                 )
             }
         }
@@ -270,6 +286,20 @@ fun DeckScreen (
             },
             isMultipleCardsSelected = uiState.numSelectedCards > 1,
         )
+
+    } else if (uiState.isEditDeckNameDialogOpen) {
+        EditDeckNameDialog(
+            onDismissRequest = { viewModel.toggleEditDeckNameDialog() },
+            onConfirmClicked = {
+                coroutineScope.launch {
+                    viewModel.updateDeckName(it)
+                    viewModel.toggleEditDeckNameDialog()
+                }
+            },
+            setUserInput = { viewModel.setUserInput(it) },
+            userInput = uiState.userInput,
+            focusManager = focusManager,
+            )
 
     } else if (uiState.isDeleteDeckDialogOpen) {
         DeleteDeckDialog(
@@ -369,6 +399,7 @@ fun CardList(
     getNumCards: () -> Int,
     getCard: (Int) -> Card,
     onCardSelected: (Int) -> Unit,
+    onEditCardButtonClicked: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -379,6 +410,7 @@ fun CardList(
             CardComponent(
                 getCard = { getCard(i) },
                 onCardSelected = { onCardSelected(i) },
+                onEditCardButtonClicked = { onEditCardButtonClicked(it) }
             )
         }
     }
@@ -388,6 +420,7 @@ fun CardList(
 fun CardComponent(
     getCard: () -> Card,
     onCardSelected: () -> Unit,
+    onEditCardButtonClicked: (Long) -> Unit
 ) {
     val card = getCard()
     val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -423,7 +456,9 @@ fun CardComponent(
                     .padding(end = smallPadding)
             )
             IconButton(
-                onClick = {}
+                onClick = {
+                    onEditCardButtonClicked(card.id)
+                }
             ) {
                 Icon(
                     imageVector = Icons.Filled.Edit,
@@ -444,10 +479,14 @@ fun DeckStats(
     modifier: Modifier = Modifier,
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val smallPadding = dimensionResource(R.dimen.padding_small)
     val circleSize = 164.dp
 
     val masteryLevel = deck.deck.masteryLevel
-    val dateStudied = Date(System.currentTimeMillis() - deck.deck.dateStudied)
+    val timeSinceStudied = System.currentTimeMillis() - deck.deck.dateStudied
+    val days = timeSinceStudied/86400000
+    val hours = timeSinceStudied/3600000%60
+    val minutes = (timeSinceStudied/60000).coerceAtLeast(1)%60
 
     Box(
         modifier = modifier
@@ -475,6 +514,7 @@ fun DeckStats(
                         progress = masteryLevel,
                         modifier = Modifier.size(circleSize),
                         strokeWidth = 8.dp,
+                        trackColor = Color.Gray,
                     )
                     Box(modifier = Modifier
                         .size(circleSize)
@@ -482,26 +522,51 @@ fun DeckStats(
                     ) {
                         Text(
                             text = "${Math.round(masteryLevel*100)}%",
-                            fontSize = 64.sp,
+                            fontSize = 58.sp,
                         )
                     }
                 }
                 Text(
                     text = "mastered",
+                    fontSize = 16.sp,
                     modifier = Modifier
-                        .padding(bottom = mediumPadding)
+                        .padding(bottom = smallPadding)
                         .weight(1f)
                 )
             }
-            Text(
-                text = "${dateStudied.day} days, ${dateStudied.hours} hours",
-                fontSize = 32.sp,
-                modifier = Modifier
-            )
-            Text(
-                text = "since last studied",
-                modifier = Modifier
-            )
+            if (deck.deck.isNeverStudied()) {
+                Text(
+                    text = "New deck!",
+                    fontSize = 32.sp,
+                    modifier = Modifier
+                )
+            } else if (days < 1) {
+                Text(
+                    text =
+                        "${hours} hour" + (if(hours > 1) "s, " else ", ") +
+                        "${minutes} minute" + (if(minutes > 1) "s" else ""),
+                    fontSize = 32.sp,
+                    modifier = Modifier
+                )
+                Text(
+                    text = "since last studied",
+                    fontSize = 16.sp,
+                    modifier = Modifier
+                )
+            } else {
+                Text(
+                    text =
+                        "${days} day" + (if(days > 1) "s, " else ", ") +
+                        "${hours} hour" + (if(hours > 1) "s" else ""),
+                    fontSize = 32.sp,
+                    modifier = Modifier
+                )
+                Text(
+                    text = "since last studied",
+                    fontSize = 16.sp,
+                    modifier = Modifier
+                )
+            }
         }
     }
 }
@@ -516,8 +581,6 @@ fun SessionOptions(
     onTipButtonClicked: () -> Unit,
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
-
-    Log.d("debug", "updated")
 
     Column(
         verticalArrangement = Arrangement.SpaceEvenly,
@@ -756,6 +819,91 @@ fun DeleteCardDialog(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun EditDeckNameDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmClicked: (String) -> Unit,
+    setUserInput: (String) -> Unit,
+    userInput: String?,
+    focusManager: FocusManager,
+    ) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127))) {}
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+
+        val smallPadding = dimensionResource(R.dimen.padding_small)
+        val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        var isError by remember { mutableStateOf(false) }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (isError) 280.dp else 240.dp)
+                .padding(mediumPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxSize()
+
+            ) {
+                Text(
+                    text = "Name for the deck:",
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Column() {
+                    if (isError) {
+                        Text(
+                            text = "This field is required.",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Start,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = userInput ?: "",
+                        onValueChange = { setUserInput(it) },
+                        label = { Text("Deck name") },
+                        isError = isError,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
+                        modifier = Modifier
+                            .padding(bottom = smallPadding)
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismissRequest
+                    ) { Text("Cancel") }
+                    Button(
+                        onClick = {
+                            if (userInput.isNullOrBlank()) {
+                                isError = true
+                            } else {
+                                onConfirmClicked(userInput)
+                            }
+                        }
+                    ) { Text("Confirm") }
+                }
+            }
+        }
+    }
+}
+
 @Preview(
     showBackground = true,
     device = "spec:width=393dp,height=808dp"
@@ -765,6 +913,6 @@ fun DeleteCardDialog(
 @Composable
 fun DeckScreenPreview() {
     FlashcardsTheme() {
-        DeckScreen(viewModel(), {}, {a -> {a}}, {}, {})
+        DeckScreen(viewModel(), {}, {a -> {a}}, {a -> {a}}, {}, {})
     }
 }

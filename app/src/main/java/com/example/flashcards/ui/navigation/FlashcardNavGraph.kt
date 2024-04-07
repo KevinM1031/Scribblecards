@@ -7,10 +7,11 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.flashcards.ui.editor.CreateCardScreen
+import com.example.flashcards.ui.createCard.CreateCardScreen
 import com.example.flashcards.ui.menu.DashboardScreen
 import com.example.flashcards.ui.deck.DeckScreen
-import com.example.flashcards.ui.editor.ImportCardsScreen
+import com.example.flashcards.ui.editCard.EditCardScreen
+import com.example.flashcards.ui.importCards.ImportCardsScreen
 import com.example.flashcards.ui.menu.MainMenuScreen
 import com.example.flashcards.ui.session.SessionScreen
 
@@ -19,6 +20,7 @@ enum class FlashcardScreen() {
     Dashboard,
     Deck,
     CreateCard,
+    EditCard,
     ImportCards,
     Session,
     Tutorial,
@@ -56,8 +58,9 @@ fun FlashcardNavHost(
             DeckScreen(
                 onBackButtonClicked = { navController.navigate(FlashcardScreen.Dashboard.name) },
                 onStartButtonClicked = { navController.navigate("${FlashcardScreen.Session.name}/$it") },
-                onCreateButtonClicked = { navController.navigate("${FlashcardScreen.CreateCard.name}/$it") },
-                onImportButtonClicked = { navController.navigate("${FlashcardScreen.ImportCards.name}/$it") },
+                onCreateCardButtonClicked = { navController.navigate("${FlashcardScreen.CreateCard.name}/$it") },
+                onEditCardButtonClicked = { navController.navigate("${FlashcardScreen.EditCard.name}/$it") },
+                onImportCardsButtonClicked = { navController.navigate("${FlashcardScreen.ImportCards.name}/$it") },
             )
         }
         composable(
@@ -67,10 +70,21 @@ fun FlashcardNavHost(
             )
         ) {
             CreateCardScreen(
-                onBackButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
+                onBackButtonClicked = { navController.navigateUp() },
             )
         }
-        composable(route = "${FlashcardScreen.ImportCards.name}/{id}",
+        composable(
+            route = "${FlashcardScreen.EditCard.name}/{id}",
+            arguments = listOf(
+                navArgument("id") { type = NavType.LongType },
+            )
+        ) {
+            EditCardScreen(
+                onBackButtonClicked = { navController.navigateUp() },
+            )
+        }
+        composable(
+            route = "${FlashcardScreen.ImportCards.name}/{id}",
             arguments = listOf(
                 navArgument("id") { type = NavType.LongType },
             )

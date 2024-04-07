@@ -21,33 +21,60 @@ class DeckViewModel(
     val uiState: StateFlow<DeckUiState> = _uiState.asStateFlow()
 
     init {
-        val param: Long = checkNotNull(savedStateHandle["id"])
-
-        viewModelScope.launch {
-            val deck = cardsRepository.getDeckWithCards(id = param)
-            _uiState.update { currentState ->
-                currentState.copy(
-                    param = param,
-                    deck = deck,
-                )
-            }
+        _uiState.update { currentState ->
+            currentState.copy(
+                param = checkNotNull(savedStateHandle["id"])
+            )
         }
-
         reset()
     }
 
     fun softReset() {
-        deselectAllCards()
-        closeCardSelector()
+
+        if (!_uiState.value.isDeckDeleted) {
+            viewModelScope.launch {
+                val deck = cardsRepository.getDeckWithCards(id = _uiState.value.param)
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        deck = deck,
+                    )
+                }
+            }
+        }
     }
 
     fun reset() {
         softReset()
+        deselectAllCards()
+        _uiState.update { currentState ->
+            currentState.copy(
+                isEditDeckNameDialogOpen = false,
+                isDeleteCardDialogOpen = false,
+                isDeleteDeckDialogOpen = false,
+                isCardSelectorOpen = false,
+                isTipOpen = false,
+                userInput = null,
+                isDeckDeleted = false,
+            )
+        }
     }
 
     suspend fun updateDeck() {
         _uiState.value.deck.deck.dateUpdated = System.currentTimeMillis()
         cardsRepository.updateDeck(_uiState.value.deck.deck)
+    }
+
+    suspend fun updateDeckName(name: String) {
+        _uiState.value.deck.deck.name = name
+        updateDeck()
+    }
+
+    fun setUserInput(text: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                userInput = text,
+            )
+        }
     }
 
     fun toggleSessionOptions() {
@@ -99,6 +126,14 @@ class DeckViewModel(
         }
     }
 
+    fun toggleEditDeckNameDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isEditDeckNameDialogOpen = !currentState.isEditDeckNameDialogOpen,
+            )
+        }
+    }
+
     fun setTipText(text: String) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -116,6 +151,11 @@ class DeckViewModel(
     }
 
     suspend fun deleteDeck() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isDeckDeleted = true,
+            )
+        }
         cardsRepository.deleteDeckWithCards(_uiState.value.deck)
     }
 

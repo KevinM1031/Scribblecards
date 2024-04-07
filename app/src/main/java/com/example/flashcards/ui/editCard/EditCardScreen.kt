@@ -1,13 +1,15 @@
-package com.example.flashcards.ui.editor
+package com.example.flashcards.ui.editCard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,11 +17,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -43,18 +45,18 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.ui.AppViewModelProvider
-import com.example.flashcards.ui.menu.DashboardViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateCardScreen (
-    viewModel: CreateCardViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    onBackButtonClicked: (Long) -> Unit,
+fun EditCardScreen (
+    viewModel: EditCardViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    onBackButtonClicked: () -> Unit,
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
@@ -73,13 +75,13 @@ fun CreateCardScreen (
                 ),
                 title = {
                     Text(
-                        text = "Create Card",
+                        text = "Edit Card",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onBackButtonClicked(uiState.deck.id) }) {
+                    IconButton(onClick = { onBackButtonClicked() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -91,6 +93,8 @@ fun CreateCardScreen (
             )
         },
     ) { innerPadding ->
+
+        var clearCardHistory by remember { mutableStateOf(false) }
 
         var isQuestionError by remember { mutableStateOf(false) }
         var isAnswerError by remember { mutableStateOf(false) }
@@ -144,6 +148,22 @@ fun CreateCardScreen (
                     .padding(vertical = smallPadding, horizontal = mediumPadding)
             )
             Spacer(modifier = Modifier.weight(1f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = "Clear card history",
+                    fontSize = 16.sp,
+                )
+                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.padding_small)))
+                Checkbox(
+                    checked = clearCardHistory,
+                    onCheckedChange = { clearCardHistory = it },
+                )
+            }
             Button(
                 onClick = {
                     var isError = false
@@ -157,8 +177,11 @@ fun CreateCardScreen (
                     }
                     if (!isError) {
                         coroutineScope.launch {
-                            viewModel.createCard()
-                            onBackButtonClicked(uiState.deck.id)
+                            if (clearCardHistory) {
+                                viewModel.clearCardHistory()
+                            }
+                            viewModel.updateCard()
+                            onBackButtonClicked()
                         }
                     }
                 },
@@ -167,7 +190,7 @@ fun CreateCardScreen (
                     .padding(vertical = mediumPadding)
             ) {
                 Text(
-                    text = "Create card"
+                    text = "Confirm"
                 )
             }
             Spacer(modifier = Modifier.height(mediumPadding))
@@ -229,6 +252,6 @@ fun CustomTextField(
 @Composable
 fun CreateCardScreenPreview() {
     FlashcardsTheme() {
-        CreateCardScreen(viewModel(), {})
+        EditCardScreen(viewModel(), {})
     }
 }

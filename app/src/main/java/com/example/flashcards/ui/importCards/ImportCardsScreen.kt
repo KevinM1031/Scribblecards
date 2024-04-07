@@ -1,4 +1,4 @@
-package com.example.flashcards.ui.editor
+package com.example.flashcards.ui.importCards
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -42,7 +42,7 @@ fun ImportCardsScreen (
                 ),
                 title = {
                     Text(
-                        text = "Create Card",
+                        text = "Import Cards",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

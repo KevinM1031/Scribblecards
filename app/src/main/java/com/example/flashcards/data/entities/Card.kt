@@ -32,4 +32,9 @@ data class Card (
         numPerfect = numPerfect.coerceAtMost(MASTERY_STANDARD)
         return numPerfect.toFloat() / MASTERY_STANDARD
     }
+
+    fun clearHistory() {
+        numStudied = 0
+        numPerfect = 0
+    }
 }

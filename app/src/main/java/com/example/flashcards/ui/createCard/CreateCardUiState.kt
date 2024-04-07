@@ -1,15 +1,10 @@
-package com.example.flashcards.ui.editor
+package com.example.flashcards.ui.createCard
 
 import com.example.flashcards.data.entities.Deck
-import com.example.flashcards.data.relations.DeckWithCards
 
 data class CreateCardUiState(
     val deck: Deck = Deck(),
     val param: Long = -1,
-
-    val numSelectedBundles: Int = 0,
-    val numSelectedDecks: Int = 0,
-    val numSelectedCards: Int = 0,
 
     val questionTextInput: String = "",
     val answerTextInput: String = "",

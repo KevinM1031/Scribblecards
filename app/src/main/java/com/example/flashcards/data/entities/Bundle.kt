@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class Bundle (
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val name: String = "Bundle",
+    var name: String = "Bundle",
 
     ): Selectable() {
 

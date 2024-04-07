@@ -22,8 +22,8 @@ data class Deck (
     var masteryLevel: Float = 0f,
     var numSelected: Int = 0,
 ) : Selectable() {
-    override fun toggleSelection() {
-        isSelected = !isSelected
-        Log.d("debug", "$name - $isSelected")
+
+    fun isNeverStudied(): Boolean {
+        return dateStudied == 0.toLong()
     }
 }

@@ -1,6 +1,7 @@
 package com.example.flashcards.ui.menu
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -23,12 +24,15 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,19 +58,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -92,6 +104,7 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isBundleOpen = viewModel.isBundleOpen()
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
 
     Scaffold(
         topBar = {
@@ -104,16 +117,16 @@ fun DashboardScreen(
                     onCreateClicked = { viewModel.openBundleCreatorDialog() },
                 )
 
-            } else if (isBundleOpen && currentBundleIndex != null) {
-                DashboardTopAppBar(
+            } else if (isBundleOpen) {
+                BundleTopAppBar(
                     onBackButtonClicked = { viewModel.closeBundle() },
-                    title = viewModel.getBundle(currentBundleIndex).name
+                    onEditBundleNameButtonClicked = { viewModel.openEditBundleNameDialog() },
+                    title = viewModel.getBundle(currentBundleIndex!!).name,
                 )
 
             } else {
                 DashboardTopAppBar(
                     onBackButtonClicked = onBackButtonClicked,
-                    title = stringResource(R.string.screen_dashboard)
                 )
             }
         },
@@ -129,9 +142,14 @@ fun DashboardScreen(
         },
     ) { innerPadding ->
 
+        var containerSize by remember { mutableStateOf(IntSize.Zero) }
+
         Box(
             modifier = Modifier
                 .padding(innerPadding)
+                .onGloballyPositioned { coordinates ->
+                    containerSize = coordinates.size
+                }
         ) {
             CardsList(
                 onDeckOpened = { onDeckButtonClicked(it) },
@@ -145,6 +163,7 @@ fun DashboardScreen(
                 numBundles = viewModel.getNumBundles(),
 
                 isBundleCreatorOpen = uiState.isBundleCreatorOpen,
+                containerSize = containerSize,
                 cardIconSize = BOX_SIZE_DP,
                 padding = dimensionResource(R.dimen.padding_medium),
                 blur = isBundleOpen,
@@ -185,6 +204,7 @@ fun DashboardScreen(
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
+            focusManager = focusManager,
         )
 
     } else if (uiState.isDeckCreatorDialogOpen) {
@@ -198,6 +218,22 @@ fun DashboardScreen(
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
+            focusManager = focusManager,
+        )
+
+    } else if (uiState.isEditBundleNameDialogOpen) {
+        CreateBundleDialog(
+            editMode = true,
+            onDismissRequest = { viewModel.closeEditBundleNameDialog() },
+            onCreateClicked = {
+                coroutineScope.launch {
+                    viewModel.updateCurrentBundleName(it)
+                }
+                viewModel.closeEditBundleNameDialog()
+            },
+            setUserInput = { viewModel.setUserInput(it) },
+            userInput = uiState.userInput,
+            focusManager = focusManager,
         )
     }
 }
@@ -216,6 +252,7 @@ fun CardsList(
     numBundles: Int,
 
     isBundleCreatorOpen: Boolean,
+    containerSize: IntSize,
     cardIconSize: Int,
     padding: Dp = dimensionResource(R.dimen.padding_medium),
     blur: Boolean = false,
@@ -254,6 +291,13 @@ fun CardsList(
                 isBundle = false,
                 size = cardIconSize,
             )
+        }
+
+        val width = with(LocalDensity.current) { containerSize.width.toDp() }
+        val widthLeft = width - padding*2 - cardIconSize.dp*(numBundles+numDecks)
+
+        for (i in 0..<((widthLeft/cardIconSize.dp).toInt())) {
+            EmptyComponent(size = BOX_SIZE_DP)
         }
     }
 }
@@ -416,6 +460,10 @@ fun OpenBundle(
     // overall constants
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val smallPadding = dimensionResource(R.dimen.padding_small)
+
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    val padding = mediumPadding
+
     val overlayWidth =
         if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
             (configuration.screenWidthDp - mediumPadding.value*2)*0.6f
@@ -441,7 +489,11 @@ fun OpenBundle(
                 .verticalScroll(rememberScrollState())
                 .padding(smallPadding)
                 .wrapContentSize(Alignment.TopCenter)
+                .onGloballyPositioned { coordinates ->
+                    containerSize = coordinates.size
+                }
         ) {
+
             for (i in 0..<numDecks) {
                 DraggableComposable(
                     index = i,
@@ -454,15 +506,20 @@ fun OpenBundle(
                     size = cardIconSize,
                 )
             }
+            val widthLeft = overlayWidth.dp - padding*2 - cardIconSize.dp*numDecks
+
+            for (i in 0..<((widthLeft/cardIconSize.dp).toInt())) {
+                EmptyComponent(size = BOX_SIZE_IN_BUNDLE_DP)
+            }
         }
     }
 }
 
 @Composable
-fun EmptyComponent() {
+fun EmptyComponent(size: Int) {
     Spacer(
         modifier = Modifier
-            .size(BOX_SIZE_DP.dp)
+            .size(size.dp)
             .padding(dimensionResource(R.dimen.padding_small))
     )
 }
@@ -471,10 +528,9 @@ fun EmptyComponent() {
 @Composable
 fun DashboardTopAppBar(
     onBackButtonClicked: () -> Unit,
-    title: String,
 ) {
     TopAppBar(
-        title = { Text(text = title, overflow = TextOverflow.Ellipsis,) },
+        title = { Text(text = "Dashboard", overflow = TextOverflow.Ellipsis,) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
         containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -483,6 +539,37 @@ fun DashboardTopAppBar(
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = "Back"
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BundleTopAppBar(
+    onBackButtonClicked: () -> Unit,
+    onEditBundleNameButtonClicked: () -> Unit,
+    title: String,
+) {
+    TopAppBar(
+        title = { Text(text = title, overflow = TextOverflow.Ellipsis,) },
+        colors = TopAppBarDefaults.mediumTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        navigationIcon = {
+            IconButton(onClick = onBackButtonClicked) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onEditBundleNameButtonClicked) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = "Edit bundle name"
                 )
             }
         }
@@ -588,13 +675,16 @@ fun CreateOptionButton(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CreateBundleDialog(
+    editMode: Boolean = false,
     onDismissRequest: () -> Unit,
     onCreateClicked: (String) -> Unit,
     setUserInput: (String) -> Unit,
     userInput: String?,
-) {
+    focusManager: FocusManager,
+    ) {
     Box(modifier = Modifier
         .fillMaxSize()
         .background(Color(0, 0, 0, 127))) {}
@@ -643,6 +733,8 @@ fun CreateBundleDialog(
                         onValueChange = { setUserInput(it) },
                         label = { Text("Bundle name") },
                         isError = isError,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
                         modifier = Modifier
                             .padding(bottom = smallPadding)
                     )
@@ -664,19 +756,21 @@ fun CreateBundleDialog(
                                 onCreateClicked(userInput)
                             }
                         }
-                    ) { Text("Create") }
+                    ) { Text(if (editMode) "Confirm" else "Create") }
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CreateDeckDialog(
     onDismissRequest: () -> Unit,
     onCreateClicked: (String) -> Unit,
     setUserInput: (String) -> Unit,
     userInput: String?,
+    focusManager: FocusManager,
 ) {
     Box(modifier = Modifier
         .fillMaxSize()
@@ -725,6 +819,8 @@ fun CreateDeckDialog(
                         onValueChange = { setUserInput(it) },
                         label = { Text("Deck name") },
                         isError = isError,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
                         modifier = Modifier
                             .padding(bottom = smallPadding)
                     )

@@ -10,12 +10,13 @@ data class DeckUiState(
     val numSelectedCards: Int = 0,
 
     val isTipOpen: Boolean = false,
+    val isDeckDeleted: Boolean = false,
     val isSessionOptionsOpen: Boolean = false,
     val isCardSelectorOpen: Boolean = false,
 
     val isDeleteCardDialogOpen: Boolean = false,
     val isDeleteDeckDialogOpen: Boolean = false,
-
+    val isEditDeckNameDialogOpen: Boolean = false,
 
     val userInput: String? = null,
     val tipText: String = "",

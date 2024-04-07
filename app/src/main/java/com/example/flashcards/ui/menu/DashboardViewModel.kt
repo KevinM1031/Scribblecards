@@ -24,10 +24,10 @@ class DashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
+        reset()
         viewModelScope.launch {
             loadCards()
         }
-        reset()
     }
 
     suspend fun loadCards() {
@@ -95,6 +95,7 @@ class DashboardViewModel(
         closeCreateOptions()
         closeBundleCreatorDialog()
         closeDeckCreatorDialog()
+        closeEditBundleNameDialog()
     }
 
     fun closeCreateOptions() {
@@ -129,6 +130,7 @@ class DashboardViewModel(
                 isBundleCreatorDialogOpen = false,
             )
         }
+        deselectAllDecks()
     }
 
     fun openBundleCreatorDialog() {
@@ -167,6 +169,24 @@ class DashboardViewModel(
         }
     }
 
+    fun openEditBundleNameDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isEditBundleNameDialogOpen = true,
+                userInput = _uiState.value.bundles[_uiState.value.currentBundleIndex!!].bundle.name
+            )
+        }
+    }
+
+    fun closeEditBundleNameDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isEditBundleNameDialogOpen = false,
+                userInput = null,
+            )
+        }
+    }
+
     fun setUserInput(input: String) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -184,6 +204,7 @@ class DashboardViewModel(
     }
 
     fun closeBundle() {
+        closeEditBundleNameDialog()
         _uiState.update { currentState ->
             currentState.copy(
                 currentBundleIndex = null,
@@ -256,6 +277,12 @@ class DashboardViewModel(
         }
 
         loadCards()
+    }
+
+    suspend fun updateCurrentBundleName(name: String) {
+        val bundle = _uiState.value.bundles[_uiState.value.currentBundleIndex!!].bundle
+        bundle.name = name
+        cardsRepository.updateBundle(bundle)
     }
 
     fun update() {
