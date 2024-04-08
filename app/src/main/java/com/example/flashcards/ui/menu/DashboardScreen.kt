@@ -168,6 +168,22 @@ fun DashboardScreen(
                 getBundle = { viewModel.getBundle(it) },
                 numBundles = viewModel.getNumBundles(),
 
+                moveDeckToBundle = { d, b ->
+                    coroutineScope.launch {
+                        viewModel.moveDeckToBundle(d, b)
+                    }
+                },
+                mergeDecksIntoBundle = { d, b ->
+                    coroutineScope.launch {
+                        viewModel.mergeDecksIntoBundle(d, b)
+                    }
+                },
+                mergeBundleWithBundle = { s, t ->
+                    coroutineScope.launch {
+                        viewModel.mergeBundleWithBundle(s, t)
+                    }
+                },
+
                 isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                 containerSize = containerSize,
                 cardIconSize = BOX_SIZE_DP,
@@ -257,6 +273,10 @@ fun CardsList(
     getBundle: (Int) -> Bundle,
     numBundles: Int,
 
+    moveDeckToBundle: (Int, Int) -> Unit,
+    mergeDecksIntoBundle: (Int, Int) -> Unit,
+    mergeBundleWithBundle: (Int, Int) -> Unit,
+
     isBundleCreatorOpen: Boolean,
     containerSize: IntSize,
     cardIconSize: Int,
@@ -266,22 +286,13 @@ fun CardsList(
 
     val bundlePositions = remember { mutableStateMapOf<Int, Offset>() }
     val deckPositions = remember { mutableStateMapOf<Int, Offset>() }
-    var droppedBundle by remember { mutableStateOf<Int?>(null) }
-    var droppedDeck by remember { mutableStateOf<Int?>(null) }
+    var draggingBundleIndex by remember { mutableStateOf<Int?>(null) }
+    var draggingDeckIndex by remember { mutableStateOf<Int?>(null) }
+    var highlightedBundleIndex by remember { mutableStateOf<Int?>(null) }
+    var highlightedDeckIndex by remember { mutableStateOf<Int?>(null) }
+    var isDropped by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val sizePx = with(density) { BOX_SIZE_DP.dp.toPx()/2 }.toInt()
-
-    if (droppedBundle != null) {
-
-        droppedBundle = null
-    } else if (droppedDeck != null) {
-        bundlePositions.forEach {
-            if (iconOverlaps(deckPositions[droppedDeck]!!, it.value, sizePx)) {
-                Log.d("debug", "dropped on ${it.key}")
-            }
-        }
-        droppedDeck = null
-    }
 
     FlowRow(
         horizontalArrangement = Arrangement.Start,
@@ -303,7 +314,9 @@ fun CardsList(
                 isBundle = true,
                 size = cardIconSize,
                 setPosition = { bundlePositions[i] = it },
-                onDrop = { droppedBundle = it },
+                onDrag = { draggingBundleIndex = it },
+                onDrop = { isDropped = true },
+                isHighlighted = highlightedBundleIndex == i
             )
         }
 
@@ -318,9 +331,10 @@ fun CardsList(
                 isBundle = false,
                 size = cardIconSize,
                 setPosition = { deckPositions[i] = it },
-                onDrop = { droppedDeck = it },
-
-                )
+                onDrag = { draggingDeckIndex = it },
+                onDrop = { isDropped = true },
+                isHighlighted = highlightedDeckIndex == i
+            )
         }
 
         val width = with(LocalDensity.current) { containerSize.width.toDp() }
@@ -328,6 +342,71 @@ fun CardsList(
 
         for (i in 0..<((widthLeft/cardIconSize.dp).toInt())) {
             EmptyComponent(size = BOX_SIZE_DP)
+        }
+
+        if (!isBundleCreatorOpen) {
+
+            // check for dragging bundles
+            if (draggingBundleIndex != null) {
+                for (pos in bundlePositions) {
+                    if (pos.key != draggingBundleIndex && iconOverlaps(bundlePositions[draggingBundleIndex]!!, pos.value, sizePx)) {
+
+                        // bundle dropped on bundle - merge bundles
+                        if (isDropped) {
+                            mergeBundleWithBundle(draggingBundleIndex!!, pos.key)
+                            isDropped = false
+                            highlightedBundleIndex = null
+                            draggingBundleIndex = null
+
+                        } else {
+                            highlightedBundleIndex = pos.key
+                        }
+                        break
+                    } else {
+                        highlightedBundleIndex = null
+                    }
+                }
+
+                // check for dragging decks
+            } else if (draggingDeckIndex != null) {
+                for (pos in bundlePositions) {
+                    if (iconOverlaps(deckPositions[draggingDeckIndex]!!, pos.value, sizePx)) {
+
+                        // deck dropped on bundle - move deck to bundle
+                        if (isDropped) {
+                            moveDeckToBundle(draggingDeckIndex!!, pos.key)
+                            isDropped = false
+                            highlightedBundleIndex = null
+                            draggingBundleIndex = null
+
+                        } else {
+                            highlightedBundleIndex = pos.key
+                        }
+                        break
+                    } else {
+                        highlightedBundleIndex = null
+                    }
+                }
+
+                for (pos in deckPositions) {
+                    if (pos.key != draggingDeckIndex && iconOverlaps(deckPositions[draggingDeckIndex]!!, pos.value, sizePx)) {
+
+                        // deck dropped on deck - merge decks into bundle
+                        if (isDropped) {
+                            mergeDecksIntoBundle(draggingDeckIndex!!, pos.key)
+                            isDropped = false
+                            highlightedDeckIndex = null
+                            draggingBundleIndex = null
+
+                        } else {
+                            highlightedDeckIndex = pos.key
+                        }
+                        break
+                    } else {
+                        highlightedDeckIndex = null
+                    }
+                }
+            }
         }
     }
 }
@@ -349,7 +428,9 @@ fun DraggableComposable(
     isBundle: Boolean,
     size: Int,
     setPosition: (Offset) -> Unit,
-    onDrop: (Int?) -> Unit,
+    onDrag: (Int?) -> Unit,
+    onDrop: () -> Unit,
+    isHighlighted: Boolean,
 ) {
 
     var isDragging by remember { mutableStateOf(false) }
@@ -371,19 +452,19 @@ fun DraggableComposable(
                 detectDragGesturesAfterLongPress(
                     onDragStart = {
                         isDragging = true
-                        onDrop(null)
+                        onDrag(index)
                     },
                     onDragEnd = {
                         isDragging = false
                         xOff = 0f
                         yOff = 0f
-                        onDrop(index)
+                        onDrop()
                     },
                     onDragCancel = {
                         isDragging = false
                         xOff = 0f
                         yOff = 0f
-                        onDrop(null)
+                        onDrag(null)
                     },
                 ) { change, dragAmount ->
                     change.consume()
@@ -400,6 +481,7 @@ fun DraggableComposable(
                     onBundleOpened = onBundleOpened,
                     onBundleSelected = onBundleSelected,
                     getBundle = getBundle,
+                    isHighlighted = isHighlighted,
                 )
             }
         } else {
@@ -409,7 +491,8 @@ fun DraggableComposable(
                     onDeckSelected = { onDeckSelected(index) },
                     getDeck = { getDeck(index) },
                     isBundleCreatorOpen = isBundleCreatorOpen,
-                )
+                    isHighlighted = isHighlighted,
+                    )
             }
         }
     }
@@ -421,7 +504,8 @@ fun BundleComponent(
     onBundleOpened: (Int) -> Unit,
     onBundleSelected: (Int) -> Unit,
     getBundle: (Int) -> Bundle,
-) {
+    isHighlighted: Boolean,
+    ) {
 
     val bundle = getBundle(index)
 
@@ -433,8 +517,10 @@ fun BundleComponent(
         contentPadding = PaddingValues(4.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiary
+            else if (isHighlighted) MaterialTheme.colorScheme.secondary
             else MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiaryContainer
+            else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
             else MaterialTheme.colorScheme.tertiary,
         ),
         modifier = Modifier
@@ -454,7 +540,8 @@ fun DeckComponent(
     onDeckSelected: () -> Unit,
     getDeck: () -> Deck,
     isBundleCreatorOpen: Boolean,
-) {
+    isHighlighted: Boolean,
+    ) {
 
     val deck = getDeck()
 
@@ -469,9 +556,11 @@ fun DeckComponent(
         shape = RoundedCornerShape(10),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (deck.isSelected) MaterialTheme.colorScheme.primaryContainer
+                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
                 else MaterialTheme.colorScheme.primary,
             contentColor = if (deck.isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.primaryContainer,
+            else if (isHighlighted) MaterialTheme.colorScheme.secondary
+            else MaterialTheme.colorScheme.primaryContainer,
         ),
         contentPadding = PaddingValues(4.dp),
         modifier = Modifier
@@ -547,7 +636,9 @@ fun OpenBundle(
                     isBundle = false,
                     size = cardIconSize,
                     setPosition = {},
+                    onDrag = {},
                     onDrop = {},
+                    isHighlighted = false,
                     )
             }
             val widthLeft = overlayWidth.dp - padding*2 - cardIconSize.dp*numDecks
