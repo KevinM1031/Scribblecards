@@ -266,6 +266,27 @@ class DashboardViewModel(
         loadCards()
     }
 
+    suspend fun moveDeckToBundle(deckIndex: Int, bundleIndex: Int) {
+        _uiState.value.decks[deckIndex].bundleId = _uiState.value.bundles[bundleIndex].bundle.id
+        cardsRepository.updateDeck(_uiState.value.decks[deckIndex])
+        loadCards()
+    }
+
+    suspend fun moveDeckOutOfBundle(deckIndex: Int, bundleIndex: Int) {
+        _uiState.value.bundles[bundleIndex].decks[deckIndex].bundleId = -1
+        cardsRepository.updateDeck(_uiState.value.decks[deckIndex])
+        loadCards()
+    }
+
+    suspend fun mergeDecksIntoBundle(bundleName: String, deck1Index: Int, deck2Index: Int) {
+        val bundleId = cardsRepository.insertBundle(Bundle(name = bundleName.trim()))
+        _uiState.value.decks[deck1Index].bundleId = bundleId
+        cardsRepository.updateDeck(_uiState.value.decks[deck1Index])
+        _uiState.value.decks[deck2Index].bundleId = bundleId
+        cardsRepository.updateDeck(_uiState.value.decks[deck2Index])
+        loadCards()
+    }
+
     suspend fun createDeck(name: String) {
 
         val deck = Deck(name = name.trim())

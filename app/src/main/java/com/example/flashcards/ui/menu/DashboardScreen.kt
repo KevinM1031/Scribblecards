@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowColumn
@@ -53,6 +54,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -64,9 +68,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -258,6 +264,25 @@ fun CardsList(
     blur: Boolean = false,
 ) {
 
+    val bundlePositions = remember { mutableStateMapOf<Int, Offset>() }
+    val deckPositions = remember { mutableStateMapOf<Int, Offset>() }
+    var droppedBundle by remember { mutableStateOf<Int?>(null) }
+    var droppedDeck by remember { mutableStateOf<Int?>(null) }
+    val density = LocalDensity.current
+    val sizePx = with(density) { BOX_SIZE_DP.dp.toPx()/2 }.toInt()
+
+    if (droppedBundle != null) {
+
+        droppedBundle = null
+    } else if (droppedDeck != null) {
+        bundlePositions.forEach {
+            if (iconOverlaps(deckPositions[droppedDeck]!!, it.value, sizePx)) {
+                Log.d("debug", "dropped on ${it.key}")
+            }
+        }
+        droppedDeck = null
+    }
+
     FlowRow(
         horizontalArrangement = Arrangement.Start,
         modifier = Modifier
@@ -277,6 +302,8 @@ fun CardsList(
                 isBundleCreatorOpen = isBundleCreatorOpen,
                 isBundle = true,
                 size = cardIconSize,
+                setPosition = { bundlePositions[i] = it },
+                onDrop = { droppedBundle = it },
             )
         }
 
@@ -290,7 +317,10 @@ fun CardsList(
                 isBundleCreatorOpen = isBundleCreatorOpen,
                 isBundle = false,
                 size = cardIconSize,
-            )
+                setPosition = { deckPositions[i] = it },
+                onDrop = { droppedDeck = it },
+
+                )
         }
 
         val width = with(LocalDensity.current) { containerSize.width.toDp() }
@@ -300,6 +330,10 @@ fun CardsList(
             EmptyComponent(size = BOX_SIZE_DP)
         }
     }
+}
+
+fun iconOverlaps(p1: Offset, p2: Offset, size: Int): Boolean {
+    return p1.x+size > p2.x && p1.x < p2.x+size && p1.y+size > p2.y && p1.y < p2.y+size
 }
 
 @Composable
@@ -314,6 +348,8 @@ fun DraggableComposable(
     isBundleCreatorOpen: Boolean,
     isBundle: Boolean,
     size: Int,
+    setPosition: (Offset) -> Unit,
+    onDrop: (Int?) -> Unit,
 ) {
 
     var isDragging by remember { mutableStateOf(false) }
@@ -328,20 +364,26 @@ fun DraggableComposable(
             .offset(x = (xOff / d.density).dp, y = (yOff / d.density).dp)
             .alpha(if (isDragging) 0.5f else 1f)
             .zIndex(if (isDragging) 1f else 0f)
+            .onGloballyPositioned { coordinates ->
+                setPosition(coordinates.positionInRoot())
+            }
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = {
                         isDragging = true
+                        onDrop(null)
                     },
                     onDragEnd = {
                         isDragging = false
                         xOff = 0f
                         yOff = 0f
+                        onDrop(index)
                     },
                     onDragCancel = {
                         isDragging = false
                         xOff = 0f
                         yOff = 0f
+                        onDrop(null)
                     },
                 ) { change, dragAmount ->
                     change.consume()
@@ -504,7 +546,9 @@ fun OpenBundle(
                     isBundleCreatorOpen = isBundleCreatorOpen,
                     isBundle = false,
                     size = cardIconSize,
-                )
+                    setPosition = {},
+                    onDrop = {},
+                    )
             }
             val widthLeft = overlayWidth.dp - padding*2 - cardIconSize.dp*numDecks
 
