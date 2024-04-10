@@ -32,8 +32,8 @@ class DashboardViewModel(
 
     suspend fun loadCards() {
 
-//        deleteAllCards()
-//        loadCardsFromDataSource()
+        //deleteAllCards()
+        //loadCardsFromDataSource()
 
         _uiState.update { currentState ->
             currentState.copy(
@@ -115,6 +115,7 @@ class DashboardViewModel(
     }
 
     fun openBundleCreator() {
+        deselectAllDecks()
         _uiState.update { currentState ->
             currentState.copy(
                 isBundleCreatorOpen = true,
@@ -187,6 +188,24 @@ class DashboardViewModel(
         }
     }
 
+    fun openRemoveDeckFromBundleUi() {
+        deselectAllDecks()
+        _uiState.update { currentState ->
+            currentState.copy(
+                isRemoveDeckFromBundleUiOpen = true,
+            )
+        }
+    }
+
+    fun closeRemoveDeckFromBundleUi() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isRemoveDeckFromBundleUiOpen = false,
+            )
+        }
+        deselectAllDecks()
+    }
+
     fun setUserInput(input: String) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -205,6 +224,7 @@ class DashboardViewModel(
 
     fun closeBundle() {
         closeEditBundleNameDialog()
+        closeRemoveDeckFromBundleUi()
         _uiState.update { currentState ->
             currentState.copy(
                 currentBundleIndex = null,
@@ -272,9 +292,16 @@ class DashboardViewModel(
         loadCards()
     }
 
-    suspend fun moveDeckOutOfBundle(deckIndex: Int, bundleIndex: Int) {
-        _uiState.value.bundles[bundleIndex].decks[deckIndex].bundleId = -1
-        cardsRepository.updateDeck(_uiState.value.decks[deckIndex])
+    suspend fun moveSelectedDecksOutOfBundle() {
+        for (bundle in _uiState.value.bundles) {
+            for (deck in bundle.decks) {
+                if (deck.isSelected) {
+                    deck.bundleId = -1
+                    deck.deselect()
+                    cardsRepository.updateDeck(deck)
+                }
+            }
+        }
         loadCards()
     }
 
@@ -294,7 +321,7 @@ class DashboardViewModel(
             deck.bundleId = _uiState.value.bundles[targetBundleIndex].bundle.id
             cardsRepository.updateDeck(deck)
         }
-        cardsRepository.deleteBundle(_uiState.value.bundles[targetBundleIndex].bundle)
+        cardsRepository.deleteBundle(_uiState.value.bundles[selectedBundleIndex].bundle)
         loadCards()
     }
 

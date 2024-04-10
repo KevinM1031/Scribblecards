@@ -688,6 +688,7 @@ fun TipDialog(
                     .fillMaxSize()
             ) {
                 Text(text = tip, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.weight(1f))
                 Button(onClick = { onDismissRequest() }) {
                     Text(text = "Close")
                 }
@@ -737,6 +738,7 @@ fun DeleteDeckDialog(
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -799,6 +801,7 @@ fun DeleteCardDialog(
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -880,6 +883,7 @@ fun EditDeckNameDialog(
                             .padding(bottom = smallPadding)
                     )
                 }
+                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,

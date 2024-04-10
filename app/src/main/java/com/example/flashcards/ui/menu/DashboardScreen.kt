@@ -2,15 +2,15 @@ package com.example.flashcards.ui.menu
 
 import android.content.res.Configuration
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -34,6 +33,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,8 +55,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,11 +73,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,8 +111,6 @@ fun DashboardScreen(
 
     Scaffold(
         topBar = {
-            val currentBundleIndex = uiState.currentBundleIndex
-
             if (uiState.isBundleCreatorOpen) {
                 BundleCreatorTopAppBar(
                     numSelected = uiState.numSelectedDecks + uiState.numSelectedBundles,
@@ -124,11 +119,24 @@ fun DashboardScreen(
                 )
 
             } else if (isBundleOpen) {
-                BundleTopAppBar(
-                    onBackButtonClicked = { viewModel.closeBundle() },
-                    onEditBundleNameButtonClicked = { viewModel.openEditBundleNameDialog() },
-                    title = viewModel.getBundle(currentBundleIndex!!).name,
-                )
+                if (uiState.isRemoveDeckFromBundleUiOpen) {
+                    RemoveDeckFromBundleTopBar(
+                        numSelected = uiState.numSelectedDecks,
+                        closeRemoveDeckFromBundleUi = { viewModel.closeRemoveDeckFromBundleUi() },
+                        onRemoveClicked = {
+                            coroutineScope.launch {
+                                viewModel.moveSelectedDecksOutOfBundle()
+                                viewModel.closeBundle()
+                            }
+                        },
+                    )
+                } else {
+                    BundleTopAppBar(
+                        onBackButtonClicked = { viewModel.closeBundle() },
+                        onEditBundleNameButtonClicked = { viewModel.openEditBundleNameDialog() },
+                        title = viewModel.getBundle(uiState.currentBundleIndex!!).name,
+                    )
+                }
 
             } else {
                 DashboardTopAppBar(
@@ -185,6 +193,7 @@ fun DashboardScreen(
                 },
 
                 isBundleCreatorOpen = uiState.isBundleCreatorOpen,
+                isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                 containerSize = containerSize,
                 cardIconSize = BOX_SIZE_DP,
                 padding = dimensionResource(R.dimen.padding_medium),
@@ -202,11 +211,17 @@ fun DashboardScreen(
                 OpenBundle(
                     configuration = LocalConfiguration.current,
                     onDeckOpened = { onDeckButtonClicked(it) },
-                    onDeckSelected = { viewModel.toggleDeckSelection(it) } ,
+                    onDeckSelected = {
+                        if (!uiState.isRemoveDeckFromBundleUiOpen) {
+                            viewModel.openRemoveDeckFromBundleUi()
+                        }
+                        viewModel.toggleDeckSelection(it)
+                    },
                     getDeck = { viewModel.getDeckFromCurrentBundle(it) },
                     numDecks = viewModel.getNumDecksInCurrentBundle(),
                     getBundle = { viewModel.getBundle(it) },
                     isBundleCreatorOpen = uiState.isBundleCreatorOpen,
+                    isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                     cardIconSize = BOX_SIZE_IN_BUNDLE_DP,
                 )
             }
@@ -217,12 +232,12 @@ fun DashboardScreen(
         CreateBundleDialog(
             onDismissRequest = { viewModel.closeBundleCreatorDialog() },
             onCreateClicked = {
+                viewModel.closeBundleCreatorDialog()
                 coroutineScope.launch {
                     viewModel.createBundle(it)
+                    viewModel.closeBundleCreator()
+                    viewModel.closeBundle()
                 }
-                viewModel.closeBundleCreator()
-                viewModel.closeBundle()
-                viewModel.closeBundleCreatorDialog()
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
@@ -233,10 +248,10 @@ fun DashboardScreen(
         CreateDeckDialog(
             onDismissRequest = { viewModel.closeDeckCreatorDialog() },
             onCreateClicked = {
+                viewModel.closeDeckCreatorDialog()
                 coroutineScope.launch {
                     viewModel.createDeck(it)
                 }
-                viewModel.closeDeckCreatorDialog()
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
@@ -248,10 +263,10 @@ fun DashboardScreen(
             editMode = true,
             onDismissRequest = { viewModel.closeEditBundleNameDialog() },
             onCreateClicked = {
+                viewModel.closeEditBundleNameDialog()
                 coroutineScope.launch {
                     viewModel.updateCurrentBundleName(it)
                 }
-                viewModel.closeEditBundleNameDialog()
             },
             setUserInput = { viewModel.setUserInput(it) },
             userInput = uiState.userInput,
@@ -278,6 +293,7 @@ fun CardsList(
     mergeBundleWithBundle: (Int, Int) -> Unit,
 
     isBundleCreatorOpen: Boolean,
+    isRemoveDeckFromBundleUiOpen: Boolean,
     containerSize: IntSize,
     cardIconSize: Int,
     padding: Dp = dimensionResource(R.dimen.padding_medium),
@@ -316,8 +332,9 @@ fun CardsList(
                 setPosition = { bundlePositions[i] = it },
                 onDrag = { draggingBundleIndex = it },
                 onDrop = { isDropped = true },
-                isHighlighted = highlightedBundleIndex == i
-            )
+                isHighlighted = highlightedBundleIndex == i,
+                isClickEnabled = draggingBundleIndex == null,
+                )
         }
 
         for (i in 0..<numDecks) {
@@ -328,12 +345,14 @@ fun CardsList(
                 getDeck = getDeck,
                 getBundle = getBundle,
                 isBundleCreatorOpen = isBundleCreatorOpen,
+                isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
                 isBundle = false,
                 size = cardIconSize,
                 setPosition = { deckPositions[i] = it },
                 onDrag = { draggingDeckIndex = it },
                 onDrop = { isDropped = true },
-                isHighlighted = highlightedDeckIndex == i
+                isHighlighted = highlightedDeckIndex == i,
+                isClickEnabled = draggingDeckIndex == null,
             )
         }
 
@@ -346,6 +365,9 @@ fun CardsList(
 
         if (!isBundleCreatorOpen) {
 
+            highlightedBundleIndex = null
+            highlightedDeckIndex = null
+
             // check for dragging bundles
             if (draggingBundleIndex != null) {
                 for (pos in bundlePositions) {
@@ -354,57 +376,65 @@ fun CardsList(
                         // bundle dropped on bundle - merge bundles
                         if (isDropped) {
                             mergeBundleWithBundle(draggingBundleIndex!!, pos.key)
+                            bundlePositions.remove(draggingBundleIndex)
                             isDropped = false
-                            highlightedBundleIndex = null
                             draggingBundleIndex = null
 
-                        } else {
-                            highlightedBundleIndex = pos.key
-                        }
+                        } else highlightedBundleIndex = pos.key
                         break
-                    } else {
-                        highlightedBundleIndex = null
                     }
+                }
+
+                if (isDropped) {
+                    isDropped = false
+                    draggingBundleIndex = null
                 }
 
                 // check for dragging decks
             } else if (draggingDeckIndex != null) {
+                var pass = false
                 for (pos in bundlePositions) {
                     if (iconOverlaps(deckPositions[draggingDeckIndex]!!, pos.value, sizePx)) {
+                        pass = true
 
                         // deck dropped on bundle - move deck to bundle
                         if (isDropped) {
                             moveDeckToBundle(draggingDeckIndex!!, pos.key)
+                            deckPositions.remove(draggingDeckIndex)
                             isDropped = false
-                            highlightedBundleIndex = null
-                            draggingBundleIndex = null
+                            draggingDeckIndex = null
 
-                        } else {
-                            highlightedBundleIndex = pos.key
-                        }
+                        } else highlightedBundleIndex = pos.key
                         break
-                    } else {
-                        highlightedBundleIndex = null
                     }
                 }
 
-                for (pos in deckPositions) {
-                    if (pos.key != draggingDeckIndex && iconOverlaps(deckPositions[draggingDeckIndex]!!, pos.value, sizePx)) {
+                if (!pass) {
+                    for (pos in deckPositions) {
+                        if (pos.key != draggingDeckIndex && iconOverlaps(
+                                deckPositions[draggingDeckIndex]!!,
+                                pos.value,
+                                sizePx
+                            )
+                        ) {
 
-                        // deck dropped on deck - merge decks into bundle
-                        if (isDropped) {
-                            mergeDecksIntoBundle(draggingDeckIndex!!, pos.key)
-                            isDropped = false
-                            highlightedDeckIndex = null
-                            draggingBundleIndex = null
+                            // deck dropped on deck - merge decks into bundle
+                            if (isDropped) {
+                                mergeDecksIntoBundle(draggingDeckIndex!!, pos.key)
+                                deckPositions.remove(draggingDeckIndex)
+                                deckPositions.remove(pos.key)
+                                isDropped = false
+                                draggingDeckIndex = null
 
-                        } else {
-                            highlightedDeckIndex = pos.key
+                            } else highlightedDeckIndex = pos.key
+                            break
                         }
-                        break
-                    } else {
-                        highlightedDeckIndex = null
                     }
+                }
+
+                if (isDropped) {
+                    isDropped = false
+                    draggingDeckIndex = null
                 }
             }
         }
@@ -415,6 +445,7 @@ fun iconOverlaps(p1: Offset, p2: Offset, size: Int): Boolean {
     return p1.x+size > p2.x && p1.x < p2.x+size && p1.y+size > p2.y && p1.y < p2.y+size
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DraggableComposable(
     index: Int,
@@ -425,12 +456,15 @@ fun DraggableComposable(
     onBundleSelected: ((Int) -> Unit)? = null,
     getBundle: ((Int) -> Bundle)? = null,
     isBundleCreatorOpen: Boolean,
+    isRemoveDeckFromBundleUiOpen: Boolean = false,
     isBundle: Boolean,
     size: Int,
-    setPosition: (Offset) -> Unit,
-    onDrag: (Int?) -> Unit,
-    onDrop: () -> Unit,
-    isHighlighted: Boolean,
+    setPosition: (Offset) -> Unit = {},
+    onDrag: (Int?) -> Unit = {},
+    onDrop: () -> Unit = {},
+    isHighlighted: Boolean = false,
+    isClickEnabled: Boolean = true,
+    isDeckInsideBundle: Boolean = false,
 ) {
 
     var isDragging by remember { mutableStateOf(false) }
@@ -449,27 +483,29 @@ fun DraggableComposable(
                 setPosition(coordinates.positionInRoot())
             }
             .pointerInput(Unit) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = {
-                        isDragging = true
-                        onDrag(index)
-                    },
-                    onDragEnd = {
-                        isDragging = false
-                        xOff = 0f
-                        yOff = 0f
-                        onDrop()
-                    },
-                    onDragCancel = {
-                        isDragging = false
-                        xOff = 0f
-                        yOff = 0f
-                        onDrag(null)
-                    },
-                ) { change, dragAmount ->
-                    change.consume()
-                    xOff += dragAmount.x
-                    yOff += dragAmount.y
+                if (!isDeckInsideBundle && !isBundleCreatorOpen) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = {
+                            isDragging = true
+                            onDrag(index)
+                        },
+                        onDragEnd = {
+                            isDragging = false
+                            xOff = 0f
+                            yOff = 0f
+                            onDrop()
+                        },
+                        onDragCancel = {
+                            isDragging = false
+                            xOff = 0f
+                            yOff = 0f
+                            onDrag(null)
+                        },
+                    ) { change, dragAmount ->
+                        change.consume()
+                        xOff += dragAmount.x
+                        yOff += dragAmount.y
+                    }
                 }
             }
     ) {
@@ -482,6 +518,7 @@ fun DraggableComposable(
                     onBundleSelected = onBundleSelected,
                     getBundle = getBundle,
                     isHighlighted = isHighlighted,
+                    isClickEnabled = isClickEnabled,
                 )
             }
         } else {
@@ -492,7 +529,10 @@ fun DraggableComposable(
                     getDeck = { getDeck(index) },
                     isBundleCreatorOpen = isBundleCreatorOpen,
                     isHighlighted = isHighlighted,
-                    )
+                    isClickEnabled = isClickEnabled,
+                    isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
+                    isInBundle = isDeckInsideBundle,
+                )
             }
         }
     }
@@ -505,6 +545,7 @@ fun BundleComponent(
     onBundleSelected: (Int) -> Unit,
     getBundle: (Int) -> Bundle,
     isHighlighted: Boolean,
+    isClickEnabled: Boolean,
     ) {
 
     val bundle = getBundle(index)
@@ -513,15 +554,22 @@ fun BundleComponent(
         onClick = {
             onBundleOpened(index)
         },
+        enabled = isClickEnabled,
         shape = RoundedCornerShape(10),
         contentPadding = PaddingValues(4.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiary
-            else if (isHighlighted) MaterialTheme.colorScheme.secondary
-            else MaterialTheme.colorScheme.tertiaryContainer,
+                else if (isHighlighted) MaterialTheme.colorScheme.secondary
+                else MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiaryContainer
-            else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
-            else MaterialTheme.colorScheme.tertiary,
+                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
+                else MaterialTheme.colorScheme.tertiary,
+            disabledContainerColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiary
+                else if (isHighlighted) MaterialTheme.colorScheme.secondary
+                else MaterialTheme.colorScheme.tertiaryContainer,
+            disabledContentColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiaryContainer
+                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
+                else MaterialTheme.colorScheme.tertiary,
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -534,44 +582,67 @@ fun BundleComponent(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DeckComponent(
     onDeckOpened: (Long) -> Unit,
     onDeckSelected: () -> Unit,
     getDeck: () -> Deck,
-    isBundleCreatorOpen: Boolean,
+    isBundleCreatorOpen: Boolean = false,
     isHighlighted: Boolean,
+    isClickEnabled: Boolean = true,
+    isInBundle: Boolean = false,
+    isRemoveDeckFromBundleUiOpen: Boolean = false,
     ) {
 
     val deck = getDeck()
 
-    OutlinedButton(
-        onClick = {
-            if (isBundleCreatorOpen) {
-                onDeckSelected()
-            } else {
-                onDeckOpened(deck.id)
-            }
-        },
+    Card(
         shape = RoundedCornerShape(10),
-        colors = ButtonDefaults.buttonColors(
+        colors = CardDefaults.cardColors(
             containerColor = if (deck.isSelected) MaterialTheme.colorScheme.primaryContainer
                 else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
                 else MaterialTheme.colorScheme.primary,
             contentColor = if (deck.isSelected) MaterialTheme.colorScheme.primary
-            else if (isHighlighted) MaterialTheme.colorScheme.secondary
-            else MaterialTheme.colorScheme.primaryContainer,
+                else if (isHighlighted) MaterialTheme.colorScheme.secondary
+                else MaterialTheme.colorScheme.primaryContainer,
+            disabledContainerColor = if (deck.isSelected) MaterialTheme.colorScheme.primaryContainer
+                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
+                else MaterialTheme.colorScheme.primary,
+            disabledContentColor = if (deck.isSelected) MaterialTheme.colorScheme.primary
+                else if (isHighlighted) MaterialTheme.colorScheme.secondary
+                else MaterialTheme.colorScheme.primaryContainer,
         ),
-        contentPadding = PaddingValues(4.dp),
         modifier = Modifier
             .fillMaxSize()
+            .combinedClickable(
+                enabled = isClickEnabled,
+                onClick = {
+                    if (isBundleCreatorOpen || (isInBundle && isRemoveDeckFromBundleUiOpen)) {
+                        onDeckSelected()
+                    } else {
+                        onDeckOpened(deck.id)
+                    }
+                },
+                onLongClick = {
+                    if (isInBundle) {
+                        onDeckSelected()
+                    }
+                },
+            )
 
     ) {
-        Text(
-            text = deck.name,
-            textAlign = TextAlign.Center,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .wrapContentSize(Alignment.Center)
+        ) {
+            Text(
+                text = deck.name,
+                textAlign = TextAlign.Center,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -586,6 +657,7 @@ fun OpenBundle(
     getDeck: ((Int) -> Deck)? = null,
     getBundle: ((Int) -> Bundle)? = null,
     isBundleCreatorOpen: Boolean,
+    isRemoveDeckFromBundleUiOpen: Boolean,
 ) {
 
     // overall constants
@@ -593,7 +665,7 @@ fun OpenBundle(
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
-    val padding = mediumPadding
+    var containerPosition by remember { mutableStateOf(Offset.Zero) }
 
     val overlayWidth =
         if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
@@ -622,6 +694,7 @@ fun OpenBundle(
                 .wrapContentSize(Alignment.TopCenter)
                 .onGloballyPositioned { coordinates ->
                     containerSize = coordinates.size
+                    containerPosition = coordinates.positionInRoot()
                 }
         ) {
 
@@ -633,15 +706,15 @@ fun OpenBundle(
                     getDeck = getDeck,
                     getBundle = getBundle,
                     isBundleCreatorOpen = isBundleCreatorOpen,
+                    isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
                     isBundle = false,
                     size = cardIconSize,
-                    setPosition = {},
-                    onDrag = {},
-                    onDrop = {},
                     isHighlighted = false,
-                    )
+                    isClickEnabled = true,
+                    isDeckInsideBundle = true,
+                )
             }
-            val widthLeft = overlayWidth.dp - padding*2 - cardIconSize.dp*numDecks
+            val widthLeft = overlayWidth.dp - mediumPadding * 2 - cardIconSize.dp * numDecks
 
             for (i in 0..<((widthLeft/cardIconSize.dp).toInt())) {
                 EmptyComponent(size = BOX_SIZE_IN_BUNDLE_DP)
@@ -754,6 +827,56 @@ fun BundleCreatorTopAppBar(
                     Icon(
                         imageVector = Icons.Filled.Done,
                         contentDescription = "Done",
+                    )
+                }
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RemoveDeckFromBundleTopBar(
+    numSelected: Int,
+    closeRemoveDeckFromBundleUi: () -> Unit,
+    onRemoveClicked: () -> Unit,
+) {
+
+    val smallPadding = dimensionResource(R.dimen.padding_small)
+
+    TopAppBar(
+        title = { Text(text = "$numSelected Selected") },
+        colors = TopAppBarDefaults.mediumTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        navigationIcon = {
+            IconButton(
+                onClick = { closeRemoveDeckFromBundleUi() }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Close"
+                )
+            }
+        },
+        actions = {
+            Button(
+                onClick = {
+                    onRemoveClicked()
+                },
+                enabled = numSelected > 0,
+                modifier = Modifier
+                    .padding(smallPadding)
+            ) {
+                Row() {
+                    Text(
+                        text = "Remove",
+                        fontSize = 16.sp,
+                    )
+                    Spacer(modifier = Modifier.size(smallPadding))
+                    Icon(
+                        imageVector = Icons.Filled.Send,
+                        contentDescription = "Remove",
                     )
                 }
             }
@@ -874,6 +997,7 @@ fun CreateBundleDialog(
                             .padding(bottom = smallPadding)
                     )
                 }
+                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -960,6 +1084,7 @@ fun CreateDeckDialog(
                             .padding(bottom = smallPadding)
                     )
                 }
+                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,

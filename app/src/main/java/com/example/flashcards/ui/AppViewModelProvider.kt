@@ -9,6 +9,7 @@ import com.example.flashcards.FlashcardApplication
 import com.example.flashcards.ui.menu.DashboardViewModel
 import com.example.flashcards.ui.deck.DeckViewModel
 import com.example.flashcards.ui.createCard.CreateCardViewModel
+import com.example.flashcards.ui.deck.ImportCardsViewModel
 import com.example.flashcards.ui.editCard.EditCardViewModel
 import com.example.flashcards.ui.session.SessionViewModel
 
@@ -40,6 +41,12 @@ object AppViewModelProvider {
         }
         initializer {
             EditCardViewModel(
+                cardsRepository = flashcardApplication().container.cardsRepository,
+                savedStateHandle = this.createSavedStateHandle(),
+            )
+        }
+        initializer {
+            ImportCardsViewModel(
                 cardsRepository = flashcardApplication().container.cardsRepository,
                 savedStateHandle = this.createSavedStateHandle(),
             )

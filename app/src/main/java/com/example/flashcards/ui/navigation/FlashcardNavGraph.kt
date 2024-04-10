@@ -1,5 +1,6 @@
 package com.example.flashcards.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -90,7 +91,7 @@ fun FlashcardNavHost(
             )
         ) {
             ImportCardsScreen(
-                onBackButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
+                onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(
@@ -99,8 +100,9 @@ fun FlashcardNavHost(
                 navArgument("id") { type = NavType.LongType },
             )
         ) {
+            BackHandler(true) {}
             SessionScreen(
-                onQuit = { navController.navigate("${FlashcardScreen.Deck.name}/$it") }
+                onQuit = { navController.navigateUp() }
             )
         }
     }
