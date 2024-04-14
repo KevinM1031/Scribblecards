@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("org.jsoup:jsoup:1.17.2")
 
     testImplementation(libs.junit)
 

@@ -27,6 +27,7 @@ enum class FlashcardScreen() {
     Tutorial,
     Settings,
 }
+
 @Composable
 fun FlashcardNavHost(
     navController: NavHostController,
@@ -45,6 +46,7 @@ fun FlashcardNavHost(
             )
         }
         composable(route = FlashcardScreen.Dashboard.name) {
+            BackHandler(true) { navController.navigate(FlashcardScreen.MainMenu.name) }
             DashboardScreen(
                 onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
                 onBackButtonClicked = { navController.navigate(FlashcardScreen.MainMenu.name) },
@@ -56,6 +58,7 @@ fun FlashcardNavHost(
                 navArgument("id") { type = NavType.LongType },
             )
         ) {
+            BackHandler(true) { navController.navigate(FlashcardScreen.Dashboard.name) }
             DeckScreen(
                 onBackButtonClicked = { navController.navigate(FlashcardScreen.Dashboard.name) },
                 onStartButtonClicked = { navController.navigate("${FlashcardScreen.Session.name}/$it") },

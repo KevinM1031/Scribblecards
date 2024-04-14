@@ -917,6 +917,7 @@ fun Notepad(
                 .pointerInput(true) {
                     detectDragGestures(
                         onDragStart = {
+                            newStroke.clear()
                             isDrawing = true
                         },
                         onDrag = { change, dragAmount ->
@@ -939,7 +940,6 @@ fun Notepad(
                         },
                         onDragEnd = {
                             onStroke(newStroke.toList())
-                            newStroke.clear()
                             isDrawing = false
                         }
                     )
@@ -1000,7 +1000,10 @@ fun Notepad(
                 .fillMaxSize()
         ) {
             IconButton(
-                onClick = onClear
+                onClick = {
+                    newStroke.clear()
+                    onClear()
+                }
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
@@ -1008,7 +1011,10 @@ fun Notepad(
                 )
             }
             IconButton(
-                onClick = onUndo
+                onClick = {
+                    newStroke.clear()
+                    onUndo()
+                }
             ) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,

@@ -1,6 +1,8 @@
 package com.example.flashcards.ui.menu
 
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import javax.sql.DataSource
 
 class DashboardViewModel(
@@ -25,9 +28,6 @@ class DashboardViewModel(
 
     init {
         reset()
-        viewModelScope.launch {
-            loadCards()
-        }
     }
 
     suspend fun loadCards() {
@@ -89,7 +89,15 @@ class DashboardViewModel(
         }
     }
 
+    fun softReset() {
+        viewModelScope.launch {
+            loadCards()
+        }
+    }
+
     fun reset() {
+        softReset()
+
         closeBundle()
         closeBundleCreator()
         closeCreateOptions()
