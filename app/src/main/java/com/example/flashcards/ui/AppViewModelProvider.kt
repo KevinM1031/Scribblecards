@@ -6,7 +6,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.flashcards.FlashcardApplication
-import com.example.flashcards.ui.menu.DashboardViewModel
+import com.example.flashcards.ui.Dashboard.DashboardViewModel
 import com.example.flashcards.ui.deck.DeckViewModel
 import com.example.flashcards.ui.createCard.CreateCardViewModel
 import com.example.flashcards.ui.deck.ImportCardsViewModel

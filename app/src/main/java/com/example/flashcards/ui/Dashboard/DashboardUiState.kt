@@ -1,4 +1,4 @@
-package com.example.flashcards.ui.menu
+package com.example.flashcards.ui.Dashboard
 
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks
@@ -23,7 +23,9 @@ data class DashboardUiState(
     val isTipOpen: Boolean = false,
     val isSessionOptionsOpen: Boolean = false,
     val isCardSelectorOpen: Boolean = false,
+
     val isBundleCloseAnimRequested: Boolean = false,
+    val isCreateOptionsCloseAnimRequested: Boolean = false,
 
     val userInput: String? = null,
     val tipText: String = "",

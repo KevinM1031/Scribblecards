@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -142,6 +143,8 @@ fun SessionScreen (
                 }
             },
         ) {
+            val newStroke = remember { mutableStateListOf<Line>() }
+
             Column {
                 Row(
                     modifier = Modifier.weight(1f)
@@ -168,6 +171,7 @@ fun SessionScreen (
                             nextCard = {
                                 viewModel.nextCard()
                                 viewModel.clearStrokes()
+                                newStroke.clear()
                             },
                             onMenuButtonClicked = {
                                 coroutineScope.launch {
@@ -187,6 +191,7 @@ fun SessionScreen (
                             )
                             Notepad(
                                 strokes = uiState.strokes,
+                                newStroke = newStroke,
                                 onStroke = { viewModel.addStroke(it) },
                                 onUndo = {
                                     viewModel.undoStroke()
@@ -203,6 +208,7 @@ fun SessionScreen (
                     if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                         Notepad(
                             strokes = uiState.strokes,
+                            newStroke = newStroke,
                             onStroke = { viewModel.addStroke(it) },
                             onUndo = {
                                 viewModel.undoStroke()
@@ -462,35 +468,62 @@ fun SessionMenu(
                 )
             }
         }
+
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
         ) {
+            Text(
+                text = "Current card:",
+                fontSize = 16.sp,
+                modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
+            )
             CardComponent(
                 card = deck.cards[currentCardIndex],
                 cardHistory = cardHistory[currentCardIndex]!!,
                 flipQnA = deck.deck.flipQnA,
             )
-            for (i in activeCardIndices) {
-                CardComponent(
-                    card = deck.cards[i],
-                    cardHistory = cardHistory[i]!!,
-                    flipQnA = deck.deck.flipQnA,
+            if (activeCardIndices.isNotEmpty()) {
+                Text(
+                    text = "Upcoming cards:",
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
                 )
+                for (i in activeCardIndices) {
+                    CardComponent(
+                        card = deck.cards[i],
+                        cardHistory = cardHistory[i]!!,
+                        flipQnA = deck.deck.flipQnA,
+                    )
+                }
             }
-            for (i in usedCardIndices) {
-                CardComponent(
-                    card = deck.cards[i],
-                    cardHistory = cardHistory[i]!!,
-                    flipQnA = deck.deck.flipQnA,
+            if (usedCardIndices.isNotEmpty()) {
+                Text(
+                    text = "Seen cards:",
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
                 )
+                for (i in usedCardIndices) {
+                    CardComponent(
+                        card = deck.cards[i],
+                        cardHistory = cardHistory[i]!!,
+                        flipQnA = deck.deck.flipQnA,
+                    )
+                }
             }
-            for (i in completedCardIndices) {
-                CardComponent(
-                    card = deck.cards[i],
-                    cardHistory = cardHistory[i]!!,
-                    flipQnA = deck.deck.flipQnA,
+            if (completedCardIndices.isNotEmpty()) {
+                Text(
+                    text = "Completed cards:",
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
                 )
+                for (i in completedCardIndices) {
+                    CardComponent(
+                        card = deck.cards[i],
+                        cardHistory = cardHistory[i]!!,
+                        flipQnA = deck.deck.flipQnA,
+                    )
+                }
             }
         }
     }
@@ -610,7 +643,10 @@ fun Flashcard(
         ),
     )
 
-    val cardText = if (flipContent || flipQnA) card.answerText else card.questionText
+    val cardText =
+        if (flipContent && flipQnA) card.questionText
+        else if (flipContent || flipQnA) card.answerText
+        else card.questionText
     val historyList = currentCardHistory.getHistory()
 
     Card(
@@ -718,29 +754,7 @@ fun Flashcard(
                     modifier = Modifier
                         .weight(0.5f)
                 ) {
-                    if (flipContent || flipQnA) {
-                        if (isExampleShown) {
-                            Text(
-                                text = card.exampleText ?: "",
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .wrapContentHeight(Alignment.CenterVertically),
-                            )
-                        } else {
-                            TextButton(
-                                onClick = onExampleButtonClicked,
-                                enabled = card.exampleText != null,
-                            ) {
-                                Text(
-                                    text = "Example",
-                                    textDecoration = TextDecoration.Underline,
-                                    fontSize = 16.sp,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    } else {
+                    if (!card.hintText.isNullOrEmpty() && ((!flipContent && !flipQnA) || (flipContent && flipQnA))) {
                         if (isHintShown) {
                             Text(
                                 text = card.hintText ?: "",
@@ -752,10 +766,34 @@ fun Flashcard(
                         } else {
                             TextButton(
                                 onClick = onHintButtonClicked,
-                                enabled = card.hintText != null,
+                                modifier = Modifier
+                                    .weight(1f)
                             ) {
                                 Text(
                                     text = "Hint",
+                                    textDecoration = TextDecoration.Underline,
+                                    fontSize = 16.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    } else if (!card.exampleText.isNullOrEmpty()) {
+                        if (isExampleShown) {
+                            Text(
+                                text = card.exampleText ?: "",
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .wrapContentHeight(Alignment.CenterVertically),
+                            )
+                        } else {
+                            TextButton(
+                                onClick = onExampleButtonClicked,
+                                modifier = Modifier
+                                    .weight(1f)
+                            ) {
+                                Text(
+                                    text = "Example",
                                     textDecoration = TextDecoration.Underline,
                                     fontSize = 16.sp,
                                     textAlign = TextAlign.Center
@@ -895,12 +933,12 @@ fun FlipBar(
 @Composable
 fun Notepad(
     strokes: List<List<Line>>,
+    newStroke: MutableList<Line>,
     onStroke: (List<Line>) -> Unit,
     onUndo: () -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val newStroke = remember { mutableStateListOf<Line>() }
 
     BoxWithConstraints(
         modifier = modifier
@@ -937,6 +975,10 @@ fun Notepad(
                                     newStroke.add(Line(start, end))
                                 }
                             }
+                        },
+                        onDragCancel = {
+                            onStroke(newStroke.toList())
+                            isDrawing = false
                         },
                         onDragEnd = {
                             onStroke(newStroke.toList())

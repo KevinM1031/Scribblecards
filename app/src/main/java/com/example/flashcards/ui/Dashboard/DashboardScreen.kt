@@ -1,7 +1,6 @@
-package com.example.flashcards.ui.menu
+package com.example.flashcards.ui.Dashboard
 
 import android.content.res.Configuration
-import android.util.Log
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -36,7 +35,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -55,7 +53,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -156,9 +153,11 @@ fun DashboardScreen(
             if (!uiState.isBundleCreatorOpen) {
                 CreateOptionButton(
                     isCreateOptionsOpen = uiState.isCreateOptionsOpen,
+                    isCreateOptionsAnimRequested = uiState.isCreateOptionsCloseAnimRequested,
                     openBundleCreator = { viewModel.openBundleCreator() },
                     openDeckCreator = { viewModel.openDeckCreatorDialog() },
                     toggleCreateOptions = { viewModel.toggleCreateOptions() },
+                    requestCloseCreateOptions = { viewModel.requestCloseCreateOptionsAnim() },
                 )
             }
         },
@@ -932,17 +931,22 @@ fun RemoveDeckFromBundleTopBar(
 @Composable
 fun CreateOptionButton(
     isCreateOptionsOpen: Boolean,
+    isCreateOptionsAnimRequested: Boolean,
     openBundleCreator: () -> Unit,
     openDeckCreator: () -> Unit,
     toggleCreateOptions: () -> Unit,
-) {
+    requestCloseCreateOptions: () -> Unit,
+    ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val optionOpenAnim = animateFloatAsState(
-        targetValue = if (isCreateOptionsOpen) 1f else 0f,
+        targetValue = if (isCreateOptionsAnimRequested) 0f else if (isCreateOptionsOpen) 1f else 0f,
         animationSpec = tween(
             durationMillis = 250,
             easing = FastOutSlowInEasing,
         ),
+        finishedListener = {
+            if (isCreateOptionsAnimRequested) toggleCreateOptions()
+        }
     )
 
     Column(
@@ -952,7 +956,7 @@ fun CreateOptionButton(
             Column(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier
-                    .offset(x = ((1f-optionOpenAnim.value) * 300).dp)
+                    .offset(x = ((1f-optionOpenAnim.value) * 100).dp)
                     .alpha(optionOpenAnim.value)
 
             ) {
@@ -976,7 +980,11 @@ fun CreateOptionButton(
         }
         FloatingActionButton(
             onClick = {
-                toggleCreateOptions()
+                if (isCreateOptionsOpen) {
+                    requestCloseCreateOptions()
+                } else {
+                    toggleCreateOptions()
+                }
             },
             modifier = Modifier.padding(smallPadding)
         ) {
@@ -984,7 +992,7 @@ fun CreateOptionButton(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Open",
                 modifier = Modifier
-                    .rotate(optionOpenAnim.value * 45f)
+                    .rotate(optionOpenAnim.value * -45f)
             )
         }
     }

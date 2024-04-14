@@ -47,11 +47,59 @@ class ImportCardsViewModel(
                     bundles = bundles,
                     subDecks = listOf(),
                     isBringFromDecksDialogOpen = false,
-                    isImportFromQuizletDialogOpen = false,
+                    isImportThroughTextDialogOpen = false,
                     isUploadCsvFileDialogOpen = false,
                     numSelectedCards = 0,
                 )
             }
+        }
+    }
+
+    fun setInputText(inputText: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                inputText = inputText
+            )
+        }
+    }
+
+    fun setQuestionLines(questionLines: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                questionLines = questionLines
+            )
+        }
+    }
+
+    fun setAnswerLines(answerLines: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                answerLines = answerLines
+            )
+        }
+    }
+
+    fun setHintLines(hintLines: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                hintLines = hintLines
+            )
+        }
+    }
+
+    fun setExampleLines(exampleLines: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                exampleLines = exampleLines
+            )
+        }
+    }
+
+    fun setIgnoredLines(ignoredLines: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                ignoredLines = ignoredLines
+            )
         }
     }
 
@@ -87,10 +135,10 @@ class ImportCardsViewModel(
         }
     }
 
-    fun toggleImportFromQuizletDialog() {
+    fun toggleImportThroughTextDialog() {
         _uiState.update { currentState ->
             currentState.copy(
-                isImportFromQuizletDialogOpen = !_uiState.value.isImportFromQuizletDialogOpen
+                isImportThroughTextDialogOpen = !_uiState.value.isImportThroughTextDialogOpen
             )
         }
     }
@@ -152,6 +200,79 @@ class ImportCardsViewModel(
             }
         }
         return subDeckCards
+    }
+
+    fun textToCards(): List<Card> {
+        val qL = getParsedInputLines(_uiState.value.questionLines)
+        val aL = getParsedInputLines(_uiState.value.answerLines)
+        val hL = getParsedInputLines(_uiState.value.hintLines)
+        val eL = getParsedInputLines(_uiState.value.exampleLines)
+        val iL = getParsedInputLines(_uiState.value.ignoredLines)
+
+        val QUESTION = 1
+        val ANSWER = 2
+        val HINT = 3
+        val EXAMPLE = 4
+        val IGNORED = 5
+
+        val lineMap = mutableMapOf<Int, Int>()
+        var max = 0
+        for (n in qL) { lineMap[n] = QUESTION; if (n > max) max = n }
+        for (n in aL) { lineMap[n] = ANSWER; if (n > max) max = n }
+        for (n in hL) { lineMap[n] = HINT; if (n > max) max = n }
+        for (n in eL) { lineMap[n] = EXAMPLE; if (n > max) max = n }
+        for (n in iL) { lineMap[n] = IGNORED; if (n > max) max = n }
+
+        val subDeckCards = mutableListOf<Card>()
+        var i = 0
+        var qT = ""
+        var aT = ""
+        var hT = ""
+        var eT = ""
+
+        val temp = _uiState.value.inputText.split("\n")
+        for (segment in temp) {
+            if (segment.isNotBlank()) {
+                when (lineMap[i+1]) {
+                    QUESTION -> { qT = segment; i++ }
+                    ANSWER -> { aT = segment; i++ }
+                    HINT -> { hT = segment; i++ }
+                    EXAMPLE -> { eT = segment; i++ }
+                    else -> {}
+                }
+
+                if (i == max && qT.isNotBlank() && aT.isNotBlank()) {
+                    i = 0
+                    subDeckCards.add(
+                        Card(
+                            questionText = qT,
+                            answerText = aT,
+                            hintText = hT,
+                            exampleText = eT,
+                        )
+                    )
+                    qT = ""
+                    aT = ""
+                    hT = ""
+                    eT = ""
+                }
+            }
+        }
+
+        return subDeckCards
+    }
+
+    private fun getParsedInputLines(inputLines: String): List<Int> {
+        val parsedLines = mutableListOf<Int>()
+        inputLines.trim()
+        val lines = inputLines.split(",").toTypedArray()
+        for (line in lines) {
+            val parsedLine: Int? = line.toIntOrNull()
+            if (parsedLine != null) {
+                parsedLines.add(parsedLine)
+            }
+        }
+        return parsedLines
     }
 
     fun update() {

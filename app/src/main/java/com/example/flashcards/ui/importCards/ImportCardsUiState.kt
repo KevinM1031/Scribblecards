@@ -17,8 +17,15 @@ data class ImportCardsUiState(
     val excludeMastered: Boolean = false,
     val resetHistory: Boolean = true,
 
+    val inputText: String = "",
+    val questionLines: String = "",
+    val answerLines: String = "",
+    val hintLines: String = "",
+    val exampleLines: String = "",
+    val ignoredLines: String = "",
+
     val isBringFromDecksDialogOpen: Boolean = false,
-    val isImportFromQuizletDialogOpen: Boolean = false,
+    val isImportThroughTextDialogOpen: Boolean = false,
     val isUploadCsvFileDialogOpen: Boolean = false,
 
     val lastUpdated: Long = 0,

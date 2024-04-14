@@ -1,23 +1,16 @@
-package com.example.flashcards.ui.menu
+package com.example.flashcards.ui.Dashboard
 
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.IOException
-import javax.sql.DataSource
 
 class DashboardViewModel(
     private val cardsRepository: CardsRepository,
@@ -109,7 +102,8 @@ class DashboardViewModel(
     fun closeCreateOptions() {
         _uiState.update { currentState ->
             currentState.copy(
-                isCreateOptionsOpen = false
+                isCreateOptionsOpen = false,
+                isCreateOptionsCloseAnimRequested = false,
             )
         }
     }
@@ -117,7 +111,16 @@ class DashboardViewModel(
     fun toggleCreateOptions() {
         _uiState.update { currentState ->
             currentState.copy(
-                isCreateOptionsOpen = !_uiState.value.isCreateOptionsOpen
+                isCreateOptionsOpen = !_uiState.value.isCreateOptionsOpen,
+                isCreateOptionsCloseAnimRequested = false,
+            )
+        }
+    }
+
+    fun requestCloseCreateOptionsAnim() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isCreateOptionsCloseAnimRequested = true,
             )
         }
     }

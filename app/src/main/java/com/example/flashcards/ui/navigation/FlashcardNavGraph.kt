@@ -9,11 +9,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.flashcards.ui.createCard.CreateCardScreen
-import com.example.flashcards.ui.menu.DashboardScreen
+import com.example.flashcards.ui.Dashboard.DashboardScreen
 import com.example.flashcards.ui.deck.DeckScreen
 import com.example.flashcards.ui.editCard.EditCardScreen
 import com.example.flashcards.ui.importCards.ImportCardsScreen
-import com.example.flashcards.ui.menu.MainMenuScreen
+import com.example.flashcards.ui.mainMenu.MainMenuScreen
 import com.example.flashcards.ui.session.SessionScreen
 
 enum class FlashcardScreen() {
