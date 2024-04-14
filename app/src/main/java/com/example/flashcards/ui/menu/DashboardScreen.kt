@@ -2,6 +2,9 @@ package com.example.flashcards.ui.menu
 
 import android.content.res.Configuration
 import android.util.Log
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -66,6 +69,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.geometry.Offset
@@ -97,6 +101,7 @@ import kotlinx.coroutines.launch
 
 private const val BOX_SIZE_DP = 110
 private const val BOX_SIZE_IN_BUNDLE_DP = 100
+private const val BOX_SHRINK_FACTOR = 0.9f
 
 @Composable
 fun DashboardScreen(
@@ -129,13 +134,13 @@ fun DashboardScreen(
                         onRemoveClicked = {
                             coroutineScope.launch {
                                 viewModel.moveSelectedDecksOutOfBundle()
-                                viewModel.closeBundle()
+                                viewModel.requestCloseBundleAnim()
                             }
                         },
                     )
                 } else {
                     BundleTopAppBar(
-                        onBackButtonClicked = { viewModel.closeBundle() },
+                        onBackButtonClicked = { viewModel.requestCloseBundleAnim() },
                         onEditBundleNameButtonClicked = { viewModel.openEditBundleNameDialog() },
                         title = viewModel.getBundle(uiState.currentBundleIndex!!).name,
                     )
@@ -160,9 +165,24 @@ fun DashboardScreen(
     ) { innerPadding ->
 
         var containerSize by remember { mutableStateOf(IntSize.Zero) }
+        val bundleCloseAnim = animateFloatAsState(
+            targetValue = if (uiState.isBundleCloseAnimRequested) 0f else if (isBundleOpen) 1f else 0f,
+            animationSpec = tween(
+                durationMillis = 250,
+                easing = FastOutSlowInEasing,
+            ),
+            finishedListener = {
+                if (uiState.isBundleCloseAnimRequested) viewModel.closeBundle()
+            }
+        )
 
         Box(
             modifier = Modifier
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        if (uiState.isCreateOptionsOpen) viewModel.toggleCreateOptions()
+                    }
+                }
                 .padding(innerPadding)
                 .onGloballyPositioned { coordinates ->
                     containerSize = coordinates.size
@@ -200,7 +220,7 @@ fun DashboardScreen(
                 containerSize = containerSize,
                 cardIconSize = BOX_SIZE_DP,
                 padding = dimensionResource(R.dimen.padding_medium),
-                blur = isBundleOpen,
+                blur = bundleCloseAnim.value,
             )
 
             if (isBundleOpen) {
@@ -208,7 +228,7 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(Unit) { detectTapGestures { viewModel.closeBundle() } }
+                        .pointerInput(Unit) { detectTapGestures { viewModel.requestCloseBundleAnim() } }
                 )
 
                 OpenBundle(
@@ -226,7 +246,12 @@ fun DashboardScreen(
                     isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                     isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                     cardIconSize = BOX_SIZE_IN_BUNDLE_DP,
+                    modifier = Modifier.alpha(bundleCloseAnim.value)
                 )
+
+                if (uiState.isBundleCloseAnimRequested) {
+                    Box(modifier = Modifier.fillMaxSize())
+                }
             }
         }
     }
@@ -239,7 +264,7 @@ fun DashboardScreen(
                 coroutineScope.launch {
                     viewModel.createBundle(it)
                     viewModel.closeBundleCreator()
-                    viewModel.closeBundle()
+                    viewModel.requestCloseBundleAnim()
                 }
             },
             setUserInput = { viewModel.setUserInput(it) },
@@ -300,7 +325,7 @@ fun CardsList(
     containerSize: IntSize,
     cardIconSize: Int,
     padding: Dp = dimensionResource(R.dimen.padding_medium),
-    blur: Boolean = false,
+    blur: Float = 0f,
 ) {
 
     val bundlePositions = remember { mutableStateMapOf<Int, Offset>() }
@@ -318,10 +343,20 @@ fun CardsList(
         modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .blur(if (blur) 12.dp else 0.dp)
+            .blur((12 * blur).dp)
             .verticalScroll(rememberScrollState())
             .wrapContentSize(Alignment.TopCenter)
     ) {
+
+        val width = with(LocalDensity.current) {containerSize.width.toDp()}.value - padding.value * 2
+        var widthLeft = width - cardIconSize*(numBundles+numDecks)
+        var adjustedCardIconSize = (cardIconSize * BOX_SHRINK_FACTOR).toInt()
+
+        if ((width / cardIconSize).toInt() + 1 == (width / adjustedCardIconSize).toInt()) {
+            widthLeft = width - adjustedCardIconSize * numDecks
+        } else {
+            adjustedCardIconSize = cardIconSize
+        }
 
         for (i in 0..<numBundles) {
             DraggableComposable(
@@ -331,7 +366,7 @@ fun CardsList(
                 getBundle = getBundle,
                 isBundleCreatorOpen = isBundleCreatorOpen,
                 isBundle = true,
-                size = cardIconSize,
+                size = adjustedCardIconSize,
                 setPosition = { bundlePositions[i] = it },
                 onDrag = { draggingBundleIndex = it },
                 onDrop = { isDropped = true },
@@ -350,7 +385,7 @@ fun CardsList(
                 isBundleCreatorOpen = isBundleCreatorOpen,
                 isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
                 isBundle = false,
-                size = cardIconSize,
+                size = adjustedCardIconSize,
                 setPosition = { deckPositions[i] = it },
                 onDrag = { draggingDeckIndex = it },
                 onDrop = { isDropped = true },
@@ -359,11 +394,8 @@ fun CardsList(
             )
         }
 
-        val width = with(LocalDensity.current) { containerSize.width.toDp() }
-        val widthLeft = width - padding*2 - cardIconSize.dp*(numBundles+numDecks)
-
-        for (i in 0..<((widthLeft/cardIconSize.dp).toInt())) {
-            EmptyComponent(size = BOX_SIZE_DP)
+        for (i in 0..<(widthLeft/adjustedCardIconSize).toInt()) {
+            EmptyComponent(size = adjustedCardIconSize)
         }
 
         if (!isBundleCreatorOpen) {
@@ -448,7 +480,6 @@ fun iconOverlaps(p1: Offset, p2: Offset, size: Int): Boolean {
     return p1.x+size > p2.x && p1.x < p2.x+size && p1.y+size > p2.y && p1.y < p2.y+size
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DraggableComposable(
     index: Int,
@@ -652,6 +683,7 @@ fun DeckComponent(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OpenBundle(
+    modifier: Modifier = Modifier,
     numDecks: Int,
     configuration: Configuration,
     cardIconSize: Int,
@@ -682,7 +714,7 @@ fun OpenBundle(
             configuration.screenWidthDp - mediumPadding.value*2
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .padding(mediumPadding)
             .size(overlayWidth.dp, overlayHeight.dp)
 
@@ -701,6 +733,17 @@ fun OpenBundle(
                 }
         ) {
 
+            val width = overlayWidth - mediumPadding.value * 2
+            var widthLeft = width - cardIconSize * numDecks
+            var adjustedCardIconSize = (cardIconSize * BOX_SHRINK_FACTOR).toInt()
+
+            if ((width / cardIconSize).toInt() + 1 == (width / adjustedCardIconSize).toInt()) {
+                widthLeft = width - adjustedCardIconSize * numDecks
+            } else {
+                adjustedCardIconSize = cardIconSize
+            }
+
+
             for (i in 0..<numDecks) {
                 DraggableComposable(
                     index = i,
@@ -711,16 +754,15 @@ fun OpenBundle(
                     isBundleCreatorOpen = isBundleCreatorOpen,
                     isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
                     isBundle = false,
-                    size = cardIconSize,
+                    size = adjustedCardIconSize,
                     isHighlighted = false,
                     isClickEnabled = true,
                     isDeckInsideBundle = true,
                 )
             }
-            val widthLeft = overlayWidth.dp - mediumPadding * 2 - cardIconSize.dp * numDecks
 
-            for (i in 0..<((widthLeft/cardIconSize.dp).toInt())) {
-                EmptyComponent(size = BOX_SIZE_IN_BUNDLE_DP)
+            for (i in 0..<(widthLeft/adjustedCardIconSize).toInt()) {
+                EmptyComponent(size = adjustedCardIconSize)
             }
         }
     }
@@ -895,13 +937,23 @@ fun CreateOptionButton(
     toggleCreateOptions: () -> Unit,
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
+    val optionOpenAnim = animateFloatAsState(
+        targetValue = if (isCreateOptionsOpen) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 250,
+            easing = FastOutSlowInEasing,
+        ),
+    )
 
     Column(
         horizontalAlignment = Alignment.End
     ) {
         if (isCreateOptionsOpen) {
             Column(
-                horizontalAlignment = Alignment.End
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier
+                    .offset(x = ((1f-optionOpenAnim.value) * 300).dp)
+                    .alpha(optionOpenAnim.value)
 
             ) {
                 FloatingActionButton(
@@ -928,10 +980,12 @@ fun CreateOptionButton(
             },
             modifier = Modifier.padding(smallPadding)
         ) {
-            if (isCreateOptionsOpen)
-                Icon(Icons.Default.Close, contentDescription = "Close")
-            else
-                Icon(Icons.Default.Add, contentDescription = "Open")
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Open",
+                modifier = Modifier
+                    .rotate(optionOpenAnim.value * 45f)
+            )
         }
     }
 }

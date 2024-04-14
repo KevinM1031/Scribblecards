@@ -23,6 +23,7 @@ data class DashboardUiState(
     val isTipOpen: Boolean = false,
     val isSessionOptionsOpen: Boolean = false,
     val isCardSelectorOpen: Boolean = false,
+    val isBundleCloseAnimRequested: Boolean = false,
 
     val userInput: String? = null,
     val tipText: String = "",

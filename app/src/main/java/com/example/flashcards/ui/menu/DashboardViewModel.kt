@@ -236,6 +236,15 @@ class DashboardViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 currentBundleIndex = null,
+                isBundleCloseAnimRequested = false,
+            )
+        }
+    }
+
+    fun requestCloseBundleAnim() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCloseAnimRequested = true,
             )
         }
     }
