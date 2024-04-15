@@ -123,12 +123,14 @@ class SessionViewModel(
         for (i in 0..<_uiState.value.deck.cards.size) {
             val card = _uiState.value.deck.cards[i]
             card.applySessionResults(_uiState.value.cardHistory[i]!!.isPerfect())
+            card.deselect()
             cardsRepository.updateCard(card)
         }
 
         _uiState.value.deck.updateValues()
         _uiState.value.deck.deck.dateUpdated = System.currentTimeMillis()
         _uiState.value.deck.deck.dateStudied = System.currentTimeMillis()
+        _uiState.value.deck.deck.deselect()
         cardsRepository.updateDeck(_uiState.value.deck.deck)
     }
 
@@ -312,6 +314,20 @@ class SessionViewModel(
             )
         }
         softReset()
+    }
+
+    suspend fun toggleCardFavorite(card: Card) {
+        val isSelected = card.isSelected
+       card.isFavorite = !card.isFavorite
+        card.deselect()
+        cardsRepository.updateCard(card)
+        card.isSelected = isSelected
+        update()
+        _uiState.update { currentState ->
+            currentState.copy(
+                deck = cardsRepository.getDeckWithCards(_uiState.value.param),
+            )
+        }
     }
 
     fun requestSlideAnim() {

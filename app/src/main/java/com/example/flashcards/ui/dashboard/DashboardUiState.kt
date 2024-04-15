@@ -1,4 +1,4 @@
-package com.example.flashcards.ui.Dashboard
+package com.example.flashcards.ui.dashboard
 
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks

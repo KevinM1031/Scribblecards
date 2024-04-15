@@ -24,9 +24,12 @@ data class ImportCardsUiState(
     val exampleLines: String = "",
     val ignoredLines: String = "",
 
-    val isBringFromDecksDialogOpen: Boolean = false,
-    val isImportThroughTextDialogOpen: Boolean = false,
-    val isUploadCsvFileDialogOpen: Boolean = false,
+    val isBringFromDecksScreenOpen: Boolean = false,
+    val isImportThroughTextScreenOpen: Boolean = false,
+    val isUploadCsvFileScreenOpen: Boolean = false,
+
+    val isTipOpen: Boolean = false,
+    val tipText: String = "",
 
     val lastUpdated: Long = 0,
 )
@@ -39,6 +42,6 @@ data class SubDeck(
 
 enum class SubDeckType {
     DEFAULT,
-    QUIZLET,
+    TEXT,
     CSV,
 }

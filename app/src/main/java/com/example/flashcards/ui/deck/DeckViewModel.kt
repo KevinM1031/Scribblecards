@@ -61,6 +61,7 @@ class DeckViewModel(
 
     suspend fun updateDeck() {
         _uiState.value.deck.deck.dateUpdated = System.currentTimeMillis()
+        _uiState.value.deck.deck.deselect()
         cardsRepository.updateDeck(_uiState.value.deck.deck)
     }
 
@@ -171,6 +172,20 @@ class DeckViewModel(
         }
     }
 
+    suspend fun toggleCardFavorite(index: Int) {
+        val isSelected = _uiState.value.deck.cards[index].isSelected
+        _uiState.value.deck.cards[index].isFavorite = !_uiState.value.deck.cards[index].isFavorite
+        _uiState.value.deck.cards[index].deselect()
+        cardsRepository.updateCard(_uiState.value.deck.cards[index])
+        _uiState.value.deck.cards[index].isSelected = isSelected
+        update()
+        _uiState.update { currentState ->
+            currentState.copy(
+                deck = cardsRepository.getDeckWithCards(_uiState.value.param),
+            )
+        }
+    }
+
     fun selectAllCardsInCurrentDeck() {
         deselectAllCards()
         val cards = _uiState.value.deck.cards
@@ -213,9 +228,5 @@ class DeckViewModel(
 
     fun getNumCardsInCurrentDeck() : Int {
         return _uiState.value.deck.cards.size
-    }
-
-    fun getCardFromCurrentDeck(index: Int) : Card {
-        return _uiState.value.deck.cards[index]
     }
 }

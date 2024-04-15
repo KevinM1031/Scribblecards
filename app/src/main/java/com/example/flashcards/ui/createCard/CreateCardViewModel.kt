@@ -91,11 +91,6 @@ class CreateCardViewModel(
         }
     }
 
-    suspend fun updateDeck() {
-        //_uiState.value.deck.deck.dateUpdated = System.currentTimeMillis()
-        //cardsRepository.updateDeck(_uiState.value.deck.deck)
-    }
-
     fun update() {
         _uiState.update { currentState ->
             currentState.copy(

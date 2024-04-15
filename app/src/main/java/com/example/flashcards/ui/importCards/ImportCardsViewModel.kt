@@ -46,9 +46,10 @@ class ImportCardsViewModel(
                     decks = decks,
                     bundles = bundles,
                     subDecks = listOf(),
-                    isBringFromDecksDialogOpen = false,
-                    isImportThroughTextDialogOpen = false,
-                    isUploadCsvFileDialogOpen = false,
+                    isBringFromDecksScreenOpen = false,
+                    isImportThroughTextScreenOpen = false,
+                    isUploadCsvFileScreenOpen = false,
+                    isTipOpen = false,
                     numSelectedCards = 0,
                 )
             }
@@ -119,26 +120,34 @@ class ImportCardsViewModel(
         }
     }
 
-    fun toggleBringFromDecksDialog() {
+    fun toggleBringFromDecksScreen() {
         _uiState.update { currentState ->
             currentState.copy(
-                isBringFromDecksDialogOpen = !_uiState.value.isBringFromDecksDialogOpen
+                isBringFromDecksScreenOpen = !_uiState.value.isBringFromDecksScreenOpen
             )
         }
     }
 
-    fun toggleUploadCsvFileDialog() {
+    fun toggleUploadCsvFileScreen() {
         _uiState.update { currentState ->
             currentState.copy(
-                isUploadCsvFileDialogOpen = !_uiState.value.isUploadCsvFileDialogOpen
+                isUploadCsvFileScreenOpen = !_uiState.value.isUploadCsvFileScreenOpen
             )
         }
     }
 
-    fun toggleImportThroughTextDialog() {
+    fun toggleImportThroughTextScreen() {
         _uiState.update { currentState ->
             currentState.copy(
-                isImportThroughTextDialogOpen = !_uiState.value.isImportThroughTextDialogOpen
+                isImportThroughTextScreenOpen = !_uiState.value.isImportThroughTextScreenOpen
+            )
+        }
+    }
+
+    fun toggleTip() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isTipOpen = !_uiState.value.isTipOpen
             )
         }
     }
@@ -202,7 +211,7 @@ class ImportCardsViewModel(
         return subDeckCards
     }
 
-    fun textToCards(): List<Card> {
+    fun textToCards(maxCards: Int = -1): List<Card> {
         val qL = getParsedInputLines(_uiState.value.questionLines)
         val aL = getParsedInputLines(_uiState.value.answerLines)
         val hL = getParsedInputLines(_uiState.value.hintLines)
@@ -231,15 +240,17 @@ class ImportCardsViewModel(
         var eT = ""
 
         val temp = _uiState.value.inputText.split("\n")
+        var numCards = 0
         for (segment in temp) {
             if (segment.isNotBlank()) {
                 when (lineMap[i+1]) {
-                    QUESTION -> { qT = segment; i++ }
-                    ANSWER -> { aT = segment; i++ }
-                    HINT -> { hT = segment; i++ }
-                    EXAMPLE -> { eT = segment; i++ }
+                    QUESTION -> qT += (if (qT.isBlank()) "\n" else "") + segment
+                    ANSWER -> aT += (if (aT.isBlank()) "\n" else "") + segment
+                    HINT -> hT += (if (hT.isBlank()) "\n" else "") + segment
+                    EXAMPLE -> eT += (if (eT.isBlank()) "\n" else "") + segment
                     else -> {}
                 }
+                i++
 
                 if (i == max && qT.isNotBlank() && aT.isNotBlank()) {
                     i = 0
@@ -255,6 +266,10 @@ class ImportCardsViewModel(
                     aT = ""
                     hT = ""
                     eT = ""
+                    numCards++
+                    if (numCards == maxCards) {
+                        return subDeckCards
+                    }
                 }
             }
         }
@@ -262,11 +277,21 @@ class ImportCardsViewModel(
         return subDeckCards
     }
 
-    private fun getParsedInputLines(inputLines: String): List<Int> {
-        val parsedLines = mutableListOf<Int>()
+    private fun getParsedInputLines(inputLines: String): Set<Int> {
+        val parsedLines = mutableSetOf<Int>()
         inputLines.trim()
         val lines = inputLines.split(",").toTypedArray()
         for (line in lines) {
+            if (line.contains("-")) {
+                val range = inputLines.split("-").toTypedArray()
+                val start: Int? = range[0].toIntOrNull()
+                val end: Int? = range[1].toIntOrNull()
+                if (start != null && end != null) {
+                    for (i in start..end) {
+                        parsedLines.add(i)
+                    }
+                }
+            }
             val parsedLine: Int? = line.toIntOrNull()
             if (parsedLine != null) {
                 parsedLines.add(parsedLine)

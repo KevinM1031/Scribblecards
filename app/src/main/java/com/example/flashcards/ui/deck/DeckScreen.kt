@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,7 +30,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -38,6 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -48,6 +53,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +65,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
@@ -214,18 +222,6 @@ fun DeckScreen (
         },
     ) { innerPadding ->
 
-        val scrollState = rememberScrollState()
-        val deckStatsHeightDp = 300.dp
-        val deckStatsHeightPx = with(LocalDensity.current) { deckStatsHeightDp.toPx() }.toInt()
-        var hidden by remember { mutableStateOf(true) }
-
-        if (!hidden && scrollState.value >= deckStatsHeightPx) {
-            hidden = true
-
-        } else if (hidden && scrollState.value < deckStatsHeightPx) {
-            hidden = false
-        }
-
         val customCardEditorBar = @Composable {
             CardEditorBar(
                 onAllCardsSelected = { viewModel.selectAllCardsInCurrentDeck() },
@@ -244,27 +240,48 @@ fun DeckScreen (
             modifier = Modifier
                 .padding(innerPadding)
         ) {
+
+            val lazyColumnState = rememberLazyListState()
+            val isFirstItemVisible by remember { derivedStateOf { lazyColumnState.firstVisibleItemIndex == 0 } }
+            var hidden by remember { mutableStateOf(true) }
+
+            if (!hidden && !isFirstItemVisible) {
+                hidden = true
+            } else if (hidden && isFirstItemVisible) {
+                hidden = false
+            }
+
             if (hidden) customCardEditorBar()
 
-            Column(
-                modifier = Modifier
-                    .verticalScroll(scrollState)
-            ) {
-                DeckStats(
-                    deck = uiState.deck,
-                    modifier = Modifier
-                        .height(deckStatsHeightDp)
-                )
-                if (!hidden) customCardEditorBar()
-                CardList(
-                    getNumCards = { viewModel.getNumCardsInCurrentDeck() },
-                    getCard = { viewModel.getCardFromCurrentDeck(it) },
-                    onCardSelected = {
-                        viewModel.toggleCardSelection(it)
-                        viewModel.openCardSelector()
-                    },
-                    onEditCardButtonClicked = { onEditCardButtonClicked(it) }
-                )
+            LazyColumn(state = lazyColumnState) {
+                item {
+                    DeckStats(
+                        deck = uiState.deck,
+                        modifier = Modifier.height(300.dp)
+                    )
+                }
+                if (!hidden) item { customCardEditorBar() }
+
+                val numCards = viewModel.getNumCardsInCurrentDeck()
+                item {
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_small)))
+                }
+                items(numCards) { i ->
+                    CardComponent(
+                        card = uiState.deck.cards[i],
+                        onCardSelected = {
+                            viewModel.toggleCardSelection(i)
+                            viewModel.openCardSelector()
+                        },
+                        onFavoriteCardButtonClicked = {
+                            coroutineScope.launch {
+                                viewModel.toggleCardFavorite(i)
+                            }
+                        },
+                        onEditCardButtonClicked = { onEditCardButtonClicked(it) },
+                        lastUpdated = uiState.lastUpdated,
+                    )
+                }
             }
         }
     }
@@ -395,36 +412,17 @@ fun CardEditorBar(
 }
 
 @Composable
-fun CardList(
-    getNumCards: () -> Int,
-    getCard: (Int) -> Card,
-    onCardSelected: (Int) -> Unit,
-    onEditCardButtonClicked: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .padding(top = dimensionResource(R.dimen.padding_small))
-    ) {
-        for (i in 0..<getNumCards()) {
-            CardComponent(
-                getCard = { getCard(i) },
-                onCardSelected = { onCardSelected(i) },
-                onEditCardButtonClicked = { onEditCardButtonClicked(it) }
-            )
-        }
-    }
-}
-
-@Composable
 fun CardComponent(
-    getCard: () -> Card,
+    card: Card,
     onCardSelected: () -> Unit,
-    onEditCardButtonClicked: (Long) -> Unit
+    onFavoriteCardButtonClicked: () -> Unit,
+    onEditCardButtonClicked: (Long) -> Unit,
+    lastUpdated: Long,
 ) {
-    val card = getCard()
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+    Log.d("debug", "${card.isFavorite}")
 
     Card(
         modifier = Modifier
@@ -442,6 +440,7 @@ fun CardComponent(
                 text = card.questionText,
                 fontSize = 16.sp,
                 overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
                 modifier = Modifier
                     .weight(0.7f)
                     .padding(end = smallPadding)
@@ -455,6 +454,22 @@ fun CardComponent(
                     .width(56.dp)
                     .padding(end = smallPadding)
             )
+            IconButton(
+                onClick = onFavoriteCardButtonClicked
+            ) {
+                if (card.isFavorite) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        tint = Color.Yellow,
+                        contentDescription = "Toggle favorite ($lastUpdated)"
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.Star,
+                        contentDescription = "Toggle favorite ($lastUpdated)"
+                    )
+                }
+            }
             IconButton(
                 onClick = {
                     onEditCardButtonClicked(card.id)
@@ -675,21 +690,21 @@ fun TipDialog(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.primary,
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(240.dp)
-                .padding(mediumPadding)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
+                    .fillMaxWidth()
             ) {
                 Text(text = tip, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.weight(1f))
-                Button(onClick = { onDismissRequest() }) {
+                Spacer(modifier = Modifier.height(mediumPadding*2))
+                Button(
+                    onClick = { onDismissRequest() },
+                    modifier = Modifier.size(120.dp, 40.dp)
+                ) {
                     Text(text = "Close")
                 }
             }
@@ -714,18 +729,14 @@ fun DeleteDeckDialog(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.primary,
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(mediumPadding)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
-
+                    .fillMaxWidth()
 
             ) {
                 Text(
@@ -737,21 +748,26 @@ fun DeleteDeckDialog(
                     text = "This action cannot be undone.",
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = mediumPadding)
                 )
-                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(mediumPadding)
                 ) {
                     TextButton(
-                        onClick = onDismissRequest
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Cancel") }
                     Button(
                         onClick = {
                             onDeleteButtonClicked()
-                        }
+                        },
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Delete") }
                 }
             }
@@ -777,18 +793,14 @@ fun DeleteCardDialog(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.primary,
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(mediumPadding)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
-
+                    .fillMaxWidth()
 
             ) {
                 Text(
@@ -800,8 +812,9 @@ fun DeleteCardDialog(
                     text = "This action cannot be undone.",
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(mediumPadding)
                 )
-                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -809,12 +822,14 @@ fun DeleteCardDialog(
                         .fillMaxWidth()
                 ) {
                     TextButton(
-                        onClick = onDismissRequest
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Cancel") }
                     Button(
                         onClick = {
                             onDeleteButtonClicked()
-                        }
+                        },
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Delete") }
                 }
             }
@@ -836,7 +851,6 @@ fun EditDeckNameDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
-        val smallPadding = dimensionResource(R.dimen.padding_small)
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
         var isError by remember { mutableStateOf(false) }
 
@@ -847,15 +861,13 @@ fun EditDeckNameDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (isError) 280.dp else 240.dp)
-                .padding(mediumPadding)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
+                    .fillMaxWidth()
 
             ) {
                 Text(
@@ -863,7 +875,9 @@ fun EditDeckNameDialog(
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
-                Column() {
+                Column(
+                    modifier = Modifier.padding(mediumPadding)
+                ) {
                     if (isError) {
                         Text(
                             text = "This field is required.",
@@ -879,11 +893,9 @@ fun EditDeckNameDialog(
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
-                        modifier = Modifier
-                            .padding(bottom = smallPadding)
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(mediumPadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -891,7 +903,8 @@ fun EditDeckNameDialog(
                         .fillMaxWidth()
                 ) {
                     TextButton(
-                        onClick = onDismissRequest
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Cancel") }
                     Button(
                         onClick = {
@@ -900,7 +913,8 @@ fun EditDeckNameDialog(
                             } else {
                                 onConfirmClicked(userInput)
                             }
-                        }
+                        },
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Confirm") }
                 }
             }

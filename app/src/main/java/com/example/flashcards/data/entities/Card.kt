@@ -14,6 +14,7 @@ data class Card (
     var exampleText: String? = null,
     var numStudied: Int = 0,
     var numPerfect: Int = 0,
+    var isFavorite: Boolean = false,
 ) : Selectable() {
 
     companion object {

@@ -46,6 +46,7 @@ class EditCardViewModel(
         _uiState.value.card.answerText = _uiState.value.answerTextInput.trim()
         _uiState.value.card.hintText = _uiState.value.hintTextInput.trim()
         _uiState.value.card.exampleText = _uiState.value.exampleTextInput.trim()
+        _uiState.value.card.deselect()
         cardsRepository.updateCard(_uiState.value.card)
     }
 

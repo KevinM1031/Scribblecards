@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,6 +45,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -76,6 +79,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -178,6 +182,11 @@ fun SessionScreen (
                                     drawerState.apply {
                                         if (isClosed) open() else close()
                                     }
+                                }
+                            },
+                            onFavoriteCardButtonClicked = {
+                                coroutineScope.launch {
+                                    viewModel.toggleCardFavorite(it)
                                 }
                             },
                             currentCardHistory = uiState.cardHistory[uiState.currentCardIndex]!!,
@@ -288,16 +297,13 @@ fun QuitDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
-                .padding(mediumPadding)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
-
+                    .fillMaxWidth()
 
             ) {
                 Text(
@@ -310,6 +316,7 @@ fun QuitDialog(
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.height(mediumPadding*2))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -317,12 +324,14 @@ fun QuitDialog(
                         .fillMaxWidth()
                 ) {
                     TextButton(
-                        onClick = onDismissRequest
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Cancel") }
                     Button(
                         onClick = {
                             onQuitButtonClicked()
-                        }
+                        },
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Quit") }
                 }
             }
@@ -349,15 +358,13 @@ fun RestartDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
-                .padding(mediumPadding)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
+                    .fillMaxWidth()
 
 
             ) {
@@ -371,6 +378,7 @@ fun RestartDialog(
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.height(mediumPadding*2))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -378,10 +386,12 @@ fun RestartDialog(
                         .fillMaxWidth()
                 ) {
                     TextButton(
-                        onClick = onDismissRequest
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Cancel") }
                     Button(
-                        onClick = onRestartButtonClicked
+                        onClick = onRestartButtonClicked,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Restart") }
                 }
             }
@@ -402,6 +412,7 @@ fun SessionMenu(
 ) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val progress = completedCardIndices.size.toFloat() / deck.cards.size
 
     Column(
@@ -461,6 +472,7 @@ fun SessionMenu(
                 )
                 LinearProgressIndicator(
                     progress = progress,
+                    strokeCap = StrokeCap.Round,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(smallPadding)
@@ -469,58 +481,67 @@ fun SessionMenu(
             }
         }
 
-        Column(
-            modifier = Modifier
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(
-                text = "Current card:",
-                fontSize = 16.sp,
-                modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
-            )
-            CardComponent(
-                card = deck.cards[currentCardIndex],
-                cardHistory = cardHistory[currentCardIndex]!!,
-                flipQnA = deck.deck.flipQnA,
-            )
-            if (activeCardIndices.isNotEmpty()) {
+        Divider()
+
+        LazyColumn {
+            item {
                 Text(
-                    text = "Upcoming cards:",
+                    text = "Current card:",
                     fontSize = 16.sp,
-                    modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
+                    modifier = Modifier.padding(start = mediumPadding, bottom = smallPadding)
                 )
-                for (i in activeCardIndices) {
+            }
+            item {
+                CardComponent(
+                    card = deck.cards[currentCardIndex],
+                    cardHistory = cardHistory[currentCardIndex]!!,
+                    flipQnA = deck.deck.flipQnA,
+                )
+            }
+            if (activeCardIndices.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Upcoming cards:",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
+                    )
+                }
+                items (activeCardIndices.size) { i ->
                     CardComponent(
-                        card = deck.cards[i],
-                        cardHistory = cardHistory[i]!!,
+                        card = deck.cards[activeCardIndices[i]],
+                        cardHistory = cardHistory[activeCardIndices[i]]!!,
                         flipQnA = deck.deck.flipQnA,
                     )
                 }
             }
             if (usedCardIndices.isNotEmpty()) {
-                Text(
-                    text = "Seen cards:",
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
-                )
-                for (i in usedCardIndices) {
+                item {
+                    Text(
+                        text = "Seen cards:",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
+                    )
+                }
+                items (usedCardIndices.size) { i ->
                     CardComponent(
-                        card = deck.cards[i],
-                        cardHistory = cardHistory[i]!!,
+                        card = deck.cards[usedCardIndices[i]],
+                        cardHistory = cardHistory[usedCardIndices[i]]!!,
                         flipQnA = deck.deck.flipQnA,
                     )
                 }
             }
             if (completedCardIndices.isNotEmpty()) {
-                Text(
-                    text = "Completed cards:",
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
-                )
-                for (i in completedCardIndices) {
+                item {
+                    Text(
+                        text = "Completed cards:",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
+                    )
+                }
+                items(completedCardIndices.size) { i ->
                     CardComponent(
-                        card = deck.cards[i],
-                        cardHistory = cardHistory[i]!!,
+                        card = deck.cards[completedCardIndices[i]],
+                        cardHistory = cardHistory[completedCardIndices[i]]!!,
                         flipQnA = deck.deck.flipQnA,
                     )
                 }
@@ -552,11 +573,21 @@ fun CardComponent(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = mediumPadding)
+                .padding(start = mediumPadding, end = mediumPadding)
         ) {
+            if (card.isFavorite) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = Color.Yellow,
+                    modifier = Modifier
+                        .padding(end = smallPadding)
+                )
+            }
             Text(
                 text = if (flipQnA) card.answerText else card.questionText,
                 fontSize = 18.sp,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .weight(0.7f)
@@ -604,6 +635,7 @@ fun Flashcard(
     onFlipButtonClicked: () -> Unit,
     onMenuButtonClicked: () -> Unit,
     setContentFlip: (Boolean) -> Unit,
+    onFavoriteCardButtonClicked: (Card) -> Unit,
     nextCard: () -> Unit,
     currentCardHistory: CardHistory,
     modifier: Modifier = Modifier,
@@ -699,36 +731,56 @@ fun Flashcard(
                         )
                     }
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    horizontalAlignment = Alignment.End
                 ) {
-                    if (isHistoryShown && cardSkip.value == 0f)
-                        if (historyList.isEmpty()) {
-                            Text("This is a new card!")
-                        } else {
-                            for (wasCorrect in currentCardHistory.getHistory()) {
-                                if (wasCorrect) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Correct",
-                                        tint = Color.Green,
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = "Wrong",
-                                        tint = Color.Red,
-                                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (isHistoryShown && cardSkip.value == 0f)
+                            if (historyList.isEmpty()) {
+                                Text("This is a new card!")
+                            } else {
+                                for (wasCorrect in currentCardHistory.getHistory()) {
+                                    if (wasCorrect) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Correct",
+                                            tint = Color.Green,
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Wrong",
+                                            tint = Color.Red,
+                                        )
+                                    }
                                 }
                             }
+                        IconButton(
+                            onClick = onInfoButtonClicked,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Show card info"
+                            )
                         }
+                    }
                     IconButton(
-                        onClick = onInfoButtonClicked,
+                        onClick = { onFavoriteCardButtonClicked(card) }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Show card info"
-                        )
+                        if (card.isFavorite) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                tint = Color.Yellow,
+                                contentDescription = "Toggle favorite"
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Outlined.Star,
+                                contentDescription = "Toggle favorite"
+                            )
+                        }
                     }
                 }
             }
@@ -743,6 +795,9 @@ fun Flashcard(
                 Text(
                     text = cardText,
                     fontSize = 30.sp,
+                    lineHeight = 32.sp,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .weight(1f)
@@ -773,6 +828,7 @@ fun Flashcard(
                                     text = "Hint",
                                     textDecoration = TextDecoration.Underline,
                                     fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
                                     textAlign = TextAlign.Center
                                 )
                             }
@@ -796,6 +852,7 @@ fun Flashcard(
                                     text = "Example",
                                     textDecoration = TextDecoration.Underline,
                                     fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
                                     textAlign = TextAlign.Center
                                 )
                             }
@@ -965,8 +1022,12 @@ fun Notepad(
                             if (isDrawing) {
                                 if (end.x < 0 || end.x > maxWidth || end.y < 0 || end.y > maxHeight) {
                                     end = end.copy(
-                                        x = end.x.coerceAtLeast(0f).coerceAtMost(maxWidth),
-                                        y = end.y.coerceAtLeast(0f).coerceAtMost(maxHeight)
+                                        x = end.x
+                                            .coerceAtLeast(0f)
+                                            .coerceAtMost(maxWidth),
+                                        y = end.y
+                                            .coerceAtLeast(0f)
+                                            .coerceAtMost(maxHeight)
                                     )
                                     newStroke.add(Line(start, end))
                                     onStroke(newStroke.toList())
@@ -1093,18 +1154,20 @@ fun TipDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp)
-                .padding(mediumPadding)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
+                    .fillMaxWidth()
             ) {
                 Text(text = tip, textAlign = TextAlign.Center)
-                Button(onClick = { onDismissRequest() }) {
+                Spacer(modifier = Modifier.height(mediumPadding*2))
+                Button(
+                    onClick = { onDismissRequest() },
+                    modifier = Modifier.size(120.dp, 40.dp)
+                ) {
                     Text(text = "Close")
                 }
             }

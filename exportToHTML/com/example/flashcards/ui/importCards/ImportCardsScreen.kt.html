@@ -200,7 +200,7 @@ ImportCardsScreen.kt</font>
                     <span class="s2">.</span><span class="s1">fillMaxWidth</span><span class="s2">()</span>
                     <span class="s2">.</span><span class="s1">padding</span><span class="s2">(</span><span class="s1">top </span><span class="s2">= </span><span class="s1">smallPadding</span><span class="s2">, </span><span class="s1">start </span><span class="s2">= </span><span class="s1">smallPadding</span><span class="s2">, </span><span class="s1">end </span><span class="s2">= </span><span class="s1">smallPadding</span><span class="s2">)</span>
                     <span class="s2">.</span><span class="s1">combinedClickable</span><span class="s2">(</span>
-                        <span class="s1">onClick </span><span class="s2">= { </span><span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleBringFromDecksDialog</span><span class="s2">() },</span>
+                        <span class="s1">onClick </span><span class="s2">= { </span><span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleBringFromDecksScreen</span><span class="s2">() },</span>
                     <span class="s2">)</span>
             <span class="s2">) {</span>
                 <span class="s1">Row</span><span class="s2">(</span>
@@ -228,7 +228,7 @@ ImportCardsScreen.kt</font>
                     <span class="s2">.</span><span class="s1">fillMaxWidth</span><span class="s2">()</span>
                     <span class="s2">.</span><span class="s1">padding</span><span class="s2">(</span><span class="s1">top </span><span class="s2">= </span><span class="s1">smallPadding</span><span class="s2">, </span><span class="s1">start </span><span class="s2">= </span><span class="s1">smallPadding</span><span class="s2">, </span><span class="s1">end </span><span class="s2">= </span><span class="s1">smallPadding</span><span class="s2">)</span>
                     <span class="s2">.</span><span class="s1">combinedClickable</span><span class="s2">(</span>
-                        <span class="s1">onClick </span><span class="s2">= { </span><span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleImportThroughTextDialog</span><span class="s2">() },</span>
+                        <span class="s1">onClick </span><span class="s2">= { </span><span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleImportThroughTextScreen</span><span class="s2">() },</span>
                     <span class="s2">)</span>
             <span class="s2">) {</span>
                 <span class="s1">Row</span><span class="s2">(</span>
@@ -331,16 +331,16 @@ ImportCardsScreen.kt</font>
         <span class="s2">}</span>
     <span class="s2">}</span>
 
-    <span class="s0">if </span><span class="s2">(</span><span class="s1">uiState</span><span class="s2">.</span><span class="s1">isBringFromDecksDialogOpen</span><span class="s2">) {</span>
-        <span class="s1">BringFromDecksDialog</span><span class="s2">(</span>
-            <span class="s1">onDismissRequest </span><span class="s2">= { </span><span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleBringFromDecksDialog</span><span class="s2">() },</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">uiState</span><span class="s2">.</span><span class="s1">isBringFromDecksScreenOpen</span><span class="s2">) {</span>
+        <span class="s1">BringFromDecksScreen</span><span class="s2">(</span>
+            <span class="s1">onDismissRequest </span><span class="s2">= { </span><span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleBringFromDecksScreen</span><span class="s2">() },</span>
             <span class="s1">bundles </span><span class="s2">= </span><span class="s1">uiState</span><span class="s2">.</span><span class="s1">bundles</span><span class="s2">,</span>
             <span class="s1">decks </span><span class="s2">= </span><span class="s1">uiState</span><span class="s2">.</span><span class="s1">decks</span><span class="s2">,</span>
             <span class="s1">excludeMastered </span><span class="s2">= </span><span class="s1">uiState</span><span class="s2">.</span><span class="s1">excludeMastered</span><span class="s2">,</span>
             <span class="s1">resetHistory </span><span class="s2">= </span><span class="s1">uiState</span><span class="s2">.</span><span class="s1">resetHistory</span><span class="s2">,</span>
             <span class="s1">onSelectClicked </span><span class="s2">= {</span>
                 <span class="s1">coroutineScope</span><span class="s2">.</span><span class="s1">launch </span><span class="s2">{</span>
-                    <span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleBringFromDecksDialog</span><span class="s2">()</span>
+                    <span class="s1">viewModel</span><span class="s2">.</span><span class="s1">toggleBringFromDecksScreen</span><span class="s2">()</span>
                     <span class="s1">viewModel</span><span class="s2">.</span><span class="s1">addSubDeck</span><span class="s2">(</span>
                         <span class="s1">SubDeck</span><span class="s2">(</span>
                             <span class="s1">name </span><span class="s2">= </span><span class="s1">it</span><span class="s2">.</span><span class="s1">name</span><span class="s2">,</span>
@@ -358,7 +358,7 @@ ImportCardsScreen.kt</font>
 
 <span class="s1">@OptIn</span><span class="s2">(</span><span class="s1">ExperimentalFoundationApi::</span><span class="s0">class</span><span class="s2">)</span>
 <span class="s1">@Composable</span>
-<span class="s0">fun </span><span class="s1">BringFromDecksDialog</span><span class="s2">(</span>
+<span class="s0">fun </span><span class="s1">BringFromDecksScreen</span><span class="s2">(</span>
     <span class="s1">onDismissRequest: </span><span class="s2">() -&gt; </span><span class="s1">Unit</span><span class="s2">,</span>
     <span class="s1">bundles: List</span><span class="s2">&lt;</span><span class="s1">BundleWithDecks</span><span class="s2">&gt;,</span>
     <span class="s1">decks: List</span><span class="s2">&lt;</span><span class="s1">Deck</span><span class="s2">&gt;,</span>

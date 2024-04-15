@@ -9,7 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.flashcards.ui.createCard.CreateCardScreen
-import com.example.flashcards.ui.Dashboard.DashboardScreen
+import com.example.flashcards.ui.dashboard.DashboardScreen
 import com.example.flashcards.ui.deck.DeckScreen
 import com.example.flashcards.ui.editCard.EditCardScreen
 import com.example.flashcards.ui.importCards.ImportCardsScreen

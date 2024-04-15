@@ -1,4 +1,4 @@
-package com.example.flashcards.ui.Dashboard
+package com.example.flashcards.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -308,6 +308,7 @@ class DashboardViewModel(
 
     suspend fun moveDeckToBundle(deckIndex: Int, bundleIndex: Int) {
         _uiState.value.decks[deckIndex].bundleId = _uiState.value.bundles[bundleIndex].bundle.id
+        _uiState.value.decks[deckIndex].deselect()
         cardsRepository.updateDeck(_uiState.value.decks[deckIndex])
         loadCards()
     }
@@ -330,8 +331,10 @@ class DashboardViewModel(
             name = _uiState.value.decks[deck1Index].name + " & " + _uiState.value.decks[deck2Index].name
         ))
         _uiState.value.decks[deck1Index].bundleId = bundleId
+        _uiState.value.decks[deck1Index].deselect()
         cardsRepository.updateDeck(_uiState.value.decks[deck1Index])
         _uiState.value.decks[deck2Index].bundleId = bundleId
+        _uiState.value.decks[deck2Index].deselect()
         cardsRepository.updateDeck(_uiState.value.decks[deck2Index])
         loadCards()
     }
@@ -339,6 +342,7 @@ class DashboardViewModel(
     suspend fun mergeBundleWithBundle(selectedBundleIndex: Int, targetBundleIndex: Int) {
         for (deck in _uiState.value.bundles[selectedBundleIndex].decks) {
             deck.bundleId = _uiState.value.bundles[targetBundleIndex].bundle.id
+            deck.deselect()
             cardsRepository.updateDeck(deck)
         }
         cardsRepository.deleteBundle(_uiState.value.bundles[selectedBundleIndex].bundle)
@@ -361,6 +365,7 @@ class DashboardViewModel(
     suspend fun updateCurrentBundleName(name: String) {
         val bundle = _uiState.value.bundles[_uiState.value.currentBundleIndex!!].bundle
         bundle.name = name
+        bundle.deselect()
         cardsRepository.updateBundle(bundle)
     }
 

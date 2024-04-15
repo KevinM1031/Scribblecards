@@ -1,6 +1,7 @@
-package com.example.flashcards.ui.Dashboard
+package com.example.flashcards.ui.dashboard
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -12,8 +13,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,11 +23,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -54,6 +54,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -98,7 +99,6 @@ import kotlinx.coroutines.launch
 
 private const val BOX_SIZE_DP = 110
 private const val BOX_SIZE_IN_BUNDLE_DP = 100
-private const val BOX_SHRINK_FACTOR = 0.9f
 
 @Composable
 fun DashboardScreen(
@@ -216,13 +216,13 @@ fun DashboardScreen(
 
                 isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                 isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
-                containerSize = containerSize,
                 cardIconSize = BOX_SIZE_DP,
                 padding = dimensionResource(R.dimen.padding_medium),
                 blur = bundleCloseAnim.value,
             )
 
             if (isBundleOpen) {
+                BackHandler { viewModel.requestCloseBundleAnim() }
 
                 Box(
                     modifier = Modifier
@@ -302,7 +302,6 @@ fun DashboardScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CardsList(
     onDeckOpened: (Long) -> Unit,
@@ -321,7 +320,6 @@ fun CardsList(
 
     isBundleCreatorOpen: Boolean,
     isRemoveDeckFromBundleUiOpen: Boolean,
-    containerSize: IntSize,
     cardIconSize: Int,
     padding: Dp = dimensionResource(R.dimen.padding_medium),
     blur: Float = 0f,
@@ -337,138 +335,139 @@ fun CardsList(
     val density = LocalDensity.current
     val sizePx = with(density) { BOX_SIZE_DP.dp.toPx()/2 }.toInt()
 
-    FlowRow(
-        horizontalArrangement = Arrangement.Start,
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
             .blur((12 * blur).dp)
-            .verticalScroll(rememberScrollState())
-            .wrapContentSize(Alignment.TopCenter)
     ) {
 
-        val width = with(LocalDensity.current) {containerSize.width.toDp()}.value - padding.value * 2
-        var widthLeft = width - cardIconSize*(numBundles+numDecks)
-        var adjustedCardIconSize = (cardIconSize * BOX_SHRINK_FACTOR).toInt()
+        val lazyGridState = rememberLazyGridState()
+        val adjustedCardIconSize by remember { derivedStateOf {
+            with(density) {
+                lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
+            } ?: cardIconSize
+        } }
 
-        if ((width / cardIconSize).toInt() + 1 == (width / adjustedCardIconSize).toInt()) {
-            widthLeft = width - adjustedCardIconSize * numDecks
-        } else {
-            adjustedCardIconSize = cardIconSize
-        }
+        LazyVerticalGrid(
+            state = lazyGridState,
+            columns = GridCells.Adaptive(minSize = (cardIconSize).dp),
+            modifier = Modifier.fillMaxSize().padding(padding)
+        ) {
 
-        for (i in 0..<numBundles) {
-            DraggableComposable(
-                index = i,
-                onBundleOpened = onBundleOpened,
-                onBundleSelected = onBundleSelected,
-                getBundle = getBundle,
-                isBundleCreatorOpen = isBundleCreatorOpen,
-                isBundle = true,
-                size = adjustedCardIconSize,
-                setPosition = { bundlePositions[i] = it },
-                onDrag = { draggingBundleIndex = it },
-                onDrop = { isDropped = true },
-                isHighlighted = highlightedBundleIndex == i,
-                isClickEnabled = draggingBundleIndex == null,
+            items(numBundles) { i ->
+                DraggableComposable(
+                    index = i,
+                    onBundleOpened = onBundleOpened,
+                    onBundleSelected = onBundleSelected,
+                    getBundle = getBundle,
+                    isBundleCreatorOpen = isBundleCreatorOpen,
+                    isBundle = true,
+                    size = adjustedCardIconSize,
+                    setPosition = { bundlePositions[i] = it },
+                    onDrag = { draggingBundleIndex = it },
+                    onDrop = { isDropped = true },
+                    isHighlighted = highlightedBundleIndex == i,
+                    isClickEnabled = draggingBundleIndex == null,
                 )
-        }
+            }
 
-        for (i in 0..<numDecks) {
-            DraggableComposable(
-                index = i,
-                onDeckOpened = onDeckOpened,
-                onDeckSelected = onDeckSelected,
-                getDeck = getDeck,
-                getBundle = getBundle,
-                isBundleCreatorOpen = isBundleCreatorOpen,
-                isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
-                isBundle = false,
-                size = adjustedCardIconSize,
-                setPosition = { deckPositions[i] = it },
-                onDrag = { draggingDeckIndex = it },
-                onDrop = { isDropped = true },
-                isHighlighted = highlightedDeckIndex == i,
-                isClickEnabled = draggingDeckIndex == null,
-            )
-        }
+            items(numDecks) { i ->
+                DraggableComposable(
+                    index = i,
+                    onDeckOpened = onDeckOpened,
+                    onDeckSelected = onDeckSelected,
+                    getDeck = getDeck,
+                    getBundle = getBundle,
+                    isBundleCreatorOpen = isBundleCreatorOpen,
+                    isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
+                    isBundle = false,
+                    size = adjustedCardIconSize,
+                    setPosition = { deckPositions[i] = it },
+                    onDrag = { draggingDeckIndex = it },
+                    onDrop = { isDropped = true },
+                    isHighlighted = highlightedDeckIndex == i,
+                    isClickEnabled = draggingDeckIndex == null,
+                )
+            }
 
-        for (i in 0..<(widthLeft/adjustedCardIconSize).toInt()) {
-            EmptyComponent(size = adjustedCardIconSize)
-        }
+            if (!isBundleCreatorOpen) {
 
-        if (!isBundleCreatorOpen) {
+                highlightedBundleIndex = null
+                highlightedDeckIndex = null
 
-            highlightedBundleIndex = null
-            highlightedDeckIndex = null
-
-            // check for dragging bundles
-            if (draggingBundleIndex != null) {
-                for (pos in bundlePositions) {
-                    if (pos.key != draggingBundleIndex && iconOverlaps(bundlePositions[draggingBundleIndex]!!, pos.value, sizePx)) {
-
-                        // bundle dropped on bundle - merge bundles
-                        if (isDropped) {
-                            mergeBundleWithBundle(draggingBundleIndex!!, pos.key)
-                            bundlePositions.remove(draggingBundleIndex)
-                            isDropped = false
-                            draggingBundleIndex = null
-
-                        } else highlightedBundleIndex = pos.key
-                        break
-                    }
-                }
-
-                if (isDropped) {
-                    isDropped = false
-                    draggingBundleIndex = null
-                }
-
-                // check for dragging decks
-            } else if (draggingDeckIndex != null) {
-                var pass = false
-                for (pos in bundlePositions) {
-                    if (iconOverlaps(deckPositions[draggingDeckIndex]!!, pos.value, sizePx)) {
-                        pass = true
-
-                        // deck dropped on bundle - move deck to bundle
-                        if (isDropped) {
-                            moveDeckToBundle(draggingDeckIndex!!, pos.key)
-                            deckPositions.remove(draggingDeckIndex)
-                            isDropped = false
-                            draggingDeckIndex = null
-
-                        } else highlightedBundleIndex = pos.key
-                        break
-                    }
-                }
-
-                if (!pass) {
-                    for (pos in deckPositions) {
-                        if (pos.key != draggingDeckIndex && iconOverlaps(
-                                deckPositions[draggingDeckIndex]!!,
+                // check for dragging bundles
+                if (draggingBundleIndex != null) {
+                    for (pos in bundlePositions) {
+                        if (pos.key != draggingBundleIndex && iconOverlaps(
+                                bundlePositions[draggingBundleIndex]!!,
                                 pos.value,
                                 sizePx
                             )
                         ) {
 
-                            // deck dropped on deck - merge decks into bundle
+                            // bundle dropped on bundle - merge bundles
                             if (isDropped) {
-                                mergeDecksIntoBundle(draggingDeckIndex!!, pos.key)
-                                deckPositions.remove(draggingDeckIndex)
-                                deckPositions.remove(pos.key)
+                                mergeBundleWithBundle(draggingBundleIndex!!, pos.key)
+                                bundlePositions.remove(draggingBundleIndex)
                                 isDropped = false
-                                draggingDeckIndex = null
+                                draggingBundleIndex = null
 
-                            } else highlightedDeckIndex = pos.key
+                            } else highlightedBundleIndex = pos.key
                             break
                         }
                     }
-                }
 
-                if (isDropped) {
-                    isDropped = false
-                    draggingDeckIndex = null
+                    if (isDropped) {
+                        isDropped = false
+                        draggingBundleIndex = null
+                    }
+
+                    // check for dragging decks
+                } else if (draggingDeckIndex != null) {
+                    var pass = false
+                    for (pos in bundlePositions) {
+                        if (iconOverlaps(deckPositions[draggingDeckIndex]!!, pos.value, sizePx)) {
+                            pass = true
+
+                            // deck dropped on bundle - move deck to bundle
+                            if (isDropped) {
+                                moveDeckToBundle(draggingDeckIndex!!, pos.key)
+                                deckPositions.remove(draggingDeckIndex)
+                                isDropped = false
+                                draggingDeckIndex = null
+
+                            } else highlightedBundleIndex = pos.key
+                            break
+                        }
+                    }
+
+                    if (!pass) {
+                        for (pos in deckPositions) {
+                            if (pos.key != draggingDeckIndex && iconOverlaps(
+                                    deckPositions[draggingDeckIndex]!!,
+                                    pos.value,
+                                    sizePx
+                                )
+                            ) {
+
+                                // deck dropped on deck - merge decks into bundle
+                                if (isDropped) {
+                                    mergeDecksIntoBundle(draggingDeckIndex!!, pos.key)
+                                    deckPositions.remove(draggingDeckIndex)
+                                    deckPositions.remove(pos.key)
+                                    isDropped = false
+                                    draggingDeckIndex = null
+
+                                } else highlightedDeckIndex = pos.key
+                                break
+                            }
+                        }
+                    }
+
+                    if (isDropped) {
+                        isDropped = false
+                        draggingDeckIndex = null
+                    }
                 }
             }
         }
@@ -679,7 +678,6 @@ fun DeckComponent(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OpenBundle(
     modifier: Modifier = Modifier,
@@ -694,7 +692,7 @@ fun OpenBundle(
     isRemoveDeckFromBundleUiOpen: Boolean,
 ) {
 
-    // overall constants
+    val density = LocalDensity.current
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
@@ -719,61 +717,47 @@ fun OpenBundle(
 
     ) {
 
-        FlowRow(
-            horizontalArrangement = Arrangement.Start,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(smallPadding)
-                .wrapContentSize(Alignment.TopCenter)
                 .onGloballyPositioned { coordinates ->
                     containerSize = coordinates.size
                     containerPosition = coordinates.positionInRoot()
                 }
         ) {
 
-            val width = overlayWidth - mediumPadding.value * 2
-            var widthLeft = width - cardIconSize * numDecks
-            var adjustedCardIconSize = (cardIconSize * BOX_SHRINK_FACTOR).toInt()
+            val lazyGridState = rememberLazyGridState()
+            val adjustedCardIconSize by remember { derivedStateOf {
+                with(density) {
+                    lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
+                } ?: cardIconSize
+            } }
 
-            if ((width / cardIconSize).toInt() + 1 == (width / adjustedCardIconSize).toInt()) {
-                widthLeft = width - adjustedCardIconSize * numDecks
-            } else {
-                adjustedCardIconSize = cardIconSize
-            }
+            LazyVerticalGrid(
+                state = lazyGridState,
+                columns = GridCells.Adaptive(minSize = (cardIconSize).dp)
+            ) {
 
-
-            for (i in 0..<numDecks) {
-                DraggableComposable(
-                    index = i,
-                    onDeckOpened = onDeckOpened,
-                    onDeckSelected = onDeckSelected,
-                    getDeck = getDeck,
-                    getBundle = getBundle,
-                    isBundleCreatorOpen = isBundleCreatorOpen,
-                    isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
-                    isBundle = false,
-                    size = adjustedCardIconSize,
-                    isHighlighted = false,
-                    isClickEnabled = true,
-                    isDeckInsideBundle = true,
-                )
-            }
-
-            for (i in 0..<(widthLeft/adjustedCardIconSize).toInt()) {
-                EmptyComponent(size = adjustedCardIconSize)
+                items(numDecks) { i ->
+                    DraggableComposable(
+                        index = i,
+                        onDeckOpened = onDeckOpened,
+                        onDeckSelected = onDeckSelected,
+                        getDeck = getDeck,
+                        getBundle = getBundle,
+                        isBundleCreatorOpen = isBundleCreatorOpen,
+                        isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
+                        isBundle = false,
+                        size = adjustedCardIconSize,
+                        isHighlighted = false,
+                        isClickEnabled = true,
+                        isDeckInsideBundle = true,
+                    )
+                }
             }
         }
     }
-}
-
-@Composable
-fun EmptyComponent(size: Int) {
-    Spacer(
-        modifier = Modifier
-            .size(size.dp)
-            .padding(dimensionResource(R.dimen.padding_small))
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -956,7 +940,7 @@ fun CreateOptionButton(
             Column(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier
-                    .offset(x = ((1f-optionOpenAnim.value) * 100).dp)
+                    .offset(x = ((1f - optionOpenAnim.value) * 100).dp)
                     .alpha(optionOpenAnim.value)
 
             ) {
@@ -1013,7 +997,6 @@ fun CreateBundleDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
-        val smallPadding = dimensionResource(R.dimen.padding_small)
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
         var isError by remember { mutableStateOf(false) }
 
@@ -1024,16 +1007,13 @@ fun CreateBundleDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (isError) 280.dp else 240.dp)
-                .padding(mediumPadding)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(mediumPadding)
-                    .fillMaxSize()
-
+                    .fillMaxWidth()
 
             ) {
                 Text(
@@ -1042,7 +1022,7 @@ fun CreateBundleDialog(
                     textAlign = TextAlign.Center,
                 )
                 Column(
-
+                    modifier = Modifier.padding(mediumPadding)
                 ) {
                     if (isError) {
                         Text(
@@ -1058,11 +1038,9 @@ fun CreateBundleDialog(
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
-                        modifier = Modifier
-                            .padding(bottom = smallPadding)
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(mediumPadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1070,7 +1048,8 @@ fun CreateBundleDialog(
                         .fillMaxWidth()
                 ) {
                     TextButton(
-                        onClick = onDismissRequest
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Cancel") }
                     Button(
                         onClick = {
@@ -1079,7 +1058,8 @@ fun CreateBundleDialog(
                             } else {
                                 onCreateClicked(userInput)
                             }
-                        }
+                        },
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text(if (editMode) "Confirm" else "Create") }
                 }
             }
@@ -1101,7 +1081,6 @@ fun CreateDeckDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
-        val smallPadding = dimensionResource(R.dimen.padding_small)
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
         var isError by remember { mutableStateOf(false) }
 
@@ -1112,16 +1091,13 @@ fun CreateDeckDialog(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (isError) 280.dp else 240.dp)
-                .padding(mediumPadding)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
+                    .fillMaxWidth()
                     .padding(mediumPadding)
-                    .fillMaxSize()
-
 
             ) {
                 Text(
@@ -1129,7 +1105,9 @@ fun CreateDeckDialog(
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
-                Column() {
+                Column(
+                    modifier = Modifier.padding(vertical = mediumPadding)
+                ) {
                     if (isError) {
                         Text(
                             text = "This field is required.",
@@ -1144,12 +1122,10 @@ fun CreateDeckDialog(
                         label = { Text("Deck name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
-                        modifier = Modifier
-                            .padding(bottom = smallPadding)
+                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) })
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(mediumPadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1157,7 +1133,8 @@ fun CreateDeckDialog(
                         .fillMaxWidth()
                 ) {
                     TextButton(
-                        onClick = onDismissRequest
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Cancel") }
                     Button(
                         onClick = {
@@ -1166,7 +1143,8 @@ fun CreateDeckDialog(
                             } else {
                                 onCreateClicked(userInput)
                             }
-                        }
+                        },
+                        modifier = Modifier.size(120.dp, 40.dp)
                     ) { Text("Create") }
                 }
             }

@@ -186,8 +186,7 @@ fun EditCardScreen (
                     }
                 },
                 modifier = Modifier
-                    .size(160.dp, 80.dp)
-                    .padding(vertical = mediumPadding)
+                    .size(160.dp, 40.dp)
             ) {
                 Text(
                     text = "Confirm"
@@ -221,7 +220,7 @@ fun CustomTextField(
         Text(
             text = text + if (isError) errorMessage else "",
             color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
         )
         TextField(
@@ -237,7 +236,7 @@ fun CustomTextField(
                     focusManager.moveFocus(if (isLast) FocusDirection.Exit else FocusDirection.Down)
                 }
             ),
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
         )
     }

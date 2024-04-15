@@ -92,13 +92,14 @@ fun CreateCardScreen (
 
         var isQuestionError by remember { mutableStateOf(false) }
         var isAnswerError by remember { mutableStateOf(false) }
+        val scrollState = rememberScrollState()
 
         Column(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(innerPadding)
         ) {
             Spacer(modifier = Modifier.height(mediumPadding))
@@ -161,8 +162,7 @@ fun CreateCardScreen (
                     }
                 },
                 modifier = Modifier
-                    .size(160.dp, 80.dp)
-                    .padding(vertical = mediumPadding)
+                    .size(160.dp, 40.dp)
             ) {
                 Text(
                     text = "Create"
@@ -196,7 +196,7 @@ fun CustomTextField(
         Text(
             text = text + if (isError) errorMessage else "",
             color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
         )
         TextField(
@@ -212,7 +212,7 @@ fun CustomTextField(
                     focusManager.moveFocus(if (isLast) FocusDirection.Exit else FocusDirection.Down)
                 }
             ),
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxWidth()
         )
     }
