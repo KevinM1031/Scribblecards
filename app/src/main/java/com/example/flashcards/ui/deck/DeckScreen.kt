@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Star
@@ -388,6 +389,20 @@ fun CardEditorBar(
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Delete card"
+                    )
+                }
+            }
+            IconButton(
+                onClick = onCardDeleteButtonClicked,
+            ) {
+                Row {
+                    Icon(
+                        imageVector = Icons.Default.List,
+                        contentDescription = null,
+                    )
+                    Text(
+                        text = "A",
+                        fontSize = 12.sp,
                     )
                 }
             }

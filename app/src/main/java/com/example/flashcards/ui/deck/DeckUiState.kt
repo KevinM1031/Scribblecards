@@ -8,6 +8,7 @@ data class DeckUiState(
     val param: Long = -1,
 
     val numSelectedCards: Int = 0,
+    val sortType: SortType = SortType.DATE_STUDIED,
 
     val isTipOpen: Boolean = false,
     val isDeckDeleted: Boolean = false,
@@ -23,3 +24,10 @@ data class DeckUiState(
 
     val lastUpdated: Long = 0,
 )
+
+enum class SortType {
+    ALPHANUMERICAL,
+    DATE_STUDIED,
+    DATE_CREATED,
+
+}

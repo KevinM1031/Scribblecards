@@ -59,6 +59,10 @@ class DeckViewModel(
         }
     }
 
+    suspend fun getSortedDeckWithCards() = {
+
+    }
+
     suspend fun updateDeck() {
         _uiState.value.deck.deck.dateUpdated = System.currentTimeMillis()
         _uiState.value.deck.deck.deselect()
