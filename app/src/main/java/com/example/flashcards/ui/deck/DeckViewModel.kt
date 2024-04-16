@@ -39,6 +39,7 @@ class DeckViewModel(
                         deck = deck,
                     )
                 }
+                sortCards()
             }
         }
     }
@@ -57,10 +58,6 @@ class DeckViewModel(
                 isDeckDeleted = false,
             )
         }
-    }
-
-    suspend fun getSortedDeckWithCards() = {
-
     }
 
     suspend fun updateDeck() {
@@ -188,6 +185,7 @@ class DeckViewModel(
                 deck = cardsRepository.getDeckWithCards(_uiState.value.param),
             )
         }
+        sortCards()
     }
 
     fun selectAllCardsInCurrentDeck() {
@@ -228,9 +226,54 @@ class DeckViewModel(
                 numSelectedCards = 0,
             )
         }
+        sortCards()
     }
 
     fun getNumCardsInCurrentDeck() : Int {
         return _uiState.value.deck.cards.size
+    }
+
+    fun sortCards() {
+        when (_uiState.value.sortType) {
+            SortType.MASTERY -> {
+                _uiState.value.deck.sortByMastery()
+            }
+            SortType.FAVORITE -> {
+                _uiState.value.deck.sortByFavorite()
+            }
+            SortType.ALPHANUMERICAL -> {
+                if (_uiState.value.deck.deck.flipQnA) {
+                    _uiState.value.deck.sortByAnswer()
+                } else {
+                    _uiState.value.deck.sortByQuestion()
+                }
+            }
+        }
+    }
+
+    fun cycleCardSort() {
+        val sortType = when (_uiState.value.sortType) {
+            SortType.ALPHANUMERICAL -> {
+                _uiState.value.deck.sortByMastery()
+                SortType.MASTERY
+            }
+            SortType.MASTERY -> {
+                _uiState.value.deck.sortByFavorite()
+                SortType.FAVORITE
+            }
+            SortType.FAVORITE -> {
+                if (_uiState.value.deck.deck.flipQnA) {
+                    _uiState.value.deck.sortByAnswer()
+                } else {
+                    _uiState.value.deck.sortByQuestion()
+                }
+                SortType.ALPHANUMERICAL
+            }
+        }
+        _uiState.update { currentState ->
+            currentState.copy(
+                sortType = sortType,
+            )
+        }
     }
 }

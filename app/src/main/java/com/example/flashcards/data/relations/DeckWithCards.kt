@@ -15,11 +15,27 @@ data class DeckWithCards(
         entityColumn = "deckId",
         //associateBy = Junction(DeckCardCrossRef::class),
     )
-    val cards: List<Card>,
+    var cards: List<Card>,
 ) {
 
     init {
         updateValues()
+    }
+
+    fun sortByQuestion() {
+        cards = cards.sortedBy { it.questionText }
+    }
+
+    fun sortByAnswer() {
+        cards = cards.sortedBy { it.answerText }
+    }
+
+    fun sortByMastery() {
+        cards = cards.sortedBy { it.getMasteryLevel() }
+    }
+
+    fun sortByFavorite() {
+        cards = cards.sortedByDescending { it.isFavorite }
     }
 
     fun updateValues() {

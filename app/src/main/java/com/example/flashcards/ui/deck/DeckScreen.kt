@@ -229,6 +229,8 @@ fun DeckScreen (
                 onAllCardsDeselected = { viewModel.deselectAllCards() },
                 onCardSelectorOpened = { viewModel.openCardSelector() },
                 onCardSelectorClosed = { viewModel.closeCardSelector() },
+                onSortButtonClicked = { viewModel.cycleCardSort() },
+                currentSortType = uiState.sortType,
                 numCards = viewModel.getNumCardsInCurrentDeck(),
                 numSelectedCards = uiState.numSelectedCards,
                 isCardSelectorOpen = uiState.isCardSelectorOpen,
@@ -340,6 +342,8 @@ fun CardEditorBar(
     onAllCardsDeselected: () -> Unit,
     onCardSelectorOpened: () -> Unit,
     onCardSelectorClosed: () -> Unit,
+    onSortButtonClicked: () -> Unit,
+    currentSortType: SortType,
     numCards: Int,
     numSelectedCards: Int,
     isCardSelectorOpen: Boolean,
@@ -393,7 +397,7 @@ fun CardEditorBar(
                 }
             }
             IconButton(
-                onClick = onCardDeleteButtonClicked,
+                onClick = onSortButtonClicked,
             ) {
                 Row {
                     Icon(
@@ -401,7 +405,11 @@ fun CardEditorBar(
                         contentDescription = null,
                     )
                     Text(
-                        text = "A",
+                        text = when (currentSortType) {
+                            SortType.ALPHANUMERICAL -> "A"
+                            SortType.MASTERY -> "%"
+                            SortType.FAVORITE -> "★"
+                        },
                         fontSize = 12.sp,
                     )
                 }
