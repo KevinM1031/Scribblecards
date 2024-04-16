@@ -31,7 +31,7 @@ data class DeckWithCards(
     }
 
     fun sortByMastery() {
-        cards = cards.sortedBy { it.getMasteryLevel() }
+        cards = cards.sortedBy { it.getMasteryLevel(millisSinceStudied = System.currentTimeMillis() - deck.dateStudied) }
     }
 
     fun sortByFavorite() {
@@ -49,7 +49,7 @@ data class DeckWithCards(
         } else {
             var sum = 0f
             for (card in cards) {
-                sum += card.getMasteryLevel()
+                sum += card.getMasteryLevel(millisSinceStudied = System.currentTimeMillis() - deck.dateStudied)
             }
             deck.masteryLevel = sum / cards.size
         }

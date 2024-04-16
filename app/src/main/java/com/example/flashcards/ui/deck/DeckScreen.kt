@@ -282,6 +282,7 @@ fun DeckScreen (
                             }
                         },
                         onEditCardButtonClicked = { onEditCardButtonClicked(it) },
+                        lastStudied = System.currentTimeMillis() - uiState.deck.deck.dateStudied,
                         lastUpdated = uiState.lastUpdated,
                     )
                 }
@@ -399,7 +400,9 @@ fun CardEditorBar(
             IconButton(
                 onClick = onSortButtonClicked,
             ) {
-                Row {
+                Row(
+                    horizontalArrangement = Arrangement.Start
+                ) {
                     Icon(
                         imageVector = Icons.Default.List,
                         contentDescription = null,
@@ -440,6 +443,7 @@ fun CardComponent(
     onCardSelected: () -> Unit,
     onFavoriteCardButtonClicked: () -> Unit,
     onEditCardButtonClicked: (Long) -> Unit,
+    lastStudied: Long,
     lastUpdated: Long,
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -468,8 +472,9 @@ fun CardComponent(
                     .weight(0.7f)
                     .padding(end = smallPadding)
             )
+            Log.d("debug", "$lastStudied ${card.getMasteryLevel(millisSinceStudied = lastStudied)}")
             Text(
-                text = "${Math.round(card.getMasteryLevel()*100)}%",
+                text = "${Math.round(card.getMasteryLevel(millisSinceStudied = lastStudied)*100)}%",
                 fontSize = 16.sp,
                 overflow = TextOverflow.Visible,
                 textAlign = TextAlign.End,
