@@ -5,6 +5,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
+import com.example.flashcards.data.Constants
+import com.example.flashcards.data.Settings
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +37,7 @@ class ImportCardsViewModel(
 
     fun reset() {
         softReset()
+        resetImportThroughTextScreen()
 
         viewModelScope.launch {
             val deck = cardsRepository.getDeckWithCards(id = _uiState.value.param)
@@ -53,6 +56,21 @@ class ImportCardsViewModel(
                     numSelectedCards = 0,
                 )
             }
+        }
+    }
+
+    fun resetImportThroughTextScreen() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.NO_ERROR,
+                importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.NO_ERROR,
+                inputText = "",
+                questionLines = "",
+                answerLines = "",
+                hintLines = "",
+                exampleLines = "",
+                ignoredLines = "",
+            )
         }
     }
 
@@ -137,9 +155,10 @@ class ImportCardsViewModel(
     }
 
     fun toggleImportThroughTextScreen() {
+        resetImportThroughTextScreen()
         _uiState.update { currentState ->
             currentState.copy(
-                isImportThroughTextScreenOpen = !_uiState.value.isImportThroughTextScreenOpen
+                isImportThroughTextScreenOpen = !_uiState.value.isImportThroughTextScreenOpen,
             )
         }
     }
@@ -168,6 +187,14 @@ class ImportCardsViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 subDecks = subDecks
+            )
+        }
+    }
+
+    fun setImportThroughTextScreenErrorState(errorState: ImportThroughTextScreenErrorState) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                importThroughTextScreenErrorState = errorState
             )
         }
     }
@@ -211,7 +238,7 @@ class ImportCardsViewModel(
         return subDeckCards
     }
 
-    fun textToCards(maxCards: Int = -1): List<Card> {
+    fun textToCards(maxCards: Int = -1, checkForErrors: Boolean = false): List<Card>? {
         val qL = getParsedInputLines(_uiState.value.questionLines)
         val aL = getParsedInputLines(_uiState.value.answerLines)
         val hL = getParsedInputLines(_uiState.value.hintLines)
@@ -226,11 +253,122 @@ class ImportCardsViewModel(
 
         val lineMap = mutableMapOf<Int, Int>()
         var max = 0
-        for (n in qL) { lineMap[n] = QUESTION; if (n > max) max = n }
-        for (n in aL) { lineMap[n] = ANSWER; if (n > max) max = n }
-        for (n in hL) { lineMap[n] = HINT; if (n > max) max = n }
-        for (n in eL) { lineMap[n] = EXAMPLE; if (n > max) max = n }
-        for (n in iL) { lineMap[n] = IGNORED; if (n > max) max = n }
+        val testError: (Int, Int) -> Boolean = { n, curr ->
+            val isError = when (lineMap[n]) {
+                curr -> false
+                QUESTION -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE,
+                        )
+                    }
+                    true
+                }
+                ANSWER -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE,
+                        )
+                    }
+                    true
+                }
+                HINT -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE,
+                        )
+                    }
+                    true
+                }
+                EXAMPLE -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE,
+                        )
+                    }
+                    true
+                }
+                IGNORED -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE,
+                        )
+                    }
+                    true
+                }
+                else -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.NO_ERROR,
+                        )
+                    }
+                    false
+                }
+            }
+
+            isError
+        }
+
+        for (n in qL) {
+            if (checkForErrors && testError(n, QUESTION)) {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE
+                    )
+                }
+                return null
+            }
+            lineMap[n] = QUESTION
+            if (n > max) max = n
+        }
+        for (n in aL) {
+            if (checkForErrors && testError(n, ANSWER)) {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE
+                    )
+                }
+                return null
+            }
+            lineMap[n] = ANSWER
+            if (n > max) max = n
+        }
+        for (n in hL) {
+            if (checkForErrors && testError(n, HINT)) {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE
+                    )
+                }
+                return null
+            }
+            lineMap[n] = HINT
+            if (n > max) max = n
+        }
+        for (n in eL) {
+            if (checkForErrors && testError(n, EXAMPLE)) {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE
+                    )
+                }
+                return null
+            }
+            lineMap[n] = EXAMPLE
+            if (n > max) max = n
+        }
+        for (n in iL) {
+            if (checkForErrors && testError(n, IGNORED)) {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE
+                    )
+                }
+                return null
+            }
+            lineMap[n] = IGNORED
+            if (n > max) max = n
+        }
 
         val subDeckCards = mutableListOf<Card>()
         var i = 0
@@ -244,16 +382,15 @@ class ImportCardsViewModel(
         for (segment in temp) {
             if (segment.isNotBlank()) {
                 when (lineMap[i+1]) {
-                    QUESTION -> qT += (if (qT.isBlank()) "\n" else "") + segment
-                    ANSWER -> aT += (if (aT.isBlank()) "\n" else "") + segment
-                    HINT -> hT += (if (hT.isBlank()) "\n" else "") + segment
-                    EXAMPLE -> eT += (if (eT.isBlank()) "\n" else "") + segment
+                    QUESTION -> qT += (if (qT.isBlank()) "" else "\n") + segment
+                    ANSWER -> aT += (if (aT.isBlank()) "" else "\n") + segment
+                    HINT -> hT += (if (hT.isBlank()) "" else "\n") + segment
+                    EXAMPLE -> eT += (if (eT.isBlank()) "" else "\n") + segment
                     else -> {}
                 }
                 i++
 
                 if (i == max && qT.isNotBlank() && aT.isNotBlank()) {
-                    i = 0
                     subDeckCards.add(
                         Card(
                             questionText = qT,
@@ -262,16 +399,33 @@ class ImportCardsViewModel(
                             exampleText = eT,
                         )
                     )
+                    i = 0
                     qT = ""
                     aT = ""
                     hT = ""
                     eT = ""
                     numCards++
-                    if (numCards == maxCards) {
+                    if (checkForErrors && numCards > Constants.MAX_CARDS) {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.TEXT_TOO_LONG
+                            )
+                        }
+                        return null
+                    } else if (numCards == maxCards) {
                         return subDeckCards
                     }
                 }
             }
+        }
+
+        if (i > 0 && checkForErrors) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.TEXT_INCOMPLETE
+                )
+            }
+            return null
         }
 
         return subDeckCards

@@ -65,6 +65,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -86,6 +88,7 @@ import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.ui.AppViewModelProvider
 import com.example.flashcards.ui.deck.ImportCardsViewModel
+import com.example.flashcards.ui.deck.ImportThroughTextScreenErrorState
 import com.example.flashcards.ui.deck.SubDeck
 import com.example.flashcards.ui.deck.SubDeckType
 import kotlinx.coroutines.launch
@@ -206,7 +209,7 @@ fun ImportCardsScreen (
                             viewModel.toggleBringFromDecksScreen()
                             viewModel.addSubDeck(
                                 SubDeck(
-                                    name = "Import from \"${it.name}\" (${cards.size} cards)",
+                                    name = "Import from \"${it.name}\" (${cards.size} " + if (cards.size == 1) "card)" else "cards)",
                                     type = SubDeckType.DEFAULT,
                                     cards = cards,
                                 )
@@ -222,16 +225,18 @@ fun ImportCardsScreen (
 
                 ImportThroughTextScreen(
                     onDismissRequest = { viewModel.toggleImportThroughTextScreen() },
+                    getCardFromText = { viewModel.textToCards(checkForErrors = true) },
                     onCreateClicked = {
-                        viewModel.toggleImportThroughTextScreen()
-                        val cards = viewModel.textToCards()
-                        viewModel.addSubDeck(
-                            SubDeck(
-                                name = "Import from text (${cards.size} cards)",
-                                type = SubDeckType.TEXT,
-                                cards = cards,
+                        if (it != null) {
+                            viewModel.toggleImportThroughTextScreen()
+                            viewModel.addSubDeck(
+                                SubDeck(
+                                    name = "Import from text (${it.size} cards)",
+                                    type = SubDeckType.TEXT,
+                                    cards = it,
+                                )
                             )
-                        )
+                        }
                     },
                     getPreviewCards = { viewModel.textToCards(maxCards = 2) },
                     setInputText = { viewModel.setInputText(it) },
@@ -247,6 +252,8 @@ fun ImportCardsScreen (
                     exampleLines = uiState.exampleLines,
                     ignoredLines = uiState.ignoredLines,
                     focusManager = focusManager,
+                    errorState = uiState.importThroughTextScreenErrorState,
+                    errorState2 = uiState.importThroughTextScreenErrorState2,
                 )
 
             } else {
@@ -409,8 +416,9 @@ fun ImportCardsScreen (
 @Composable
 fun ImportThroughTextScreen(
     onDismissRequest: () -> Unit,
-    onCreateClicked: () -> Unit,
-    getPreviewCards: () -> List<Card>,
+    getCardFromText: () -> List<Card>?,
+    onCreateClicked: (List<Card>?) -> Unit,
+    getPreviewCards: () -> List<Card>?,
     setInputText: (String) -> Unit,
     setQuestionLines: (String) -> Unit,
     setAnswerLines: (String) -> Unit,
@@ -424,28 +432,30 @@ fun ImportThroughTextScreen(
     exampleLines: String?,
     ignoredLines: String?,
     focusManager: FocusManager,
-) {
+    errorState: ImportThroughTextScreenErrorState,
+    errorState2: ImportThroughTextScreenErrorState,
+    ) {
+
+    var focusRequested by remember { mutableStateOf(false) }
+    val focusRequesterT = remember { FocusRequester() }
+    val focusRequesterQ = remember { FocusRequester() }
+    val focusRequesterA = remember { FocusRequester() }
+    val focusRequesterH = remember { FocusRequester() }
+    val focusRequesterE = remember { FocusRequester() }
+    val focusRequesterI = remember { FocusRequester() }
+
     val inputTextUiNumLines = 8
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
-    /**
-     * 0 - no error
-     * 1 - input text is empty
-     * 2 - found trailing values (incomplete text)
-     * 3 - input text is too long
-     * 10 - question lines are not set
-     * 20 - answer lines are not set
-     */
-    var isError by remember { mutableStateOf(0) }
     var previewCard1 by remember { mutableStateOf<Card?>(null) }
     var previewCard2 by remember { mutableStateOf<Card?>(null) }
 
     val updatePreviews = {
         val previewCards = getPreviewCards()
-        previewCard1 = previewCards.getOrNull(0)
-        previewCard2 = previewCards.getOrNull(1)
+        previewCard1 = previewCards?.getOrNull(0)
+        previewCard2 = previewCards?.getOrNull(1)
     }
 
     Column(
@@ -462,73 +472,102 @@ fun ImportThroughTextScreen(
             value = inputText ?: "",
             onValueChange = { setInputText(it); updatePreviews() },
             label = "Copy and paste text directly from a table, list, etc.",
-            isError = isError != 0,
-            errorMessage = when (isError) {
-                1 -> "This field is required."
-                2 -> "This text is incomplete."
-                3 -> "This text is too long"
-                else -> "An unknown error occurred."
+            isError = errorState.isTextError,
+            errorMessage = when (errorState) {
+                ImportThroughTextScreenErrorState.TEXT_EMPTY -> "this field is required."
+                ImportThroughTextScreenErrorState.TEXT_INCOMPLETE -> "number of questions and answers do not match."
+                ImportThroughTextScreenErrorState.TEXT_TOO_LONG -> "this text is too long."
+                else -> "what have you done??"
             },
             minLines = inputTextUiNumLines,
             maxLines = inputTextUiNumLines,
             focusManager = focusManager,
             modifier = Modifier
                 .padding(vertical = smallPadding, horizontal = mediumPadding)
+                .focusRequester(focusRequesterT)
         )
         CustomTextField(
             text = "Question text lines:",
             value = questionLines ?: "",
             onValueChange = { setQuestionLines(it); updatePreviews() },
             label = "Split with \',\' and define ranges with \'-\'",
-            isError = isError == 10,
-            errorMessage = "This field is required.",
+            isError = errorState.isQuestionLineError || errorState2.isQuestionLineError,
+            errorMessage =
+                if (errorState == ImportThroughTextScreenErrorState.QUESTION_LINES_EMPTY) "this field is required."
+                else if (errorState == ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE
+                    || errorState2 == ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE) "lines cannot overlap."
+                else "what have you done??",
             maxLines = 1,
             focusManager = focusManager,
             modifier = Modifier
                 .padding(vertical = smallPadding, horizontal = mediumPadding)
+                .focusRequester(focusRequesterQ)
         )
         CustomTextField(
             text = "Answer text lines:",
             value = answerLines ?: "",
             onValueChange = { setAnswerLines(it); updatePreviews() },
             label = "Split with \',\' and define ranges with \'-\'",
-            isError = isError == 20,
-            errorMessage = "This field is required.",
+            isError = errorState.isAnswerLineError || errorState2.isAnswerLineError,
+            errorMessage =
+                if (errorState == ImportThroughTextScreenErrorState.ANSWER_LINES_EMPTY) "this field is required."
+                else if (errorState == ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE
+                    || errorState2 == ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE) "lines cannot overlap."
+                else "what have you done??",
             maxLines = 1,
             focusManager = focusManager,
             modifier = Modifier
                 .padding(vertical = smallPadding, horizontal = mediumPadding)
+                .focusRequester(focusRequesterA)
         )
         CustomTextField(
             text = "Hint text lines (optional):",
             value = hintLines ?: "",
             onValueChange = { setHintLines(it); updatePreviews() },
             label = "Split with \',\' and define ranges with \'-\'",
+            isError = errorState.isHintLineError || errorState2.isHintLineError,
+            errorMessage =
+                if (errorState == ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE
+                    || errorState2 == ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE) "lines cannot overlap."
+                else "what have you done??",
             maxLines = 1,
             focusManager = focusManager,
             modifier = Modifier
                 .padding(vertical = smallPadding, horizontal = mediumPadding)
+                .focusRequester(focusRequesterH)
         )
         CustomTextField(
             text = "Example text lines (optional):",
             value = exampleLines ?: "",
             onValueChange = { setExampleLines(it); updatePreviews() },
             label = "Split with \',\' and define ranges with \'-\'",
+            isError = errorState.isExampleLineError || errorState2.isExampleLineError,
+            errorMessage =
+                if (errorState == ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE
+                    || errorState2 == ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE) "lines cannot overlap."
+                else "what have you done??",
             maxLines = 1,
             focusManager = focusManager,
             modifier = Modifier
                 .padding(vertical = smallPadding, horizontal = mediumPadding)
+                .focusRequester(focusRequesterE)
         )
         CustomTextField(
             text = "Lines to ignore (optional):",
             value = ignoredLines ?: "",
             onValueChange = { setIgnoredLines(it); updatePreviews() },
             label = "Split with \',\' and define ranges with \'-\'",
+            isError = errorState.isIgnoredLineError || errorState2.isIgnoredLineError,
+            errorMessage =
+                if (errorState == ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE
+                    || errorState2 == ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE) "lines cannot overlap."
+                else "what have you done??",
             maxLines = 1,
             focusManager = focusManager,
             isLast = true,
             modifier = Modifier
                 .padding(vertical = smallPadding, horizontal = mediumPadding)
+                .focusRequester(focusRequesterI)
         )
 
         Spacer(modifier = Modifier.height(smallPadding))
@@ -546,7 +585,6 @@ fun ImportThroughTextScreen(
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = mediumPadding)
                 ) {
                     Column(
                         modifier = Modifier
@@ -614,7 +652,6 @@ fun ImportThroughTextScreen(
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = mediumPadding)
                 ) {
                     Column(
                         modifier = Modifier
@@ -694,15 +731,38 @@ fun ImportThroughTextScreen(
             ) { Text("Cancel") }
             Button(
                 onClick = {
+                    focusRequested = false
                     if (inputText.isNullOrBlank()) {
-                        isError = 1
+                        focusRequesterT.requestFocus()
+                    } else if (questionLines.isNullOrBlank()) {
+                        focusRequesterQ.requestFocus()
+                    } else if (answerLines.isNullOrBlank()) {
+                        focusRequesterA.requestFocus()
                     } else {
-                        onCreateClicked()
+                        val cards = getCardFromText()
+                        onCreateClicked(cards)
                     }
                 },
                 modifier = Modifier.size(160.dp, 40.dp)
             ) { Text("Create") }
         }
+    }
+
+    if (!focusRequested) {
+        when (errorState) {
+            ImportThroughTextScreenErrorState.TEXT_EMPTY -> focusRequesterT.requestFocus()
+            ImportThroughTextScreenErrorState.TEXT_INCOMPLETE -> focusRequesterT.requestFocus()
+            ImportThroughTextScreenErrorState.TEXT_TOO_LONG -> focusRequesterT.requestFocus()
+            ImportThroughTextScreenErrorState.QUESTION_LINES_EMPTY -> focusRequesterQ.requestFocus()
+            ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE -> focusRequesterQ.requestFocus()
+            ImportThroughTextScreenErrorState.ANSWER_LINES_EMPTY -> focusRequesterA.requestFocus()
+            ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE -> focusRequesterA.requestFocus()
+            ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE -> focusRequesterH.requestFocus()
+            ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE -> focusRequesterE.requestFocus()
+            ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE -> focusRequesterI.requestFocus()
+            else -> {}
+        }
+        focusRequested = true
     }
 }
 
@@ -978,7 +1038,7 @@ fun CustomTextField(
             .fillMaxWidth()
     ) {
         Text(
-            text = text + if (isError) errorMessage else "",
+            text = text + if (isError) " - $errorMessage" else "",
             color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .fillMaxWidth()

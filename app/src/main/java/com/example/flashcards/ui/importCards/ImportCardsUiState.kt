@@ -24,6 +24,9 @@ data class ImportCardsUiState(
     val exampleLines: String = "",
     val ignoredLines: String = "",
 
+    val importThroughTextScreenErrorState: ImportThroughTextScreenErrorState = ImportThroughTextScreenErrorState.NO_ERROR,
+    val importThroughTextScreenErrorState2: ImportThroughTextScreenErrorState = ImportThroughTextScreenErrorState.NO_ERROR,
+
     val isBringFromDecksScreenOpen: Boolean = false,
     val isImportThroughTextScreenOpen: Boolean = false,
     val isUploadCsvFileScreenOpen: Boolean = false,
@@ -44,4 +47,26 @@ enum class SubDeckType {
     DEFAULT,
     TEXT,
     CSV,
+}
+
+enum class ImportThroughTextScreenErrorState(
+        val isTextError: Boolean,
+        val isQuestionLineError: Boolean,
+        val isAnswerLineError: Boolean,
+        val isHintLineError: Boolean,
+        val isExampleLineError: Boolean,
+        val isIgnoredLineError: Boolean,
+        ) {
+    NO_ERROR(false, false, false, false, false, false),
+    TEXT_EMPTY(true, false, false, false, false, false),
+    TEXT_INCOMPLETE(true, false, false, false, false, false),
+    TEXT_TOO_LONG(true, false, false, false, false, false),
+    QUESTION_LINES_EMPTY(false, true, false, false, false, false),
+    ANSWER_LINES_EMPTY(false, false, true, false, false, false),
+    QUESTION_LINES_DUPLICATE(false, true, false, false, false, false),
+    ANSWER_LINES_DUPLICATE(false, false, true, false, false, false),
+    HINT_LINES_DUPLICATE(false, false, false, true, false, false),
+    EXAMPLE_LINES_DUPLICATE(false, false, false, false, true, false),
+    IGNORED_LINES_DUPLICATE(false, false, false, false, false, true),
+
 }

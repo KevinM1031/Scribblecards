@@ -1122,7 +1122,7 @@ fun CreateDeckDialog(
                         label = { Text("Deck name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) })
+                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
                     )
                 }
                 Spacer(modifier = Modifier.height(mediumPadding))
