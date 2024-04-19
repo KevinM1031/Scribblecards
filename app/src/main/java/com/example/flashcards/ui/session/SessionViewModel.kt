@@ -141,7 +141,7 @@ class SessionViewModel(
             sum += Card.calculateMasteryLevel(
                 numStudied = cards[i].numStudied + 1,
                 numPerfect = cards[i].numPerfect + if (_uiState.value.cardHistory[i]!!.isPerfect()) 1 else 0,
-                millisSinceStudied = System.currentTimeMillis() - _uiState.value.deck.deck.dateStudied,
+                millisSinceStudied = 0,
             )
         }
         return sum / cards.size

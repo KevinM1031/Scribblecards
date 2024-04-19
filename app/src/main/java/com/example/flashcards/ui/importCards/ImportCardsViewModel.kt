@@ -1,6 +1,7 @@
 package com.example.flashcards.ui.deck
 
 import android.util.Log
+import androidx.compose.ui.focus.FocusRequester
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,7 @@ import com.example.flashcards.data.Constants
 import com.example.flashcards.data.Settings
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.relations.BundleWithDecks
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +39,7 @@ class ImportCardsViewModel(
 
     fun reset() {
         softReset()
+        resetBringFromDecksScreen()
         resetImportThroughTextScreen()
 
         viewModelScope.launch {
@@ -59,25 +62,51 @@ class ImportCardsViewModel(
         }
     }
 
+    fun resetBringFromDecksScreen() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                bFD_selectedBundle = null,
+                bFD_selectedDeck = null,
+                bFD_excludeMastered = false,
+                bFD_resetHistory = true,
+            )
+        }
+    }
+
     fun resetImportThroughTextScreen() {
         _uiState.update { currentState ->
             currentState.copy(
-                importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.NO_ERROR,
-                importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.NO_ERROR,
-                inputText = "",
-                questionLines = "",
-                answerLines = "",
-                hintLines = "",
-                exampleLines = "",
-                ignoredLines = "",
+                iTT_errorState = ITT_ErrorState.NO_ERROR,
+                iTT_errorState2 = ITT_ErrorState.NO_ERROR,
+                iTT_inputText = "",
+                iTT_questionLines = "",
+                iTT_answerLines = "",
+                iTT_hintLines = "",
+                iTT_exampleLines = "",
+                iTT_ignoredLines = "",
+                iTT_focusRequested = false,
+                iTT_focusRequesterT = FocusRequester(),
+                iTT_focusRequesterQ = FocusRequester(),
+                iTT_focusRequesterA = FocusRequester(),
+                iTT_focusRequesterH = FocusRequester(),
+                iTT_focusRequesterE = FocusRequester(),
+                iTT_focusRequesterI = FocusRequester(),
             )
         }
+    }
+
+    fun getTotalNumCards(): Int {
+        var n = 0
+        for (subDeck in _uiState.value.subDecks) {
+            n += subDeck.cards.size
+        }
+        return n
     }
 
     fun setInputText(inputText: String) {
         _uiState.update { currentState ->
             currentState.copy(
-                inputText = inputText
+                iTT_inputText = inputText
             )
         }
     }
@@ -85,7 +114,7 @@ class ImportCardsViewModel(
     fun setQuestionLines(questionLines: String) {
         _uiState.update { currentState ->
             currentState.copy(
-                questionLines = questionLines
+                iTT_questionLines = questionLines
             )
         }
     }
@@ -93,7 +122,7 @@ class ImportCardsViewModel(
     fun setAnswerLines(answerLines: String) {
         _uiState.update { currentState ->
             currentState.copy(
-                answerLines = answerLines
+                iTT_answerLines = answerLines
             )
         }
     }
@@ -101,7 +130,7 @@ class ImportCardsViewModel(
     fun setHintLines(hintLines: String) {
         _uiState.update { currentState ->
             currentState.copy(
-                hintLines = hintLines
+                iTT_hintLines = hintLines
             )
         }
     }
@@ -109,7 +138,7 @@ class ImportCardsViewModel(
     fun setExampleLines(exampleLines: String) {
         _uiState.update { currentState ->
             currentState.copy(
-                exampleLines = exampleLines
+                iTT_exampleLines = exampleLines
             )
         }
     }
@@ -117,7 +146,7 @@ class ImportCardsViewModel(
     fun setIgnoredLines(ignoredLines: String) {
         _uiState.update { currentState ->
             currentState.copy(
-                ignoredLines = ignoredLines
+                iTT_ignoredLines = ignoredLines
             )
         }
     }
@@ -125,7 +154,7 @@ class ImportCardsViewModel(
     fun setExcludeMastered(excludeMastered: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(
-                excludeMastered = excludeMastered
+                bFD_excludeMastered = excludeMastered
             )
         }
     }
@@ -133,12 +162,13 @@ class ImportCardsViewModel(
     fun setResetHistory(resetHistory: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(
-                resetHistory = resetHistory
+                bFD_resetHistory = resetHistory
             )
         }
     }
 
     fun toggleBringFromDecksScreen() {
+        resetBringFromDecksScreen()
         _uiState.update { currentState ->
             currentState.copy(
                 isBringFromDecksScreenOpen = !_uiState.value.isBringFromDecksScreenOpen
@@ -191,10 +221,34 @@ class ImportCardsViewModel(
         }
     }
 
-    fun setImportThroughTextScreenErrorState(errorState: ImportThroughTextScreenErrorState) {
+    fun setImportThroughTextScreenErrorState(errorState: ITT_ErrorState) {
         _uiState.update { currentState ->
             currentState.copy(
-                importThroughTextScreenErrorState = errorState
+                iTT_errorState = errorState
+            )
+        }
+    }
+
+    fun selectBundle(bundle: BundleWithDecks?) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                bFD_selectedBundle = bundle
+            )
+        }
+    }
+
+    fun selectDeck(deck: Deck?) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                bFD_selectedDeck = deck
+            )
+        }
+    }
+
+    fun setImportThroughScreenFocusRequest(requested: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                iTT_focusRequested = requested
             )
         }
     }
@@ -214,9 +268,9 @@ class ImportCardsViewModel(
         val subDeckCards = mutableListOf<Card>()
 
         for (card in cards) {
-            if (!_uiState.value.excludeMastered || card.getMasteryLevel() < 1f) {
+            if (!_uiState.value.bFD_excludeMastered || card.getMasteryLevel() < 1f) {
                 subDeckCards.add(
-                    if (_uiState.value.resetHistory)
+                    if (_uiState.value.bFD_resetHistory)
                         Card(
                             questionText = card.questionText,
                             answerText = card.answerText,
@@ -239,11 +293,11 @@ class ImportCardsViewModel(
     }
 
     fun textToCards(maxCards: Int = -1, checkForErrors: Boolean = false): List<Card>? {
-        val qL = getParsedInputLines(_uiState.value.questionLines)
-        val aL = getParsedInputLines(_uiState.value.answerLines)
-        val hL = getParsedInputLines(_uiState.value.hintLines)
-        val eL = getParsedInputLines(_uiState.value.exampleLines)
-        val iL = getParsedInputLines(_uiState.value.ignoredLines)
+        val qL = getParsedInputLines(_uiState.value.iTT_questionLines)
+        val aL = getParsedInputLines(_uiState.value.iTT_answerLines)
+        val hL = getParsedInputLines(_uiState.value.iTT_hintLines)
+        val eL = getParsedInputLines(_uiState.value.iTT_exampleLines)
+        val iL = getParsedInputLines(_uiState.value.iTT_ignoredLines)
 
         val QUESTION = 1
         val ANSWER = 2
@@ -259,7 +313,7 @@ class ImportCardsViewModel(
                 QUESTION -> {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE,
+                            iTT_errorState2 = ITT_ErrorState.QUESTION_LINES_DUPLICATE,
                         )
                     }
                     true
@@ -267,7 +321,7 @@ class ImportCardsViewModel(
                 ANSWER -> {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE,
+                            iTT_errorState2 = ITT_ErrorState.ANSWER_LINES_DUPLICATE,
                         )
                     }
                     true
@@ -275,7 +329,7 @@ class ImportCardsViewModel(
                 HINT -> {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE,
+                            iTT_errorState2 = ITT_ErrorState.HINT_LINES_DUPLICATE,
                         )
                     }
                     true
@@ -283,7 +337,7 @@ class ImportCardsViewModel(
                 EXAMPLE -> {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE,
+                            iTT_errorState2 = ITT_ErrorState.EXAMPLE_LINES_DUPLICATE,
                         )
                     }
                     true
@@ -291,7 +345,7 @@ class ImportCardsViewModel(
                 IGNORED -> {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE,
+                            iTT_errorState2 = ITT_ErrorState.IGNORED_LINES_DUPLICATE,
                         )
                     }
                     true
@@ -299,7 +353,7 @@ class ImportCardsViewModel(
                 else -> {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            importThroughTextScreenErrorState2 = ImportThroughTextScreenErrorState.NO_ERROR,
+                            iTT_errorState2 = ITT_ErrorState.NO_ERROR,
                         )
                     }
                     false
@@ -313,7 +367,7 @@ class ImportCardsViewModel(
             if (checkForErrors && testError(n, QUESTION)) {
                 _uiState.update { currentState ->
                     currentState.copy(
-                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE
+                        iTT_errorState = ITT_ErrorState.QUESTION_LINES_DUPLICATE
                     )
                 }
                 return null
@@ -325,7 +379,7 @@ class ImportCardsViewModel(
             if (checkForErrors && testError(n, ANSWER)) {
                 _uiState.update { currentState ->
                     currentState.copy(
-                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE
+                        iTT_errorState = ITT_ErrorState.ANSWER_LINES_DUPLICATE
                     )
                 }
                 return null
@@ -337,7 +391,7 @@ class ImportCardsViewModel(
             if (checkForErrors && testError(n, HINT)) {
                 _uiState.update { currentState ->
                     currentState.copy(
-                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE
+                        iTT_errorState = ITT_ErrorState.HINT_LINES_DUPLICATE
                     )
                 }
                 return null
@@ -349,7 +403,7 @@ class ImportCardsViewModel(
             if (checkForErrors && testError(n, EXAMPLE)) {
                 _uiState.update { currentState ->
                     currentState.copy(
-                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE
+                        iTT_errorState = ITT_ErrorState.EXAMPLE_LINES_DUPLICATE
                     )
                 }
                 return null
@@ -361,7 +415,7 @@ class ImportCardsViewModel(
             if (checkForErrors && testError(n, IGNORED)) {
                 _uiState.update { currentState ->
                     currentState.copy(
-                        importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE
+                        iTT_errorState = ITT_ErrorState.IGNORED_LINES_DUPLICATE
                     )
                 }
                 return null
@@ -377,7 +431,7 @@ class ImportCardsViewModel(
         var hT = ""
         var eT = ""
 
-        val temp = _uiState.value.inputText.split("\n")
+        val temp = _uiState.value.iTT_inputText.split("\n")
         var numCards = 0
         for (segment in temp) {
             if (segment.isNotBlank()) {
@@ -408,7 +462,7 @@ class ImportCardsViewModel(
                     if (checkForErrors && numCards > Constants.MAX_CARDS) {
                         _uiState.update { currentState ->
                             currentState.copy(
-                                importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.TEXT_TOO_LONG
+                                iTT_errorState = ITT_ErrorState.TEXT_TOO_LONG
                             )
                         }
                         return null
@@ -422,7 +476,7 @@ class ImportCardsViewModel(
         if (i > 0 && checkForErrors) {
             _uiState.update { currentState ->
                 currentState.copy(
-                    importThroughTextScreenErrorState = ImportThroughTextScreenErrorState.TEXT_INCOMPLETE
+                    iTT_errorState = ITT_ErrorState.TEXT_INCOMPLETE
                 )
             }
             return null

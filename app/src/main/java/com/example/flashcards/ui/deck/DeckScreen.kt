@@ -41,18 +41,22 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -81,6 +85,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
+import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
@@ -98,11 +103,14 @@ fun DeckScreen (
     onImportCardsButtonClicked: (Long) -> Unit,
 ) {
 
-    viewModel.softReset()
-
     val uiState by viewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.softReset()
+    }
 
     Scaffold(
         topBar = {
@@ -221,6 +229,9 @@ fun DeckScreen (
                 }
             }
         },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
     ) { innerPadding ->
 
         val customCardEditorBar = @Composable {
@@ -235,6 +246,14 @@ fun DeckScreen (
                 numSelectedCards = uiState.numSelectedCards,
                 isCardSelectorOpen = uiState.isCardSelectorOpen,
                 onCreateButtonClicked = { onCreateCardButtonClicked(uiState.deck.deck.id) },
+                onTooManyCards = {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Card limit reached (maximum ${Constants.MAX_CARDS} cards).",
+                            withDismissAction = true,
+                        )
+                    }
+                },
                 onCardDeleteButtonClicked = { viewModel.toggleDeleteCardDialog() },
             )
         }
@@ -349,6 +368,7 @@ fun CardEditorBar(
     numSelectedCards: Int,
     isCardSelectorOpen: Boolean,
     onCreateButtonClicked: () -> Unit,
+    onTooManyCards: () -> Unit,
     onCardDeleteButtonClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -380,7 +400,12 @@ fun CardEditorBar(
             }
         },
         actions = {
-            IconButton(onClick = onCreateButtonClicked) {
+            IconButton(
+                onClick = {
+                    if (numCards < Constants.MAX_CARDS) onCreateButtonClicked()
+                    else onTooManyCards()
+                }
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Add card"
@@ -414,6 +439,7 @@ fun CardEditorBar(
                             SortType.FAVORITE -> "★"
                         },
                         fontSize = 12.sp,
+                        modifier = Modifier.width(2.dp)
                     )
                 }
             }
@@ -449,8 +475,6 @@ fun CardComponent(
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
-    Log.d("debug", "${card.isFavorite}")
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -472,7 +496,6 @@ fun CardComponent(
                     .weight(0.7f)
                     .padding(end = smallPadding)
             )
-            Log.d("debug", "$lastStudied ${card.getMasteryLevel(millisSinceStudied = lastStudied)}")
             Text(
                 text = "${Math.round(card.getMasteryLevel(millisSinceStudied = lastStudied)*100)}%",
                 fontSize = 16.sp,
@@ -528,7 +551,7 @@ fun DeckStats(
     val masteryLevel = deck.deck.masteryLevel
     val timeSinceStudied = System.currentTimeMillis() - deck.deck.dateStudied
     val days = timeSinceStudied/86400000
-    val hours = timeSinceStudied/3600000%60
+    val hours = timeSinceStudied/3600000%24
     val minutes = (timeSinceStudied/60000).coerceAtLeast(1)%60
 
     Box(
@@ -708,6 +731,7 @@ fun TipDialog(
     tip: String,
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val largePadding = dimensionResource(R.dimen.padding_large)
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -728,7 +752,7 @@ fun TipDialog(
                     .fillMaxWidth()
             ) {
                 Text(text = tip, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(mediumPadding*2))
+                Spacer(modifier = Modifier.height(largePadding))
                 Button(
                     onClick = { onDismissRequest() },
                     modifier = Modifier.size(120.dp, 40.dp)

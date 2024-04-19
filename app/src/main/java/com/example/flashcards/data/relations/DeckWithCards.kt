@@ -1,5 +1,6 @@
 package com.example.flashcards.data.relations
 
+import android.util.Log
 import androidx.room.Embedded
 import androidx.room.Junction
 import androidx.room.Relation

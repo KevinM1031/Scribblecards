@@ -34,6 +34,8 @@ class DeckViewModel(
         if (!_uiState.value.isDeckDeleted) {
             viewModelScope.launch {
                 val deck = cardsRepository.getDeckWithCards(id = _uiState.value.param)
+                deck.updateMasteryLevel()
+                cardsRepository.updateDeck(deck.deck)
                 _uiState.update { currentState ->
                     currentState.copy(
                         deck = deck,
@@ -253,22 +255,9 @@ class DeckViewModel(
 
     fun cycleCardSort() {
         val sortType = when (_uiState.value.sortType) {
-            SortType.ALPHANUMERICAL -> {
-                _uiState.value.deck.sortByMastery()
-                SortType.MASTERY
-            }
-            SortType.MASTERY -> {
-                _uiState.value.deck.sortByFavorite()
-                SortType.FAVORITE
-            }
-            SortType.FAVORITE -> {
-                if (_uiState.value.deck.deck.flipQnA) {
-                    _uiState.value.deck.sortByAnswer()
-                } else {
-                    _uiState.value.deck.sortByQuestion()
-                }
-                SortType.ALPHANUMERICAL
-            }
+            SortType.ALPHANUMERICAL -> SortType.MASTERY
+            SortType.MASTERY -> SortType.FAVORITE
+            SortType.FAVORITE -> SortType.ALPHANUMERICAL
         }
         _uiState.update { currentState ->
             currentState.copy(

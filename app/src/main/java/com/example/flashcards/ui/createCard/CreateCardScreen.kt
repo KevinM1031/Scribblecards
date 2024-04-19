@@ -2,6 +2,7 @@ package com.example.flashcards.ui.createCard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -21,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
@@ -88,87 +91,95 @@ fun CreateCardScreen (
                 },
             )
         },
-    ) { innerPadding ->
-
-        var isQuestionError by remember { mutableStateOf(false) }
-        var isAnswerError by remember { mutableStateOf(false) }
-        val scrollState = rememberScrollState()
-
-        Column(
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(innerPadding)
-        ) {
-            Spacer(modifier = Modifier.height(mediumPadding))
-            CustomTextField(
-                text = "Question",
-                value = uiState.questionTextInput,
-                onValueChange = { viewModel.setQuestionTextInput(it) },
-                label = "Question text",
-                focusManager = focusManager,
-                isError = isQuestionError,
-                modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            CustomTextField(
-                text = "Answer",
-                value = uiState.answerTextInput,
-                onValueChange = { viewModel.setAnswerTextInput(it) },
-                label = "Answer text",
-                focusManager = focusManager,
-                isError = isAnswerError,
-                modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            CustomTextField(
-                text = "Hint (optional)",
-                value = uiState.hintTextInput,
-                onValueChange = { viewModel.setHintTextInput(it) },
-                label = "Hint text",
-                focusManager = focusManager,
-                modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            CustomTextField(
-                text = "Example (optional)",
-                value = uiState.exampleTextInput,
-                onValueChange = { viewModel.setExampleTextInput(it) },
-                label = "Example text",
-                focusManager = focusManager,
-                isLast = true,
-                modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Button(
-                onClick = {
-                    var isError = false
-                    if (uiState.questionTextInput.isBlank()) {
-                        isQuestionError = true
-                        isError = true
-                    }
-                    if (uiState.answerTextInput.isBlank()) {
-                        isAnswerError = true
-                        isError = true
-                    }
-                    if (!isError) {
-                        coroutineScope.launch {
-                            viewModel.createCard()
-                            onBackButtonClicked()
+        bottomBar = {
+            BottomAppBar(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+                actions = {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                        ) {
+                            TextButton(
+                                onClick = onBackButtonClicked,
+                                modifier = Modifier.size(160.dp, 40.dp)
+                            ) { Text("Cancel") }
+                            Button(
+                                enabled = uiState.questionTextInput.isNotBlank() && uiState.answerTextInput.isNotBlank(),
+                                onClick = {
+                                    coroutineScope.launch {
+                                        viewModel.createCard()
+                                        onBackButtonClicked()
+                                    }
+                                },
+                                modifier = Modifier.size(160.dp, 40.dp)
+                            ) { Text("Create") }
                         }
                     }
-                },
+                }
+            )
+        }
+    ) { innerPadding ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(innerPadding)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .size(160.dp, 40.dp)
+                    .fillMaxSize()
+                    .padding(smallPadding)
             ) {
-                Text(
-                    text = "Create"
+                Spacer(modifier = Modifier.height(mediumPadding))
+                CustomTextField(
+                    text = "Question",
+                    value = uiState.questionTextInput,
+                    onValueChange = { viewModel.setQuestionTextInput(it) },
+                    label = "Question text",
+                    focusManager = focusManager,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
+                )
+                CustomTextField(
+                    text = "Answer",
+                    value = uiState.answerTextInput,
+                    onValueChange = { viewModel.setAnswerTextInput(it) },
+                    label = "Answer text",
+                    focusManager = focusManager,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
+                )
+                CustomTextField(
+                    text = "Hint (optional)",
+                    value = uiState.hintTextInput,
+                    onValueChange = { viewModel.setHintTextInput(it) },
+                    label = "Hint text",
+                    focusManager = focusManager,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
+                )
+                CustomTextField(
+                    text = "Example (optional)",
+                    value = uiState.exampleTextInput,
+                    onValueChange = { viewModel.setExampleTextInput(it) },
+                    label = "Example text",
+                    focusManager = focusManager,
+                    isLast = true,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
                 )
             }
-            Spacer(modifier = Modifier.height(mediumPadding))
         }
     }
 }

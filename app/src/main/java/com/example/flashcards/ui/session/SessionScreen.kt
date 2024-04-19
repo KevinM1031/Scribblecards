@@ -284,6 +284,7 @@ fun QuitDialog(
     onQuitButtonClicked: () -> Unit,
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val largePadding = dimensionResource(R.dimen.padding_large)
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -316,7 +317,7 @@ fun QuitDialog(
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
-                Spacer(modifier = Modifier.height(mediumPadding*2))
+                Spacer(modifier = Modifier.height(largePadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -350,6 +351,7 @@ fun RestartDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        val largePadding = dimensionResource(R.dimen.padding_large)
 
         Card(
             colors = CardDefaults.cardColors(
@@ -378,7 +380,7 @@ fun RestartDialog(
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
-                Spacer(modifier = Modifier.height(mediumPadding*2))
+                Spacer(modifier = Modifier.height(largePadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1142,6 +1144,7 @@ fun TipDialog(
     tip: String,
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val largePadding = dimensionResource(R.dimen.padding_large)
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -1163,7 +1166,7 @@ fun TipDialog(
                     .fillMaxWidth()
             ) {
                 Text(text = tip, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(mediumPadding*2))
+                Spacer(modifier = Modifier.height(largePadding))
                 Button(
                     onClick = { onDismissRequest() },
                     modifier = Modifier.size(120.dp, 40.dp)

@@ -46,6 +46,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -83,12 +85,13 @@ import androidx.compose.ui.window.Dialog
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
+import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.ui.AppViewModelProvider
+import com.example.flashcards.ui.deck.ITT_ErrorState
 import com.example.flashcards.ui.deck.ImportCardsViewModel
-import com.example.flashcards.ui.deck.ImportThroughTextScreenErrorState
 import com.example.flashcards.ui.deck.SubDeck
 import com.example.flashcards.ui.deck.SubDeckType
 import kotlinx.coroutines.launch
@@ -103,6 +106,7 @@ fun ImportCardsScreen (
     val uiState by viewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -152,23 +156,98 @@ fun ImportCardsScreen (
             )
         },
         bottomBar = {
-            if (!uiState.isBringFromDecksScreenOpen && !uiState.isImportThroughTextScreenOpen && !uiState.isUploadCsvFileScreenOpen) {
-                Column() {
-                    BottomAppBar(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        actions = {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                            ) {
+            Column {
+                BottomAppBar(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    actions = {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                        ) {
+
+                            if (uiState.isBringFromDecksScreenOpen) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ) {
+                                    TextButton(
+                                        onClick = { viewModel.toggleBringFromDecksScreen() },
+                                        modifier = Modifier.size(160.dp, 40.dp)
+                                    ) { Text("Cancel") }
+                                    Button(
+                                        enabled = uiState.bFD_selectedDeck != null,
+                                        onClick = {
+                                            if (uiState.bFD_selectedDeck != null) {
+                                                coroutineScope.launch {
+                                                    val cards =
+                                                        viewModel.getAllCardsFromDeck(uiState.bFD_selectedDeck!!)
+                                                    viewModel.toggleBringFromDecksScreen()
+                                                    viewModel.addSubDeck(
+                                                        SubDeck(
+                                                            name = "Import from \"${uiState.bFD_selectedDeck!!.name}\" (${cards.size} " + if (cards.size == 1) "card)" else "cards)",
+                                                            type = SubDeckType.DEFAULT,
+                                                            cards = cards,
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.size(160.dp, 40.dp)
+                                    ) { Text("Import") }
+                                }
+
+                            } else if (uiState.isImportThroughTextScreenOpen) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ) {
+                                    TextButton(
+                                        onClick = { viewModel.toggleImportThroughTextScreen() },
+                                        modifier = Modifier.size(160.dp, 40.dp)
+                                    ) { Text("Cancel") }
+                                    Button(
+                                        enabled = uiState.iTT_inputText.isNotBlank() && uiState.iTT_questionLines.isNotBlank() && uiState.iTT_answerLines.isNotBlank(),
+                                        onClick = {
+                                            viewModel.setImportThroughScreenFocusRequest(false)
+                                            val cards = viewModel.textToCards(checkForErrors = true)
+                                            if (cards != null) {
+                                                viewModel.toggleImportThroughTextScreen()
+                                                viewModel.addSubDeck(
+                                                    SubDeck(
+                                                        name = "Import from text (${cards.size} cards)",
+                                                        type = SubDeckType.TEXT,
+                                                        cards = cards,
+                                                    )
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier.size(160.dp, 40.dp)
+                                    ) { Text("Import") }
+                                }
+                            } else if (uiState.isUploadCsvFileScreenOpen) {
+
+                            } else {
                                 Button(
                                     onClick = {
-                                        coroutineScope.launch {
-                                            viewModel.importAll()
-                                            viewModel.reset()
-                                            onBackButtonClicked()
+                                        if (viewModel.getTotalNumCards() <= Constants.MAX_CARDS) {
+                                            coroutineScope.launch {
+                                                viewModel.importAll()
+                                                viewModel.reset()
+                                                onBackButtonClicked()
+                                            }
+                                        } else {
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    message = "Card limit reached (maximum ${Constants.MAX_CARDS} cards).",
+                                                    withDismissAction = true,
+                                                )
+                                            }
                                         }
                                     },
                                     enabled = uiState.subDecks.isNotEmpty(),
@@ -176,16 +255,19 @@ fun ImportCardsScreen (
                                         .width(160.dp),
                                 ) {
                                     Text(
-                                        text = "Import all",
+                                        text = "Create cards",
                                         textAlign = TextAlign.Center,
                                         fontSize = 16.sp,
                                     )
                                 }
                             }
                         }
-                    )
-                }
+                    }
+                )
             }
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         },
     ) { innerPadding ->
 
@@ -198,46 +280,22 @@ fun ImportCardsScreen (
                 BackHandler { viewModel.toggleBringFromDecksScreen() }
 
                 BringFromDecksScreen(
-                    onDismissRequest = { viewModel.toggleBringFromDecksScreen() },
                     bundles = uiState.bundles,
                     decks = uiState.decks,
-                    excludeMastered = uiState.excludeMastered,
-                    resetHistory = uiState.resetHistory,
-                    onSelectClicked = {
-                        coroutineScope.launch {
-                            val cards = viewModel.getAllCardsFromDeck(it)
-                            viewModel.toggleBringFromDecksScreen()
-                            viewModel.addSubDeck(
-                                SubDeck(
-                                    name = "Import from \"${it.name}\" (${cards.size} " + if (cards.size == 1) "card)" else "cards)",
-                                    type = SubDeckType.DEFAULT,
-                                    cards = cards,
-                                )
-                            )
-                        }
-                    },
+                    excludeMastered = uiState.bFD_excludeMastered,
+                    resetHistory = uiState.bFD_resetHistory,
                     setExcludeMastered = { viewModel.setExcludeMastered(it) },
                     setResetHistory = { viewModel.setResetHistory(it) },
+                    selectedBundle = uiState.bFD_selectedBundle,
+                    selectedDeck = uiState.bFD_selectedDeck,
+                    selectBundle = { viewModel.selectBundle(it) },
+                    selectDeck = { viewModel.selectDeck(it) },
                 )
 
             } else if (uiState.isImportThroughTextScreenOpen) {
                 BackHandler { viewModel.toggleImportThroughTextScreen() }
 
                 ImportThroughTextScreen(
-                    onDismissRequest = { viewModel.toggleImportThroughTextScreen() },
-                    getCardFromText = { viewModel.textToCards(checkForErrors = true) },
-                    onCreateClicked = {
-                        if (it != null) {
-                            viewModel.toggleImportThroughTextScreen()
-                            viewModel.addSubDeck(
-                                SubDeck(
-                                    name = "Import from text (${it.size} cards)",
-                                    type = SubDeckType.TEXT,
-                                    cards = it,
-                                )
-                            )
-                        }
-                    },
                     getPreviewCards = { viewModel.textToCards(maxCards = 2) },
                     setInputText = { viewModel.setInputText(it) },
                     setQuestionLines = { viewModel.setQuestionLines(it) },
@@ -245,15 +303,23 @@ fun ImportCardsScreen (
                     setHintLines = { viewModel.setHintLines(it) },
                     setExampleLines = { viewModel.setExampleLines(it) },
                     setIgnoredLines = { viewModel.setIgnoredLines(it) },
-                    inputText = uiState.inputText,
-                    questionLines = uiState.questionLines,
-                    answerLines = uiState.answerLines,
-                    hintLines = uiState.hintLines,
-                    exampleLines = uiState.exampleLines,
-                    ignoredLines = uiState.ignoredLines,
+                    inputText = uiState.iTT_inputText,
+                    questionLines = uiState.iTT_questionLines,
+                    answerLines = uiState.iTT_answerLines,
+                    hintLines = uiState.iTT_hintLines,
+                    exampleLines = uiState.iTT_exampleLines,
+                    ignoredLines = uiState.iTT_ignoredLines,
                     focusManager = focusManager,
-                    errorState = uiState.importThroughTextScreenErrorState,
-                    errorState2 = uiState.importThroughTextScreenErrorState2,
+                    isFocusRequested = uiState.iTT_focusRequested,
+                    setFocusRequest = { viewModel.setImportThroughScreenFocusRequest(it) },
+                    focusRequesterT = uiState.iTT_focusRequesterT,
+                    focusRequesterQ = uiState.iTT_focusRequesterQ,
+                    focusRequesterA = uiState.iTT_focusRequesterA,
+                    focusRequesterH = uiState.iTT_focusRequesterH,
+                    focusRequesterE = uiState.iTT_focusRequesterE,
+                    focusRequesterI = uiState.iTT_focusRequesterI,
+                    errorState = uiState.iTT_errorState,
+                    errorState2 = uiState.iTT_errorState2,
                 )
 
             } else {
@@ -415,9 +481,6 @@ fun ImportCardsScreen (
 
 @Composable
 fun ImportThroughTextScreen(
-    onDismissRequest: () -> Unit,
-    getCardFromText: () -> List<Card>?,
-    onCreateClicked: (List<Card>?) -> Unit,
     getPreviewCards: () -> List<Card>?,
     setInputText: (String) -> Unit,
     setQuestionLines: (String) -> Unit,
@@ -432,17 +495,17 @@ fun ImportThroughTextScreen(
     exampleLines: String?,
     ignoredLines: String?,
     focusManager: FocusManager,
-    errorState: ImportThroughTextScreenErrorState,
-    errorState2: ImportThroughTextScreenErrorState,
+    isFocusRequested: Boolean,
+    focusRequesterT: FocusRequester,
+    focusRequesterQ: FocusRequester,
+    focusRequesterA: FocusRequester,
+    focusRequesterH: FocusRequester,
+    focusRequesterE: FocusRequester,
+    focusRequesterI: FocusRequester,
+    setFocusRequest: (Boolean) -> Unit,
+    errorState: ITT_ErrorState,
+    errorState2: ITT_ErrorState,
     ) {
-
-    var focusRequested by remember { mutableStateOf(false) }
-    val focusRequesterT = remember { FocusRequester() }
-    val focusRequesterQ = remember { FocusRequester() }
-    val focusRequesterA = remember { FocusRequester() }
-    val focusRequesterH = remember { FocusRequester() }
-    val focusRequesterE = remember { FocusRequester() }
-    val focusRequesterI = remember { FocusRequester() }
 
     val inputTextUiNumLines = 8
 
@@ -459,521 +522,478 @@ fun ImportThroughTextScreen(
     }
 
     Column(
-        verticalArrangement = Arrangement.SpaceEvenly,
-        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .fillMaxSize()
-            .padding(top = smallPadding)
             .verticalScroll(rememberScrollState())
-
+            .fillMaxSize()
     ) {
-        CustomTextField(
-            text = "Paste text:",
-            value = inputText ?: "",
-            onValueChange = { setInputText(it); updatePreviews() },
-            label = "Copy and paste text directly from a table, list, etc.",
-            isError = errorState.isTextError,
-            errorMessage = when (errorState) {
-                ImportThroughTextScreenErrorState.TEXT_EMPTY -> "this field is required."
-                ImportThroughTextScreenErrorState.TEXT_INCOMPLETE -> "number of questions and answers do not match."
-                ImportThroughTextScreenErrorState.TEXT_TOO_LONG -> "this text is too long."
-                else -> "what have you done??"
-            },
-            minLines = inputTextUiNumLines,
-            maxLines = inputTextUiNumLines,
-            focusManager = focusManager,
+        Column(
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .padding(vertical = smallPadding, horizontal = mediumPadding)
-                .focusRequester(focusRequesterT)
-        )
-        CustomTextField(
-            text = "Question text lines:",
-            value = questionLines ?: "",
-            onValueChange = { setQuestionLines(it); updatePreviews() },
-            label = "Split with \',\' and define ranges with \'-\'",
-            isError = errorState.isQuestionLineError || errorState2.isQuestionLineError,
-            errorMessage =
-                if (errorState == ImportThroughTextScreenErrorState.QUESTION_LINES_EMPTY) "this field is required."
-                else if (errorState == ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE
-                    || errorState2 == ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE) "lines cannot overlap."
-                else "what have you done??",
-            maxLines = 1,
-            focusManager = focusManager,
-            modifier = Modifier
-                .padding(vertical = smallPadding, horizontal = mediumPadding)
-                .focusRequester(focusRequesterQ)
-        )
-        CustomTextField(
-            text = "Answer text lines:",
-            value = answerLines ?: "",
-            onValueChange = { setAnswerLines(it); updatePreviews() },
-            label = "Split with \',\' and define ranges with \'-\'",
-            isError = errorState.isAnswerLineError || errorState2.isAnswerLineError,
-            errorMessage =
-                if (errorState == ImportThroughTextScreenErrorState.ANSWER_LINES_EMPTY) "this field is required."
-                else if (errorState == ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE
-                    || errorState2 == ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE) "lines cannot overlap."
-                else "what have you done??",
-            maxLines = 1,
-            focusManager = focusManager,
-            modifier = Modifier
-                .padding(vertical = smallPadding, horizontal = mediumPadding)
-                .focusRequester(focusRequesterA)
-        )
-        CustomTextField(
-            text = "Hint text lines (optional):",
-            value = hintLines ?: "",
-            onValueChange = { setHintLines(it); updatePreviews() },
-            label = "Split with \',\' and define ranges with \'-\'",
-            isError = errorState.isHintLineError || errorState2.isHintLineError,
-            errorMessage =
-                if (errorState == ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE
-                    || errorState2 == ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE) "lines cannot overlap."
-                else "what have you done??",
-            maxLines = 1,
-            focusManager = focusManager,
-            modifier = Modifier
-                .padding(vertical = smallPadding, horizontal = mediumPadding)
-                .focusRequester(focusRequesterH)
-        )
-        CustomTextField(
-            text = "Example text lines (optional):",
-            value = exampleLines ?: "",
-            onValueChange = { setExampleLines(it); updatePreviews() },
-            label = "Split with \',\' and define ranges with \'-\'",
-            isError = errorState.isExampleLineError || errorState2.isExampleLineError,
-            errorMessage =
-                if (errorState == ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE
-                    || errorState2 == ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE) "lines cannot overlap."
-                else "what have you done??",
-            maxLines = 1,
-            focusManager = focusManager,
-            modifier = Modifier
-                .padding(vertical = smallPadding, horizontal = mediumPadding)
-                .focusRequester(focusRequesterE)
-        )
-        CustomTextField(
-            text = "Lines to ignore (optional):",
-            value = ignoredLines ?: "",
-            onValueChange = { setIgnoredLines(it); updatePreviews() },
-            label = "Split with \',\' and define ranges with \'-\'",
-            isError = errorState.isIgnoredLineError || errorState2.isIgnoredLineError,
-            errorMessage =
-                if (errorState == ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE
-                    || errorState2 == ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE) "lines cannot overlap."
-                else "what have you done??",
-            maxLines = 1,
-            focusManager = focusManager,
-            isLast = true,
-            modifier = Modifier
-                .padding(vertical = smallPadding, horizontal = mediumPadding)
-                .focusRequester(focusRequesterI)
-        )
+                .fillMaxSize()
+                .padding(smallPadding)
 
-        Spacer(modifier = Modifier.height(smallPadding))
-
-        Column {
-            Text(
-                text = "Preview (first 2 cards):",
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
+        ) {
+            CustomTextField(
+                text = "Copied text",
+                value = inputText ?: "",
+                onValueChange = { setInputText(it); updatePreviews() },
+                label = "Copy and paste text directly from a table, list, etc.",
+                isError = errorState.isTextError,
+                errorMessage = when (errorState) {
+                    ITT_ErrorState.TEXT_INCOMPLETE -> "number of questions and answers do not match."
+                    ITT_ErrorState.TEXT_TOO_LONG -> "this text is too long."
+                    else -> "what have you done??"
+                },
+                minLines = inputTextUiNumLines,
+                maxLines = inputTextUiNumLines,
+                focusManager = focusManager,
                 modifier = Modifier
-                    .padding(horizontal = mediumPadding)
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterT)
+            )
+            CustomTextField(
+                text = "Question text lines",
+                value = questionLines ?: "",
+                onValueChange = { setQuestionLines(it); updatePreviews() },
+                label = "Split with \',\' and define ranges with \'-\'",
+                isError = errorState.isQuestionLineError || errorState2.isQuestionLineError,
+                errorMessage =
+                if (errorState == ITT_ErrorState.QUESTION_LINES_DUPLICATE || errorState2 == ITT_ErrorState.QUESTION_LINES_DUPLICATE)
+                    "lines cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterQ)
+            )
+            CustomTextField(
+                text = "Answer text lines",
+                value = answerLines ?: "",
+                onValueChange = { setAnswerLines(it); updatePreviews() },
+                label = "Split with \',\' and define ranges with \'-\'",
+                isError = errorState.isAnswerLineError || errorState2.isAnswerLineError,
+                errorMessage =
+                if (errorState == ITT_ErrorState.ANSWER_LINES_DUPLICATE || errorState2 == ITT_ErrorState.ANSWER_LINES_DUPLICATE)
+                    "lines cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterA)
+            )
+            CustomTextField(
+                text = "Hint text lines (optional)",
+                value = hintLines ?: "",
+                onValueChange = { setHintLines(it); updatePreviews() },
+                label = "Split with \',\' and define ranges with \'-\'",
+                isError = errorState.isHintLineError || errorState2.isHintLineError,
+                errorMessage =
+                if (errorState == ITT_ErrorState.HINT_LINES_DUPLICATE || errorState2 == ITT_ErrorState.HINT_LINES_DUPLICATE)
+                    "lines cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterH)
+            )
+            CustomTextField(
+                text = "Example text lines (optional)",
+                value = exampleLines ?: "",
+                onValueChange = { setExampleLines(it); updatePreviews() },
+                label = "Split with \',\' and define ranges with \'-\'",
+                isError = errorState.isExampleLineError || errorState2.isExampleLineError,
+                errorMessage =
+                if (errorState == ITT_ErrorState.EXAMPLE_LINES_DUPLICATE || errorState2 == ITT_ErrorState.EXAMPLE_LINES_DUPLICATE)
+                    "lines cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterE)
+            )
+            CustomTextField(
+                text = "Lines to ignore (optional)",
+                value = ignoredLines ?: "",
+                onValueChange = { setIgnoredLines(it); updatePreviews() },
+                label = "Split with \',\' and define ranges with \'-\'",
+                isError = errorState.isIgnoredLineError || errorState2.isIgnoredLineError,
+                errorMessage =
+                if (errorState == ITT_ErrorState.IGNORED_LINES_DUPLICATE || errorState2 == ITT_ErrorState.IGNORED_LINES_DUPLICATE)
+                    "lines cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                isLast = true,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterI)
             )
 
-            Row {
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(mediumPadding)
-                    ) {
+            Spacer(modifier = Modifier.height(smallPadding))
 
-                        Text(text = "Question:", fontSize = 14.sp,)
-                        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
+            Column {
+                Text(
+                    text = "Preview (first 2 cards)",
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                )
+
+                Row {
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(mediumPadding)
                         ) {
-                            Text(
-                                text = previewCard1?.questionText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(smallPadding))
-                        Text(text = "Answer:", fontSize = 14.sp,)
-                        Card(
-                            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = previewCard1?.answerText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(smallPadding))
-                        Text(text = "Hint:", fontSize = 14.sp,)
-                        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = previewCard1?.hintText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(smallPadding))
-                        Text(text = "Example:", fontSize = 14.sp,)
-                        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = previewCard1?.exampleText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
+
+                            Text(text = "Question", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard1?.questionText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Answer", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard1?.answerText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Hint", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard1?.hintText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Example", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard1?.exampleText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.width(smallPadding))
+                    Spacer(modifier = Modifier.width(smallPadding))
 
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                ) {
-                    Column(
+                    Card(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(mediumPadding)
+                            .weight(1f)
                     ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(mediumPadding)
+                        ) {
 
-                        Text(text = "Question:", fontSize = 14.sp,)
-                        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = previewCard2?.questionText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(smallPadding))
-                        Text(text = "Answer:", fontSize = 14.sp,)
-                        Card(
-                            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = previewCard2?.answerText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(smallPadding))
-                        Text(text = "Hint:", fontSize = 14.sp,)
-                        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = previewCard2?.hintText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(smallPadding))
-                        Text(text = "Example:", fontSize = 14.sp,)
-                        Card(colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = previewCard2?.exampleText ?: "",
-                                fontSize = 16.sp,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = smallPadding)
-                            )
+                            Text(text = "Question", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard2?.questionText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Answer", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard2?.answerText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Hint", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard2?.hintText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Example", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = previewCard2?.exampleText ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(mediumPadding))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(mediumPadding)
-        ) {
-            TextButton(
-                onClick = onDismissRequest,
-                modifier = Modifier.size(160.dp, 40.dp)
-            ) { Text("Cancel") }
-            Button(
-                onClick = {
-                    focusRequested = false
-                    if (inputText.isNullOrBlank()) {
-                        focusRequesterT.requestFocus()
-                    } else if (questionLines.isNullOrBlank()) {
-                        focusRequesterQ.requestFocus()
-                    } else if (answerLines.isNullOrBlank()) {
-                        focusRequesterA.requestFocus()
-                    } else {
-                        val cards = getCardFromText()
-                        onCreateClicked(cards)
-                    }
-                },
-                modifier = Modifier.size(160.dp, 40.dp)
-            ) { Text("Create") }
+        if (!isFocusRequested) {
+            when (errorState) {
+                ITT_ErrorState.TEXT_INCOMPLETE -> focusRequesterT.requestFocus()
+                ITT_ErrorState.TEXT_TOO_LONG -> focusRequesterT.requestFocus()
+                ITT_ErrorState.QUESTION_LINES_DUPLICATE -> focusRequesterQ.requestFocus()
+                ITT_ErrorState.ANSWER_LINES_DUPLICATE -> focusRequesterA.requestFocus()
+                ITT_ErrorState.HINT_LINES_DUPLICATE -> focusRequesterH.requestFocus()
+                ITT_ErrorState.EXAMPLE_LINES_DUPLICATE -> focusRequesterE.requestFocus()
+                ITT_ErrorState.IGNORED_LINES_DUPLICATE -> focusRequesterI.requestFocus()
+                else -> {}
+            }
+            setFocusRequest(true)
         }
-    }
-
-    if (!focusRequested) {
-        when (errorState) {
-            ImportThroughTextScreenErrorState.TEXT_EMPTY -> focusRequesterT.requestFocus()
-            ImportThroughTextScreenErrorState.TEXT_INCOMPLETE -> focusRequesterT.requestFocus()
-            ImportThroughTextScreenErrorState.TEXT_TOO_LONG -> focusRequesterT.requestFocus()
-            ImportThroughTextScreenErrorState.QUESTION_LINES_EMPTY -> focusRequesterQ.requestFocus()
-            ImportThroughTextScreenErrorState.QUESTION_LINES_DUPLICATE -> focusRequesterQ.requestFocus()
-            ImportThroughTextScreenErrorState.ANSWER_LINES_EMPTY -> focusRequesterA.requestFocus()
-            ImportThroughTextScreenErrorState.ANSWER_LINES_DUPLICATE -> focusRequesterA.requestFocus()
-            ImportThroughTextScreenErrorState.HINT_LINES_DUPLICATE -> focusRequesterH.requestFocus()
-            ImportThroughTextScreenErrorState.EXAMPLE_LINES_DUPLICATE -> focusRequesterE.requestFocus()
-            ImportThroughTextScreenErrorState.IGNORED_LINES_DUPLICATE -> focusRequesterI.requestFocus()
-            else -> {}
-        }
-        focusRequested = true
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BringFromDecksScreen(
-    onDismissRequest: () -> Unit,
     bundles: List<BundleWithDecks>,
     decks: List<Deck>,
     excludeMastered: Boolean,
     resetHistory: Boolean,
-    onSelectClicked: (Deck) -> Unit,
     setExcludeMastered: (Boolean) -> Unit,
     setResetHistory: (Boolean) -> Unit,
-    ) {
+    selectedBundle: BundleWithDecks?,
+    selectedDeck: Deck?,
+    selectBundle: (BundleWithDecks?) -> Unit,
+    selectDeck: (Deck?) -> Unit,
+) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
     var dropdownMenuWidth by remember { mutableIntStateOf(0) }
-
     var dropdownMenuState by remember { mutableStateOf(0) }
-    var selectedBundle by remember { mutableStateOf<BundleWithDecks?>(null) }
-    var selectedDeck by remember { mutableStateOf<Deck?>(null) }
+
 
     Column(
-        verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .fillMaxSize()
             .verticalScroll(rememberScrollState())
-
+            .fillMaxSize()
     ) {
-        Text(
-            text = "Choose deck:",
-            fontSize = 24.sp,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(modifier = Modifier.height(mediumPadding))
         Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(86.dp)
+                .fillMaxSize()
+                .padding(smallPadding)
+
         ) {
-            Text(
-                text = "Bundle (optional)",
-                fontSize = 16.sp,
-            )
-            Spacer(modifier = Modifier.height(smallPadding))
-            Card(
+
+            Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .onGloballyPositioned { coordinates ->
-                        dropdownMenuWidth = coordinates.size.width
-                    }
-                    .combinedClickable(
-                        onClick = { dropdownMenuState = 1 },
-                    )
+                    .fillMaxWidth()
+                    .height(86.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = mediumPadding)
-                ) {
-                    Text(
-                        text = selectedBundle?.bundle?.name ?: "None"
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = if (dropdownMenuState == 1) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Expand"
-                    )
-                }
-            }
-            DropdownMenu(
-                expanded = dropdownMenuState == 1,
-                onDismissRequest = { dropdownMenuState = 0 },
-                modifier = Modifier
-                    .width(with(LocalDensity.current) { dropdownMenuWidth.toDp() })
-                    .heightIn(0.dp, 240.dp)
-            ) {
-                DropdownMenuItem(
-                    text = { Text(text = "None") },
-                    onClick = {
-                        if (selectedBundle != null) selectedDeck = null
-                        selectedBundle = null
-                        dropdownMenuState = 0
-                    },
+                Text(
+                    text = "Bundle (optional)",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = smallPadding)
                 )
-                for (bundle in bundles) {
-                    DropdownMenuItem(
-                        text = { Text(text = bundle.bundle.name) },
-                        onClick = { selectedBundle = bundle; dropdownMenuState = 0 },
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(mediumPadding))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(86.dp)
-        ) {
-            Text(
-                text = "Deck",
-                fontSize = 16.sp,
-            )
-            Spacer(modifier = Modifier.height(smallPadding))
-            Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .combinedClickable(
-                        onClick = { dropdownMenuState = 2 },
-                    )
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Card(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = mediumPadding)
-                ) {
-                    Text(
-                        text = selectedDeck?.name ?: "None"
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = if (dropdownMenuState == 2) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Expand"
-                    )
-                }
-            }
-            DropdownMenu(
-                expanded = dropdownMenuState == 2,
-                onDismissRequest = { dropdownMenuState = 0 },
-                modifier = Modifier
-                    .width(with(LocalDensity.current) { dropdownMenuWidth.toDp() })
-                    .heightIn(0.dp, 240.dp)
-            ) {
-                var n = 0
-                for (deck in decks) {
-                    if (deck.bundleId == (selectedBundle?.bundle?.id ?: -1)) {
-                        DropdownMenuItem(
-                            text = { Text(text = deck.name) },
-                            onClick = { selectedDeck = deck; dropdownMenuState = 0 },
+                        .onGloballyPositioned { coordinates ->
+                            dropdownMenuWidth = coordinates.size.width
+                        }
+                        .combinedClickable(
+                            onClick = { dropdownMenuState = 1 },
                         )
-                        n++
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = mediumPadding)
+                    ) {
+                        Text(
+                            text = selectedBundle?.bundle?.name ?: "None"
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = if (dropdownMenuState == 1) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Expand"
+                        )
                     }
                 }
-                if (n == 0) {
+                Spacer(modifier = Modifier.height(smallPadding))
+                DropdownMenu(
+                    expanded = dropdownMenuState == 1,
+                    onDismissRequest = { dropdownMenuState = 0 },
+                    modifier = Modifier
+                        .width(with(LocalDensity.current) { dropdownMenuWidth.toDp() })
+                        .heightIn(0.dp, 240.dp)
+                ) {
                     DropdownMenuItem(
                         text = { Text(text = "None") },
                         onClick = {
-                            selectedDeck = null
+                            if (selectedBundle != null) selectDeck(null)
+                            selectBundle(null)
                             dropdownMenuState = 0
                         },
                     )
+                    for (bundle in bundles) {
+                        DropdownMenuItem(
+                            text = { Text(text = bundle.bundle.name) },
+                            onClick = { selectBundle(bundle); dropdownMenuState = 0 },
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Switch(
-                checked = excludeMastered,
-                onCheckedChange = { setExcludeMastered(it) },
-            )
-            Spacer(modifier = Modifier.width(mediumPadding))
-            Text(
-                text = "Exclude mastered cards",
-                fontSize = 16.sp,
-            )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Switch(
-                checked = resetHistory,
-                onCheckedChange = { setResetHistory(it) },
-            )
-            Spacer(modifier = Modifier.width(mediumPadding))
-            Text(
-                text = "Clear history",
-                fontSize = 16.sp,
-            )
-        }
-        Spacer(modifier = Modifier.weight(1f))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            TextButton(
-                onClick = onDismissRequest
-            ) { Text("Cancel") }
-            Button(
-                enabled = selectedDeck != null,
-                onClick = {
-                    onSelectClicked(selectedDeck!!)
+            Spacer(modifier = Modifier.height(smallPadding))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(86.dp)
+            ) {
+                Text(
+                    text = "Deck",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = smallPadding)
+                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .combinedClickable(
+                            onClick = { dropdownMenuState = 2 },
+                        )
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = mediumPadding)
+                    ) {
+                        Text(
+                            text = selectedDeck?.name ?: "None"
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = if (dropdownMenuState == 2) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Expand"
+                        )
+                    }
                 }
-            ) { Text("Select") }
+                DropdownMenu(
+                    expanded = dropdownMenuState == 2,
+                    onDismissRequest = { dropdownMenuState = 0 },
+                    modifier = Modifier
+                        .width(with(LocalDensity.current) { dropdownMenuWidth.toDp() })
+                        .heightIn(0.dp, 240.dp)
+                ) {
+                    var n = 0
+                    for (deck in decks) {
+                        if (deck.bundleId == (selectedBundle?.bundle?.id ?: -1)) {
+                            DropdownMenuItem(
+                                text = { Text(text = deck.name) },
+                                onClick = { selectDeck(deck); dropdownMenuState = 0 },
+                            )
+                            n++
+                        }
+                    }
+                    if (n == 0) {
+                        DropdownMenuItem(
+                            text = { Text(text = "None") },
+                            onClick = {
+                                selectDeck(null)
+                                dropdownMenuState = 0
+                            },
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(mediumPadding))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Switch(
+                    checked = excludeMastered,
+                    onCheckedChange = { setExcludeMastered(it) },
+                )
+                Spacer(modifier = Modifier.width(mediumPadding))
+                Text(
+                    text = "Exclude mastered cards",
+                    fontSize = 16.sp,
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Switch(
+                    checked = resetHistory,
+                    onCheckedChange = { setResetHistory(it) },
+                )
+                Spacer(modifier = Modifier.width(mediumPadding))
+                Text(
+                    text = "Clear history",
+                    fontSize = 16.sp,
+                )
+            }
         }
     }
 }
@@ -984,6 +1004,7 @@ fun TipDialog(
     tip: String,
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val largePadding = dimensionResource(R.dimen.padding_large)
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -1005,7 +1026,7 @@ fun TipDialog(
                     .fillMaxWidth()
             ) {
                 Text(text = tip, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(mediumPadding*2))
+                Spacer(modifier = Modifier.height(largePadding))
                 Button(
                     onClick = { onDismissRequest() },
                     modifier = Modifier.size(120.dp, 40.dp)

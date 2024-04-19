@@ -32,6 +32,7 @@ class EditCardViewModel(
                     answerTextInput = card.answerText,
                     hintTextInput = card.hintText ?: "",
                     exampleTextInput = card.exampleText ?: "",
+                    clearCardHistory = false,
                 )
             }
         }
@@ -48,6 +49,14 @@ class EditCardViewModel(
         _uiState.value.card.exampleText = _uiState.value.exampleTextInput.trim()
         _uiState.value.card.deselect()
         cardsRepository.updateCard(_uiState.value.card)
+    }
+
+    fun setClearCardHistory(clearCardHistory: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                clearCardHistory = clearCardHistory,
+            )
+        }
     }
 
     fun setQuestionTextInput(text: String) {

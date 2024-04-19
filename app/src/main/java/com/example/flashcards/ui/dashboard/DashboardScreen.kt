@@ -1,6 +1,7 @@
 package com.example.flashcards.ui.dashboard
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -48,11 +49,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -91,11 +95,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
+import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.ui.AppViewModelProvider
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private const val BOX_SIZE_DP = 110
 private const val BOX_SIZE_IN_BUNDLE_DP = 100
@@ -107,12 +114,14 @@ fun DashboardScreen(
     onBackButtonClicked: () -> Unit,
 ) {
 
-    viewModel.softReset()
-
+    LaunchedEffect(Unit) {
+        viewModel.softReset()
+    }
     val uiState by viewModel.uiState.collectAsState()
     val isBundleOpen = viewModel.isBundleOpen()
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -139,7 +148,7 @@ fun DashboardScreen(
                     BundleTopAppBar(
                         onBackButtonClicked = { viewModel.requestCloseBundleAnim() },
                         onEditBundleNameButtonClicked = { viewModel.openEditBundleNameDialog() },
-                        title = viewModel.getBundle(uiState.currentBundleIndex!!).name,
+                        title = viewModel.getBundle(uiState.currentBundleIndex!!).bundle.name,
                     )
                 }
 
@@ -156,10 +165,28 @@ fun DashboardScreen(
                     isCreateOptionsAnimRequested = uiState.isCreateOptionsCloseAnimRequested,
                     openBundleCreator = { viewModel.openBundleCreator() },
                     openDeckCreator = { viewModel.openDeckCreatorDialog() },
+                    onTooManyDecks = {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Deck limit reached (maximum ${Constants.MAX_DECKS} decks).",
+                                withDismissAction = true,
+                            )
+                        }
+                    },
+                    getNumDecks = {
+                        var n = uiState.decks.size
+                        for (bundle in uiState.bundles) {
+                            n += bundle.decks.size
+                        }
+                        n
+                    },
                     toggleCreateOptions = { viewModel.toggleCreateOptions() },
                     requestCloseCreateOptions = { viewModel.requestCloseCreateOptionsAnim() },
                 )
             }
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         },
     ) { innerPadding ->
 
@@ -311,7 +338,7 @@ fun CardsList(
 
     onBundleOpened: (Int) -> Unit,
     onBundleSelected: (Int) -> Unit,
-    getBundle: (Int) -> Bundle,
+    getBundle: (Int) -> BundleWithDecks,
     numBundles: Int,
 
     moveDeckToBundle: (Int, Int) -> Unit,
@@ -351,7 +378,9 @@ fun CardsList(
         LazyVerticalGrid(
             state = lazyGridState,
             columns = GridCells.Adaptive(minSize = (cardIconSize).dp),
-            modifier = Modifier.fillMaxSize().padding(padding)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
 
             items(numBundles) { i ->
@@ -486,7 +515,7 @@ fun DraggableComposable(
     getDeck: ((Int) -> Deck)? = null,
     onBundleOpened: ((Int) -> Unit)? = null,
     onBundleSelected: ((Int) -> Unit)? = null,
-    getBundle: ((Int) -> Bundle)? = null,
+    getBundle: ((Int) -> BundleWithDecks)? = null,
     isBundleCreatorOpen: Boolean,
     isRemoveDeckFromBundleUiOpen: Boolean = false,
     isBundle: Boolean,
@@ -497,6 +526,7 @@ fun DraggableComposable(
     isHighlighted: Boolean = false,
     isClickEnabled: Boolean = true,
     isDeckInsideBundle: Boolean = false,
+    alpha: Float = 1f,
 ) {
 
     var isDragging by remember { mutableStateOf(false) }
@@ -507,9 +537,12 @@ fun DraggableComposable(
     Box(
         modifier = Modifier
             .size(size.dp)
-            .padding(dimensionResource(R.dimen.padding_small))
+            .padding(
+                if (isBundle || isDeckInsideBundle) dimensionResource(R.dimen.padding_small)
+                else dimensionResource(R.dimen.padding_medium_small)
+            )
             .offset(x = (xOff / d.density).dp, y = (yOff / d.density).dp)
-            .alpha(if (isDragging) 0.5f else 1f)
+            .alpha(alpha * (if (isDragging) 0.5f else 1f))
             .zIndex(if (isDragging) 1f else 0f)
             .onGloballyPositioned { coordinates ->
                 setPosition(coordinates.positionInRoot())
@@ -575,12 +608,13 @@ fun BundleComponent(
     index: Int,
     onBundleOpened: (Int) -> Unit,
     onBundleSelected: (Int) -> Unit,
-    getBundle: (Int) -> Bundle,
+    getBundle: (Int) -> BundleWithDecks,
     isHighlighted: Boolean,
     isClickEnabled: Boolean,
     ) {
 
-    val bundle = getBundle(index)
+    val bundleWithDeck = getBundle(index)
+    val bundle = bundleWithDeck.bundle
 
     OutlinedButton(
         onClick = {
@@ -606,11 +640,33 @@ fun BundleComponent(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        Text(
-            text = bundle.name,
-            textAlign = TextAlign.Center,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(dimensionResource(R.dimen.padding_small))
+        ) {
+            var masteryLevel = 0f
+            for (deck in bundleWithDeck.decks) {
+                masteryLevel += deck.masteryLevel
+            }
+            masteryLevel = masteryLevel / bundleWithDeck.decks.size
+
+            Text(
+                text = bundle.name,
+                fontSize = 14.sp,
+                lineHeight = 16.sp,
+                maxLines = 3,
+                textAlign = TextAlign.Center,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${(masteryLevel*100).roundToInt()}%",
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -664,15 +720,25 @@ fun DeckComponent(
             )
 
     ) {
-        Box(
+        Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
-                .wrapContentSize(Alignment.Center)
+                .padding(dimensionResource(R.dimen.padding_small))
         ) {
             Text(
                 text = deck.name,
+                fontSize = 14.sp,
+                lineHeight = 16.sp,
+                maxLines = 3,
                 textAlign = TextAlign.Center,
                 overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${(deck.masteryLevel*100).roundToInt()}%",
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -687,7 +753,7 @@ fun OpenBundle(
     onDeckOpened: ((Long) -> Unit)? = null,
     onDeckSelected: ((Int) -> Unit)? = null,
     getDeck: ((Int) -> Deck)? = null,
-    getBundle: ((Int) -> Bundle)? = null,
+    getBundle: ((Int) -> BundleWithDecks)? = null,
     isBundleCreatorOpen: Boolean,
     isRemoveDeckFromBundleUiOpen: Boolean,
 ) {
@@ -918,6 +984,8 @@ fun CreateOptionButton(
     isCreateOptionsAnimRequested: Boolean,
     openBundleCreator: () -> Unit,
     openDeckCreator: () -> Unit,
+    onTooManyDecks: () -> Unit,
+    getNumDecks: () -> Int,
     toggleCreateOptions: () -> Unit,
     requestCloseCreateOptions: () -> Unit,
     ) {
@@ -946,16 +1014,15 @@ fun CreateOptionButton(
             ) {
                 FloatingActionButton(
                     onClick = {
-                        openDeckCreator()
+                        if (getNumDecks() < Constants.MAX_DECKS) openDeckCreator()
+                        else onTooManyDecks()
                     },
                     modifier = Modifier.padding(smallPadding)
                 ) {
                     Text(text = "Create new deck", modifier = Modifier.padding(smallPadding))
                 }
                 FloatingActionButton(
-                    onClick = {
-                        openBundleCreator()
-                    },
+                    onClick = openBundleCreator,
                     modifier = Modifier.padding(smallPadding)
                 ) {
                     Text(text = "Create new bundle", modifier = Modifier.padding(smallPadding))

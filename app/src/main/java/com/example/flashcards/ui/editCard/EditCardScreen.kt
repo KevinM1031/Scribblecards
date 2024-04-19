@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
@@ -92,107 +94,116 @@ fun EditCardScreen (
                 },
             )
         },
+        bottomBar = {
+            BottomAppBar(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        TextButton(
+                            onClick = onBackButtonClicked,
+                            modifier = Modifier.size(160.dp, 40.dp)
+                        ) { Text("Cancel") }
+                        Button(
+                            onClick = {
+                                var isError = false
+                                if (uiState.questionTextInput.isBlank()) {
+                                    isError = true
+                                }
+                                if (uiState.answerTextInput.isBlank()) {
+                                    isError = true
+                                }
+                                if (!isError) {
+                                    coroutineScope.launch {
+                                        if (uiState.clearCardHistory) {
+                                            viewModel.clearCardHistory()
+                                        }
+                                        viewModel.updateCard()
+                                        onBackButtonClicked()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.size(160.dp, 40.dp)
+                        ) { Text("Confirm") }
+                    }
+                }
+            )
+        }
     ) { innerPadding ->
 
-        var clearCardHistory by remember { mutableStateOf(false) }
-
-        var isQuestionError by remember { mutableStateOf(false) }
-        var isAnswerError by remember { mutableStateOf(false) }
-
         Column(
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
         ) {
-            Spacer(modifier = Modifier.height(mediumPadding))
-            CustomTextField(
-                text = "Question",
-                value = uiState.questionTextInput,
-                onValueChange = { viewModel.setQuestionTextInput(it) },
-                label = "Question text",
-                focusManager = focusManager,
-                isError = isQuestionError,
+            Column(
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            CustomTextField(
-                text = "Answer",
-                value = uiState.answerTextInput,
-                onValueChange = { viewModel.setAnswerTextInput(it) },
-                label = "Answer text",
-                focusManager = focusManager,
-                isError = isAnswerError,
-                modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            CustomTextField(
-                text = "Hint (optional)",
-                value = uiState.hintTextInput,
-                onValueChange = { viewModel.setHintTextInput(it) },
-                label = "Hint text",
-                focusManager = focusManager,
-                modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            CustomTextField(
-                text = "Example (optional)",
-                value = uiState.exampleTextInput,
-                onValueChange = { viewModel.setExampleTextInput(it) },
-                label = "Example text",
-                focusManager = focusManager,
-                isLast = true,
-                modifier = Modifier
-                    .padding(vertical = smallPadding, horizontal = mediumPadding)
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
+                    .padding(smallPadding)
             ) {
-                Text(
-                    text = "Clear card history",
-                    fontSize = 16.sp,
+                Spacer(modifier = Modifier.height(mediumPadding))
+                CustomTextField(
+                    text = "Question",
+                    value = uiState.questionTextInput,
+                    onValueChange = { viewModel.setQuestionTextInput(it) },
+                    label = "Question text",
+                    focusManager = focusManager,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
                 )
-                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.padding_small)))
-                Checkbox(
-                    checked = clearCardHistory,
-                    onCheckedChange = { clearCardHistory = it },
+                CustomTextField(
+                    text = "Answer",
+                    value = uiState.answerTextInput,
+                    onValueChange = { viewModel.setAnswerTextInput(it) },
+                    label = "Answer text",
+                    focusManager = focusManager,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
                 )
+                CustomTextField(
+                    text = "Hint (optional)",
+                    value = uiState.hintTextInput,
+                    onValueChange = { viewModel.setHintTextInput(it) },
+                    label = "Hint text",
+                    focusManager = focusManager,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
+                )
+                CustomTextField(
+                    text = "Example (optional)",
+                    value = uiState.exampleTextInput,
+                    onValueChange = { viewModel.setExampleTextInput(it) },
+                    label = "Example text",
+                    focusManager = focusManager,
+                    isLast = true,
+                    modifier = Modifier
+                        .padding(vertical = smallPadding)
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Clear card history",
+                        fontSize = 16.sp,
+                    )
+                    Spacer(modifier = Modifier.width(dimensionResource(R.dimen.padding_small)))
+                    Checkbox(
+                        checked = uiState.clearCardHistory,
+                        onCheckedChange = { viewModel.setClearCardHistory(it) },
+                    )
+                }
             }
-            Button(
-                onClick = {
-                    var isError = false
-                    if (uiState.questionTextInput.isBlank()) {
-                        isQuestionError = true
-                        isError = true
-                    }
-                    if (uiState.answerTextInput.isBlank()) {
-                        isAnswerError = true
-                        isError = true
-                    }
-                    if (!isError) {
-                        coroutineScope.launch {
-                            if (clearCardHistory) {
-                                viewModel.clearCardHistory()
-                            }
-                            viewModel.updateCard()
-                            onBackButtonClicked()
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .size(160.dp, 40.dp)
-            ) {
-                Text(
-                    text = "Confirm"
-                )
-            }
-            Spacer(modifier = Modifier.height(mediumPadding))
         }
     }
 }
