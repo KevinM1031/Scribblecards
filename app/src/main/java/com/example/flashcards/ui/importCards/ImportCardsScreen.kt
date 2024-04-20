@@ -1,6 +1,14 @@
 package com.example.flashcards.ui.importCards
 
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -17,6 +25,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,6 +67,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -70,7 +80,10 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
@@ -82,8 +95,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.documentfile.provider.DocumentFile
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.flashcards.FlashcardApplication
 import com.example.flashcards.R
 import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Card
@@ -94,7 +111,9 @@ import com.example.flashcards.ui.deck.ITT_ErrorState
 import com.example.flashcards.ui.deck.ImportCardsViewModel
 import com.example.flashcards.ui.deck.SubDeck
 import com.example.flashcards.ui.deck.SubDeckType
+import com.example.flashcards.ui.deck.UCF_ErrorState
 import kotlinx.coroutines.launch
+import java.io.InputStreamReader
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -103,6 +122,7 @@ fun ImportCardsScreen (
     onBackButtonClicked: () -> Unit,
 ) {
 
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
@@ -133,8 +153,9 @@ fun ImportCardsScreen (
                             viewModel.toggleBringFromDecksScreen()
                         else if (uiState.isImportThroughTextScreenOpen)
                             viewModel.toggleImportThroughTextScreen()
-                        else if (uiState.isUploadCsvFileScreenOpen)
+                        else if (uiState.isUploadCsvFileScreenOpen) {
                             viewModel.toggleUploadCsvFileScreen()
+                        }
                         else onBackButtonClicked()
                     }) {
                         Icon(
@@ -188,7 +209,7 @@ fun ImportCardsScreen (
                                                     viewModel.toggleBringFromDecksScreen()
                                                     viewModel.addSubDeck(
                                                         SubDeck(
-                                                            name = "Import from \"${uiState.bFD_selectedDeck!!.name}\" (${cards.size} " + if (cards.size == 1) "card)" else "cards)",
+                                                            name = ("${cards.size} " + if (cards.size == 1) "card" else "cards") + " - import from \"${uiState.bFD_selectedDeck!!.name}\"",
                                                             type = SubDeckType.DEFAULT,
                                                             cards = cards,
                                                         )
@@ -220,7 +241,7 @@ fun ImportCardsScreen (
                                                 viewModel.toggleImportThroughTextScreen()
                                                 viewModel.addSubDeck(
                                                     SubDeck(
-                                                        name = "Import from text (${cards.size} cards)",
+                                                        name = ("${cards.size} " + if (cards.size == 1) "card" else "cards") + " - imported from text",
                                                         type = SubDeckType.TEXT,
                                                         cards = cards,
                                                     )
@@ -231,7 +252,35 @@ fun ImportCardsScreen (
                                     ) { Text("Import") }
                                 }
                             } else if (uiState.isUploadCsvFileScreenOpen) {
-
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ) {
+                                    TextButton(
+                                        onClick = { viewModel.toggleUploadCsvFileScreen() },
+                                        modifier = Modifier.size(160.dp, 40.dp)
+                                    ) { Text("Cancel") }
+                                    Button(
+                                        enabled = uiState.uCF_csvFileData.isNotEmpty() && uiState.uCF_questionIndex != null && uiState.uCF_answerIndex != null,
+                                        onClick = {
+                                            viewModel.setUploadCsvFileScreenFocusRequest(false)
+                                            val cards = viewModel.csvDataToCards(checkForErrors = true)
+                                            if (cards != null) {
+                                                viewModel.toggleUploadCsvFileScreen()
+                                                viewModel.addSubDeck(
+                                                    SubDeck(
+                                                        name = ("${cards.size} " + if (cards.size == 1) "card" else "cards") + " - uploaded (${uiState.uCF_csvFileName})",
+                                                        type = SubDeckType.CSV,
+                                                        cards = cards,
+                                                    )
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier.size(160.dp, 40.dp)
+                                    ) { Text("Import") }
+                                }
                             } else {
                                 Button(
                                     onClick = {
@@ -296,7 +345,6 @@ fun ImportCardsScreen (
                 BackHandler { viewModel.toggleImportThroughTextScreen() }
 
                 ImportThroughTextScreen(
-                    getPreviewCards = { viewModel.textToCards(maxCards = 2) },
                     setInputText = { viewModel.setInputText(it) },
                     setQuestionLines = { viewModel.setQuestionLines(it) },
                     setAnswerLines = { viewModel.setAnswerLines(it) },
@@ -320,6 +368,35 @@ fun ImportCardsScreen (
                     focusRequesterI = uiState.iTT_focusRequesterI,
                     errorState = uiState.iTT_errorState,
                     errorState2 = uiState.iTT_errorState2,
+                    previewCard1 = uiState.iTT_previewCard1,
+                    previewCard2 = uiState.iTT_previewCard2,
+                    updatePreviews = { viewModel.updateImportThroughScreenPreviewCards() },
+                )
+
+            } else if (uiState.isUploadCsvFileScreenOpen) {
+
+                UploadCsvFileScreen(
+                    parseCsvFile = { viewModel.csvToStrList(context, it) },
+                    csvFileData = uiState.uCF_csvFileData,
+                    csvFileName = uiState.uCF_csvFileName,
+                    setQuestionIndex = { viewModel.setQuestionIndex(it) },
+                    setAnswerIndex = { viewModel.setAnswerIndex(it) },
+                    setHintIndex = { viewModel.setHintIndex(it) },
+                    setExampleIndex = { viewModel.setExampleIndex(it) },
+                    questionIndex = uiState.uCF_questionIndex,
+                    answerIndex = uiState.uCF_answerIndex,
+                    hintIndex = uiState.uCF_hintIndex,
+                    exampleIndex = uiState.uCF_exampleIndex,
+                    focusManager = focusManager,
+                    isFocusRequested = uiState.uCF_focusRequested,
+                    setFocusRequest = { viewModel.setUploadCsvFileScreenFocusRequest(it) },
+                    focusRequesterF = uiState.uCF_focusRequesterF,
+                    focusRequesterQ = uiState.uCF_focusRequesterQ,
+                    focusRequesterA = uiState.uCF_focusRequesterA,
+                    focusRequesterH = uiState.uCF_focusRequesterH,
+                    focusRequesterE = uiState.uCF_focusRequesterE,
+                    errorState = uiState.uCF_errorState,
+                    errorState2 = uiState.uCF_errorState2,
                 )
 
             } else {
@@ -480,8 +557,330 @@ fun ImportCardsScreen (
 }
 
 @Composable
+fun UploadCsvFileScreen(
+    parseCsvFile: (Uri) -> Unit,
+    csvFileData: List<List<String>>,
+    csvFileName: String,
+    questionIndex: Int?,
+    answerIndex: Int?,
+    hintIndex: Int?,
+    exampleIndex: Int?,
+    setQuestionIndex: (String) -> Unit,
+    setAnswerIndex: (String) -> Unit,
+    setHintIndex: (String) -> Unit,
+    setExampleIndex: (String) -> Unit,
+    focusManager: FocusManager,
+    isFocusRequested: Boolean,
+    focusRequesterF: FocusRequester,
+    focusRequesterQ: FocusRequester,
+    focusRequesterA: FocusRequester,
+    focusRequesterH: FocusRequester,
+    focusRequesterE: FocusRequester,
+    setFocusRequest: (Boolean) -> Unit,
+    errorState: UCF_ErrorState,
+    errorState2: UCF_ErrorState,
+    ) {
+
+    val smallPadding = dimensionResource(R.dimen.padding_small)
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+    val onSelectCsvClicked = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()
+    ) { fileUri ->
+        if (fileUri != null) {
+            parseCsvFile(fileUri)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .fillMaxSize()
+    ) {
+        Column(
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(smallPadding)
+
+        ) {
+            Text(
+                text = "Select .CSV file" + (
+                    when (errorState) {
+                        UCF_ErrorState.FILE_EMPTY -> " - file is empty."
+                        UCF_ErrorState.FILE_INCOMPLETE -> " - file contains inconsistent data."
+                        else -> ""
+                    }
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Start,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = mediumPadding)
+            ) {
+                Card(
+                    shape = RoundedCornerShape(5),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = smallPadding)
+                        .wrapContentHeight(align = Alignment.CenterVertically)
+
+                ) {
+                    Text(
+                        text = csvFileName.ifBlank { "File not selected" },
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(smallPadding)
+                    )
+                }
+
+                Button(
+                    onClick = { onSelectCsvClicked.launch("*/*") },
+                    modifier = Modifier
+                        .size(120.dp, 40.dp)
+                        .focusRequester(focusRequesterF)
+                ) {
+                    Text("Browse file")
+                }
+            }
+
+            CustomTextField(
+                text = "Question text column",
+                value = "${questionIndex ?: ""}",
+                onValueChange = { setQuestionIndex(it) },
+                label = "Column number",
+                isError = errorState.isQuestionIndexError || errorState2.isQuestionIndexError,
+                errorMessage =
+                if (errorState == UCF_ErrorState.QUESTION_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.QUESTION_INDEX_DUPLICATE)
+                    "columns cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterQ)
+            )
+            CustomTextField(
+                text = "Answer text column",
+                value = "${answerIndex ?: ""}",
+                onValueChange = { setAnswerIndex(it) },
+                label = "Column number",
+                isError = errorState.isAnswerIndexError || errorState2.isAnswerIndexError,
+                errorMessage =
+                if (errorState == UCF_ErrorState.ANSWER_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.ANSWER_INDEX_DUPLICATE)
+                    "columns cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterA)
+            )
+            CustomTextField(
+                text = "Hint text column (optional)",
+                value = "${hintIndex ?: ""}",
+                onValueChange = { setHintIndex(it) },
+                label = "Column number",
+                isError = errorState.isHintIndexError || errorState2.isHintIndexError,
+                errorMessage =
+                if (errorState == UCF_ErrorState.HINT_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.HINT_INDEX_DUPLICATE)
+                    "columns cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterH)
+            )
+            CustomTextField(
+                text = "Example text column (optional)",
+                value = "${exampleIndex ?: ""}",
+                onValueChange = { setExampleIndex(it) },
+                label = "Column number",
+                isError = errorState.isExampleIndexError || errorState2.isExampleIndexError,
+                errorMessage =
+                if (errorState == UCF_ErrorState.EXAMPLE_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.EXAMPLE_INDEX_DUPLICATE)
+                    "columns cannot overlap."
+                else "what have you done??",
+                maxLines = 1,
+                focusManager = focusManager,
+                modifier = Modifier
+                    .padding(vertical = smallPadding)
+                    .focusRequester(focusRequesterE)
+            )
+
+            Column {
+                Text(
+                    text = "Preview (first 2 cards)",
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                )
+
+                Row {
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(mediumPadding)
+                        ) {
+
+                            Text(text = "Question", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(0)?.getOrNull(questionIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Answer", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(0)?.getOrNull(answerIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Hint", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(0)?.getOrNull(hintIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Example", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(0)?.getOrNull(exampleIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(smallPadding))
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(mediumPadding)
+                        ) {
+
+                            Text(text = "Question", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(1)?.getOrNull(questionIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Answer", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(1)?.getOrNull(answerIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Hint", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(1)?.getOrNull(hintIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(smallPadding))
+                            Text(text = "Example", fontSize = 14.sp,)
+                            Card(
+                                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = csvFileData.getOrNull(1)?.getOrNull(exampleIndex?.dec() ?: -1) ?: "",
+                                    fontSize = 16.sp,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1,
+                                    modifier = Modifier.padding(horizontal = smallPadding)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isFocusRequested) {
+            when (errorState) {
+                UCF_ErrorState.FILE_EMPTY -> focusRequesterF.requestFocus()
+                UCF_ErrorState.FILE_INCOMPLETE -> focusRequesterF.requestFocus()
+                UCF_ErrorState.QUESTION_INDEX_DUPLICATE -> focusRequesterQ.requestFocus()
+                UCF_ErrorState.ANSWER_INDEX_DUPLICATE -> focusRequesterA.requestFocus()
+                UCF_ErrorState.HINT_INDEX_DUPLICATE -> focusRequesterH.requestFocus()
+                UCF_ErrorState.EXAMPLE_INDEX_DUPLICATE -> focusRequesterE.requestFocus()
+                else -> {}
+            }
+            setFocusRequest(true)
+        }
+    }
+}
+
+@Composable
 fun ImportThroughTextScreen(
-    getPreviewCards: () -> List<Card>?,
     setInputText: (String) -> Unit,
     setQuestionLines: (String) -> Unit,
     setAnswerLines: (String) -> Unit,
@@ -505,21 +904,15 @@ fun ImportThroughTextScreen(
     setFocusRequest: (Boolean) -> Unit,
     errorState: ITT_ErrorState,
     errorState2: ITT_ErrorState,
-    ) {
+    previewCard1: Card?,
+    previewCard2: Card?,
+    updatePreviews: () -> Unit,
+) {
 
     val inputTextUiNumLines = 8
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
-
-    var previewCard1 by remember { mutableStateOf<Card?>(null) }
-    var previewCard2 by remember { mutableStateOf<Card?>(null) }
-
-    val updatePreviews = {
-        val previewCards = getPreviewCards()
-        previewCard1 = previewCards?.getOrNull(0)
-        previewCard2 = previewCards?.getOrNull(1)
-    }
 
     Column(
         modifier = Modifier

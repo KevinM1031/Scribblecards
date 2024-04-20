@@ -6,7 +6,6 @@ import com.example.flashcards.data.AppDataContainer
 
 class FlashcardApplication : Application() {
 
-
     lateinit var container: AppContainer
 
     override fun onCreate() {

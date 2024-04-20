@@ -1,7 +1,10 @@
 package com.example.flashcards.ui.deck
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.ui.focus.FocusRequester
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -41,6 +44,7 @@ class ImportCardsViewModel(
         softReset()
         resetBringFromDecksScreen()
         resetImportThroughTextScreen()
+        resetUploadCsvFileScreen()
 
         viewModelScope.launch {
             val deck = cardsRepository.getDeckWithCards(id = _uiState.value.param)
@@ -91,6 +95,29 @@ class ImportCardsViewModel(
                 iTT_focusRequesterH = FocusRequester(),
                 iTT_focusRequesterE = FocusRequester(),
                 iTT_focusRequesterI = FocusRequester(),
+                iTT_previewCard1 = null,
+                iTT_previewCard2 = null,
+            )
+        }
+    }
+
+    fun resetUploadCsvFileScreen() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_csvFileName = "",
+                uCF_csvFileData = listOf(),
+                uCF_errorState = UCF_ErrorState.NO_ERROR,
+                uCF_errorState2 = UCF_ErrorState.NO_ERROR,
+                uCF_questionIndex = null,
+                uCF_answerIndex = null,
+                uCF_hintIndex = null,
+                uCF_exampleIndex = null,
+                uCF_focusRequested = false,
+                uCF_focusRequesterF = FocusRequester(),
+                uCF_focusRequesterQ = FocusRequester(),
+                uCF_focusRequesterA = FocusRequester(),
+                uCF_focusRequesterH = FocusRequester(),
+                uCF_focusRequesterE = FocusRequester(),
             )
         }
     }
@@ -151,6 +178,38 @@ class ImportCardsViewModel(
         }
     }
 
+    fun setQuestionIndex(questionIndex: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_questionIndex = questionIndex.toIntOrNull()
+            )
+        }
+    }
+
+    fun setAnswerIndex(answerIndex: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_answerIndex = answerIndex.toIntOrNull()
+            )
+        }
+    }
+
+    fun setHintIndex(hintIndex: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_hintIndex = hintIndex.toIntOrNull()
+            )
+        }
+    }
+
+    fun setExampleIndex(exampleIndex: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_exampleIndex = exampleIndex.toIntOrNull()
+            )
+        }
+    }
+
     fun setExcludeMastered(excludeMastered: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -176,19 +235,20 @@ class ImportCardsViewModel(
         }
     }
 
-    fun toggleUploadCsvFileScreen() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isUploadCsvFileScreenOpen = !_uiState.value.isUploadCsvFileScreenOpen
-            )
-        }
-    }
-
     fun toggleImportThroughTextScreen() {
         resetImportThroughTextScreen()
         _uiState.update { currentState ->
             currentState.copy(
                 isImportThroughTextScreenOpen = !_uiState.value.isImportThroughTextScreenOpen,
+            )
+        }
+    }
+
+    fun toggleUploadCsvFileScreen() {
+        resetUploadCsvFileScreen()
+        _uiState.update { currentState ->
+            currentState.copy(
+                isUploadCsvFileScreenOpen = !_uiState.value.isUploadCsvFileScreenOpen
             )
         }
     }
@@ -221,13 +281,6 @@ class ImportCardsViewModel(
         }
     }
 
-    fun setImportThroughTextScreenErrorState(errorState: ITT_ErrorState) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                iTT_errorState = errorState
-            )
-        }
-    }
 
     fun selectBundle(bundle: BundleWithDecks?) {
         _uiState.update { currentState ->
@@ -252,6 +305,15 @@ class ImportCardsViewModel(
             )
         }
     }
+
+    fun setUploadCsvFileScreenFocusRequest(requested: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_focusRequested = requested
+            )
+        }
+    }
+
 
     suspend fun importAll() {
         for (subDeck in _uiState.value.subDecks) {
@@ -506,6 +568,71 @@ class ImportCardsViewModel(
             }
         }
         return parsedLines
+    }
+
+    fun updateImportThroughScreenPreviewCards() {
+        val cards = textToCards(maxCards = 2)
+        _uiState.update { currentState ->
+            currentState.copy(
+                iTT_previewCard1 = cards?.getOrNull(0),
+                iTT_previewCard2 = cards?.getOrNull(0),
+            )
+        }
+    }
+
+    fun csvToStrList(context: Context, uri: Uri) {
+        val reader = context.contentResolver.openInputStream(uri)?.bufferedReader()
+        val strList = mutableListOf<List<String>>()
+        while (reader?.ready() == true) {
+            strList.add(reader.readLine()?.split(",") ?: listOf())
+        }
+        reader?.close()
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_csvFileName = uri.path.toString().split("/").last(),
+                uCF_csvFileData = strList,
+            )
+        }
+    }
+
+    fun csvDataToCards(checkForErrors: Boolean = false): List<Card>? {
+        if (checkForErrors && _uiState.value.uCF_csvFileData.isEmpty()) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    uCF_errorState = UCF_ErrorState.FILE_EMPTY
+                )
+            }
+            return null
+        }
+
+        val cards = mutableListOf<Card>()
+        for (row in _uiState.value.uCF_csvFileData) {
+            if (row.isNotEmpty()) {
+                val qT = row.getOrNull(_uiState.value.uCF_questionIndex?.dec() ?: -1)
+                val aT = row.getOrNull(_uiState.value.uCF_answerIndex?.dec() ?: -1)
+                val hT = row.getOrNull(_uiState.value.uCF_hintIndex?.dec() ?: -1)
+                val eT = row.getOrNull(_uiState.value.uCF_exampleIndex?.dec() ?: -1)
+
+                if (checkForErrors && (qT == null || aT == null)) {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            uCF_errorState = UCF_ErrorState.FILE_INCOMPLETE
+                        )
+                    }
+                    return null
+                }
+
+                cards.add(
+                    Card(
+                        questionText = qT!!,
+                        answerText = aT!!,
+                        hintText = hT,
+                        exampleText = eT,
+                    )
+                )
+            }
+        }
+        return cards
     }
 
     fun update() {

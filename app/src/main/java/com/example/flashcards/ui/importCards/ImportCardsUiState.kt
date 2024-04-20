@@ -49,7 +49,30 @@ data class ImportCardsUiState(
     val iTT_focusRequesterH: FocusRequester = FocusRequester(),
     val iTT_focusRequesterE: FocusRequester = FocusRequester(),
     val iTT_focusRequesterI: FocusRequester = FocusRequester(),
-)
+
+    val iTT_previewCard1: Card? = null,
+    val iTT_previewCard2: Card? = null,
+
+    // upload csv file screen states
+    val uCF_csvFileName: String = "",
+    val uCF_csvFileData: List<List<String>> = listOf(),
+
+    val uCF_questionIndex: Int? = null,
+    val uCF_answerIndex: Int? = null,
+    val uCF_hintIndex: Int? = null,
+    val uCF_exampleIndex: Int? = null,
+
+    val uCF_errorState: UCF_ErrorState = UCF_ErrorState.NO_ERROR,
+    val uCF_errorState2: UCF_ErrorState = UCF_ErrorState.NO_ERROR,
+
+    val uCF_focusRequested: Boolean = false,
+    val uCF_focusRequesterF: FocusRequester = FocusRequester(),
+    val uCF_focusRequesterQ: FocusRequester = FocusRequester(),
+    val uCF_focusRequesterA: FocusRequester = FocusRequester(),
+    val uCF_focusRequesterH: FocusRequester = FocusRequester(),
+    val uCF_focusRequesterE: FocusRequester = FocusRequester(),
+
+    )
 
 data class SubDeck(
     val name: String,
@@ -79,5 +102,20 @@ enum class ITT_ErrorState(
     HINT_LINES_DUPLICATE(false, false, false, true, false, false),
     EXAMPLE_LINES_DUPLICATE(false, false, false, false, true, false),
     IGNORED_LINES_DUPLICATE(false, false, false, false, false, true),
+}
 
+enum class UCF_ErrorState(
+    val isCsvFileError: Boolean,
+    val isQuestionIndexError: Boolean,
+    val isAnswerIndexError: Boolean,
+    val isHintIndexError: Boolean,
+    val isExampleIndexError: Boolean,
+) {
+    NO_ERROR(false, false, false, false, false),
+    FILE_EMPTY(true, false, false, false, false),
+    FILE_INCOMPLETE(true, false, false, false, false),
+    QUESTION_INDEX_DUPLICATE(false, true, false, false, false),
+    ANSWER_INDEX_DUPLICATE(false, false, true, false, false),
+    HINT_INDEX_DUPLICATE(false, false, false, true, false),
+    EXAMPLE_INDEX_DUPLICATE(false, false, false, false, true),
 }
