@@ -29,6 +29,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             updateMasteryLevels()
             loadCards()
+            deleteAllEmptyBundles()
         }
     }
 
@@ -60,15 +61,6 @@ class DashboardViewModel(
      * WARNING - Expensive function
      */
     suspend fun updateMasteryLevels() {
-        val bundles = cardsRepository.getAllBundlesWithDecks()
-        for (bundle in bundles) {
-            for (deck in bundle.decks) {
-                val deckWithCards = cardsRepository.getDeckWithCards(deck.id)
-                deckWithCards.updateMasteryLevel()
-                cardsRepository.updateDeck(deckWithCards.deck)
-            }
-        }
-
         val decks = cardsRepository.getAllDecksWithCards()
         for (deck in decks) {
             deck.updateMasteryLevel()
@@ -207,6 +199,7 @@ class DashboardViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 currentBundleIndex = bundleIndex,
+                isBundleCloseAnimRequested = false,
             )
         }
     }
@@ -245,6 +238,7 @@ class DashboardViewModel(
         for (bWD in bWDsToDelete) {
             cardsRepository.deleteBundle(bWD)
         }
+        loadCards()
     }
 
     /**
@@ -281,10 +275,10 @@ class DashboardViewModel(
         }
 
         deleteAllEmptyBundles()
-        loadCards()
     }
 
     suspend fun moveDeckToBundle(deckIndex: Int, bundleIndex: Int) {
+        if (_uiState.value.decks.getOrNull(deckIndex) == null || _uiState.value.bundles.getOrNull(bundleIndex) == null) return
         _uiState.value.decks[deckIndex].bundleId = _uiState.value.bundles[bundleIndex].bundle.id
         _uiState.value.decks[deckIndex].deselect()
         cardsRepository.updateDeck(_uiState.value.decks[deckIndex])
@@ -301,7 +295,7 @@ class DashboardViewModel(
                 }
             }
         }
-        loadCards()
+        deleteAllEmptyBundles()
     }
 
     suspend fun mergeDecksIntoBundle(deck1Index: Int, deck2Index: Int) {
@@ -388,8 +382,8 @@ class DashboardViewModel(
         return _uiState.value.bundles[bundleIndex!!].decks[index]
     }
 
-    fun getBundle(index: Int) : BundleWithDecks {
-        return _uiState.value.bundles[index]
+    fun getBundle(index: Int) : BundleWithDecks? {
+        return _uiState.value.bundles.getOrNull(index)
     }
 
     fun toggleBundleSelection(index: Int) {
@@ -429,7 +423,7 @@ class DashboardViewModel(
         return if (index == null)
             0
         else
-            _uiState.value.bundles[index].decks.size
+            _uiState.value.bundles.getOrNull(index)?.decks?.size ?: 0
     }
 
     fun getNumBundles() : Int {

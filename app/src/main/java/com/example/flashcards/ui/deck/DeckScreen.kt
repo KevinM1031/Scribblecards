@@ -769,7 +769,9 @@ fun DeleteDeckDialog(
     onDismissRequest: () -> Unit,
     onDeleteButtonClicked: () -> Unit,
 ) {
+    val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val largePadding = dimensionResource(R.dimen.padding_large)
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -802,14 +804,13 @@ fun DeleteDeckDialog(
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = mediumPadding)
+                        .padding(top = smallPadding, bottom = largePadding)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(mediumPadding)
                 ) {
                     TextButton(
                         onClick = onDismissRequest,
@@ -833,7 +834,9 @@ fun DeleteCardDialog(
     onDeleteButtonClicked: () -> Unit,
     isMultipleCardsSelected: Boolean,
 ) {
+    val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val largePadding = dimensionResource(R.dimen.padding_large)
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -865,7 +868,7 @@ fun DeleteCardDialog(
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .padding(mediumPadding)
+                        .padding(top = smallPadding, bottom = largePadding)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -904,7 +907,9 @@ fun EditDeckNameDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
+        val smallPadding = dimensionResource(R.dimen.padding_small)
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        val largePadding = dimensionResource(R.dimen.padding_large)
         var isError by remember { mutableStateOf(false) }
 
         Card(
@@ -929,7 +934,7 @@ fun EditDeckNameDialog(
                     textAlign = TextAlign.Center,
                 )
                 Column(
-                    modifier = Modifier.padding(mediumPadding)
+                    modifier = Modifier.padding(top = smallPadding, bottom = largePadding)
                 ) {
                     if (isError) {
                         Text(
@@ -941,14 +946,13 @@ fun EditDeckNameDialog(
                     }
                     OutlinedTextField(
                         value = userInput ?: "",
-                        onValueChange = { setUserInput(it) },
+                        onValueChange = { setUserInput(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH)) },
                         label = { Text("Deck name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
                     )
                 }
-                Spacer(modifier = Modifier.height(mediumPadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -968,7 +972,7 @@ fun EditDeckNameDialog(
                             }
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Confirm") }
+                    ) { Text("Save") }
                 }
             }
         }

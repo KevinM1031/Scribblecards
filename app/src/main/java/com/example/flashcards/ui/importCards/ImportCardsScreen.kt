@@ -114,6 +114,8 @@ import com.example.flashcards.ui.deck.SubDeckType
 import com.example.flashcards.ui.deck.UCF_ErrorState
 import kotlinx.coroutines.launch
 import java.io.InputStreamReader
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -127,6 +129,9 @@ fun ImportCardsScreen (
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val smallPadding = dimensionResource(R.dimen.padding_small)
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
     Scaffold(
         topBar = {
@@ -185,7 +190,8 @@ fun ImportCardsScreen (
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .padding(horizontal = mediumPadding)
                         ) {
 
                             if (uiState.isBringFromDecksScreenOpen) {
@@ -322,9 +328,6 @@ fun ImportCardsScreen (
 
         Box(modifier = Modifier.padding(innerPadding)) {
 
-            val smallPadding = dimensionResource(R.dimen.padding_small)
-            val mediumPadding = dimensionResource(R.dimen.padding_medium)
-
             if (uiState.isBringFromDecksScreenOpen) {
                 BackHandler { viewModel.toggleBringFromDecksScreen() }
 
@@ -379,6 +382,7 @@ fun ImportCardsScreen (
                     parseCsvFile = { viewModel.csvToStrList(context, it) },
                     csvFileData = uiState.uCF_csvFileData,
                     csvFileName = uiState.uCF_csvFileName,
+                    csvFileSize = uiState.uCF_csvFileSize,
                     setQuestionIndex = { viewModel.setQuestionIndex(it) },
                     setAnswerIndex = { viewModel.setAnswerIndex(it) },
                     setHintIndex = { viewModel.setHintIndex(it) },
@@ -391,12 +395,7 @@ fun ImportCardsScreen (
                     isFocusRequested = uiState.uCF_focusRequested,
                     setFocusRequest = { viewModel.setUploadCsvFileScreenFocusRequest(it) },
                     focusRequesterF = uiState.uCF_focusRequesterF,
-                    focusRequesterQ = uiState.uCF_focusRequesterQ,
-                    focusRequesterA = uiState.uCF_focusRequesterA,
-                    focusRequesterH = uiState.uCF_focusRequesterH,
-                    focusRequesterE = uiState.uCF_focusRequesterE,
                     errorState = uiState.uCF_errorState,
-                    errorState2 = uiState.uCF_errorState2,
                 )
 
             } else {
@@ -504,9 +503,6 @@ fun ImportCardsScreen (
                                         start = smallPadding,
                                         end = smallPadding
                                     )
-                                    .combinedClickable(
-                                        onClick = { },
-                                    )
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -522,8 +518,10 @@ fun ImportCardsScreen (
                                         text = subDeck.name,
                                         fontSize = 20.sp,
                                         overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = mediumPadding)
                                     )
-                                    Spacer(modifier = Modifier.weight(1f))
                                     IconButton(
                                         onClick = { viewModel.removeSubDeck(subDeck) },
                                     ) {
@@ -561,6 +559,7 @@ fun UploadCsvFileScreen(
     parseCsvFile: (Uri) -> Unit,
     csvFileData: List<List<String>>,
     csvFileName: String,
+    csvFileSize: Long,
     questionIndex: Int?,
     answerIndex: Int?,
     hintIndex: Int?,
@@ -572,17 +571,13 @@ fun UploadCsvFileScreen(
     focusManager: FocusManager,
     isFocusRequested: Boolean,
     focusRequesterF: FocusRequester,
-    focusRequesterQ: FocusRequester,
-    focusRequesterA: FocusRequester,
-    focusRequesterH: FocusRequester,
-    focusRequesterE: FocusRequester,
     setFocusRequest: (Boolean) -> Unit,
     errorState: UCF_ErrorState,
-    errorState2: UCF_ErrorState,
-    ) {
+) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val mediumLargePadding = dimensionResource(R.dimen.padding_medium_large)
 
     val onSelectCsvClicked = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()
     ) { fileUri ->
@@ -609,10 +604,12 @@ fun UploadCsvFileScreen(
                     when (errorState) {
                         UCF_ErrorState.FILE_EMPTY -> " - file is empty."
                         UCF_ErrorState.FILE_INCOMPLETE -> " - file contains inconsistent data."
+                        UCF_ErrorState.FILE_TOO_LONG -> " - too many cards (will only import the first ${Constants.MAX_CARDS} cards).."
+                        UCF_ErrorState.FILE_TOO_LARGE -> " - file is too large (maximum: ${Constants.MAX_FILE_SIZE/1000000} MB)."
                         else -> ""
                     }
                 ),
-                color = MaterialTheme.colorScheme.primary,
+                color = if (errorState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Start,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -621,7 +618,6 @@ fun UploadCsvFileScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = mediumPadding)
             ) {
                 Card(
                     shape = RoundedCornerShape(5),
@@ -649,70 +645,60 @@ fun UploadCsvFileScreen(
                     Text("Browse file")
                 }
             }
+            if (csvFileName.isNotEmpty()) {
+                Text(
+                    text =
+                        "${"%,d".format(csvFileSize)} bytes, "
+                        + (if (errorState == UCF_ErrorState.FILE_TOO_LARGE) "? " else "${csvFileData.size} ")
+                        + (if (csvFileData.size == 1) "card" else "cards"),
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = if (errorState == UCF_ErrorState.FILE_TOO_LARGE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             CustomTextField(
                 text = "Question text column",
                 value = "${questionIndex ?: ""}",
                 onValueChange = { setQuestionIndex(it) },
                 label = "Column number",
-                isError = errorState.isQuestionIndexError || errorState2.isQuestionIndexError,
-                errorMessage =
-                if (errorState == UCF_ErrorState.QUESTION_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.QUESTION_INDEX_DUPLICATE)
-                    "columns cannot overlap."
-                else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
                 modifier = Modifier
-                    .padding(vertical = smallPadding)
-                    .focusRequester(focusRequesterQ)
+                    .padding(top = mediumLargePadding, bottom = smallPadding)
             )
             CustomTextField(
                 text = "Answer text column",
                 value = "${answerIndex ?: ""}",
                 onValueChange = { setAnswerIndex(it) },
                 label = "Column number",
-                isError = errorState.isAnswerIndexError || errorState2.isAnswerIndexError,
-                errorMessage =
-                if (errorState == UCF_ErrorState.ANSWER_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.ANSWER_INDEX_DUPLICATE)
-                    "columns cannot overlap."
-                else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
-                    .focusRequester(focusRequesterA)
             )
             CustomTextField(
                 text = "Hint text column (optional)",
                 value = "${hintIndex ?: ""}",
                 onValueChange = { setHintIndex(it) },
                 label = "Column number",
-                isError = errorState.isHintIndexError || errorState2.isHintIndexError,
-                errorMessage =
-                if (errorState == UCF_ErrorState.HINT_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.HINT_INDEX_DUPLICATE)
-                    "columns cannot overlap."
-                else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
-                    .focusRequester(focusRequesterH)
             )
             CustomTextField(
                 text = "Example text column (optional)",
                 value = "${exampleIndex ?: ""}",
                 onValueChange = { setExampleIndex(it) },
                 label = "Column number",
-                isError = errorState.isExampleIndexError || errorState2.isExampleIndexError,
-                errorMessage =
-                if (errorState == UCF_ErrorState.EXAMPLE_INDEX_DUPLICATE || errorState2 == UCF_ErrorState.EXAMPLE_INDEX_DUPLICATE)
-                    "columns cannot overlap."
-                else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
+                isLast = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
-                    .focusRequester(focusRequesterE)
             )
 
             Column {
@@ -864,16 +850,8 @@ fun UploadCsvFileScreen(
             }
         }
 
-        if (!isFocusRequested) {
-            when (errorState) {
-                UCF_ErrorState.FILE_EMPTY -> focusRequesterF.requestFocus()
-                UCF_ErrorState.FILE_INCOMPLETE -> focusRequesterF.requestFocus()
-                UCF_ErrorState.QUESTION_INDEX_DUPLICATE -> focusRequesterQ.requestFocus()
-                UCF_ErrorState.ANSWER_INDEX_DUPLICATE -> focusRequesterA.requestFocus()
-                UCF_ErrorState.HINT_INDEX_DUPLICATE -> focusRequesterH.requestFocus()
-                UCF_ErrorState.EXAMPLE_INDEX_DUPLICATE -> focusRequesterE.requestFocus()
-                else -> {}
-            }
+        if (!isFocusRequested && errorState.isError) {
+            focusRequesterF.requestFocus()
             setFocusRequest(true)
         }
     }
@@ -941,6 +919,7 @@ fun ImportThroughTextScreen(
                 minLines = inputTextUiNumLines,
                 maxLines = inputTextUiNumLines,
                 focusManager = focusManager,
+                isForLongString = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterT)
@@ -1179,16 +1158,12 @@ fun ImportThroughTextScreen(
         }
 
         if (!isFocusRequested) {
-            when (errorState) {
-                ITT_ErrorState.TEXT_INCOMPLETE -> focusRequesterT.requestFocus()
-                ITT_ErrorState.TEXT_TOO_LONG -> focusRequesterT.requestFocus()
-                ITT_ErrorState.QUESTION_LINES_DUPLICATE -> focusRequesterQ.requestFocus()
-                ITT_ErrorState.ANSWER_LINES_DUPLICATE -> focusRequesterA.requestFocus()
-                ITT_ErrorState.HINT_LINES_DUPLICATE -> focusRequesterH.requestFocus()
-                ITT_ErrorState.EXAMPLE_LINES_DUPLICATE -> focusRequesterE.requestFocus()
-                ITT_ErrorState.IGNORED_LINES_DUPLICATE -> focusRequesterI.requestFocus()
-                else -> {}
-            }
+            if (errorState.isTextError) focusRequesterT.requestFocus()
+            else if (errorState.isQuestionLineError) focusRequesterQ.requestFocus()
+            else if (errorState.isAnswerLineError) focusRequesterA.requestFocus()
+            else if (errorState.isHintLineError) focusRequesterH.requestFocus()
+            else if (errorState.isExampleLineError) focusRequesterE.requestFocus()
+            else if (errorState.isIgnoredLineError) focusRequesterI.requestFocus()
             setFocusRequest(true)
         }
     }
@@ -1445,6 +1420,7 @@ fun CustomTextField(
     isLast: Boolean = false,
     isError: Boolean = false,
     errorMessage: String = " - this field is required.",
+    isForLongString: Boolean = false,
 ) {
     Column(
         verticalArrangement = Arrangement.Top,
@@ -1459,7 +1435,13 @@ fun CustomTextField(
         )
         TextField(
             value = value,
-            onValueChange = { onValueChange(it) },
+            onValueChange = {
+                if (isForLongString) {
+                    onValueChange(if (it.length <= Constants.MAX_LONG_STRING_LENGTH) it else it.substring(0..Constants.MAX_LONG_STRING_LENGTH))
+                } else {
+                    onValueChange(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH))
+                }
+            },
             label = { Text(text = label) },
             isError = isError,
             minLines = minLines,

@@ -146,9 +146,9 @@ fun DashboardScreen(
                     )
                 } else {
                     BundleTopAppBar(
-                        onBackButtonClicked = { viewModel.requestCloseBundleAnim() },
+                        onBackButtonClicked = { viewModel.requestCloseBundleAnim(); },
                         onEditBundleNameButtonClicked = { viewModel.openEditBundleNameDialog() },
-                        title = viewModel.getBundle(uiState.currentBundleIndex!!).bundle.name,
+                        title = viewModel.getBundle(uiState.currentBundleIndex!!)?.bundle?.name ?: "",
                     )
                 }
 
@@ -222,7 +222,7 @@ fun DashboardScreen(
 
                 onBundleOpened = { viewModel.openBundle(it) },
                 onBundleSelected = { viewModel.toggleBundleSelection(it) },
-                getBundle = { viewModel.getBundle(it) },
+                getBundle = { viewModel.getBundle(it) ?: BundleWithDecks(Bundle(), listOf()) },
                 numBundles = viewModel.getNumBundles(),
 
                 moveDeckToBundle = { d, b ->
@@ -268,7 +268,7 @@ fun DashboardScreen(
                     },
                     getDeck = { viewModel.getDeckFromCurrentBundle(it) },
                     numDecks = viewModel.getNumDecksInCurrentBundle(),
-                    getBundle = { viewModel.getBundle(it) },
+                    getBundle = { viewModel.getBundle(it) ?: BundleWithDecks(Bundle(), listOf()) },
                     isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                     isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                     cardIconSize = BOX_SIZE_IN_BUNDLE_DP,
@@ -648,10 +648,12 @@ fun BundleComponent(
                 .padding(dimensionResource(R.dimen.padding_small))
         ) {
             var masteryLevel = 0f
-            for (deck in bundleWithDeck.decks) {
-                masteryLevel += deck.masteryLevel
+            if (bundleWithDeck.decks.isNotEmpty()) {
+                for (deck in bundleWithDeck.decks) {
+                    masteryLevel += deck.masteryLevel
+                }
+                masteryLevel /= bundleWithDeck.decks.size
             }
-            masteryLevel = masteryLevel / bundleWithDeck.decks.size
 
             Text(
                 text = bundle.name,
@@ -1064,7 +1066,9 @@ fun CreateBundleDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
+        val smallPadding = dimensionResource(R.dimen.padding_small)
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        val largePadding = dimensionResource(R.dimen.padding_large)
         var isError by remember { mutableStateOf(false) }
 
         Card(
@@ -1089,7 +1093,7 @@ fun CreateBundleDialog(
                     textAlign = TextAlign.Center,
                 )
                 Column(
-                    modifier = Modifier.padding(mediumPadding)
+                    modifier = Modifier.padding(top = smallPadding, bottom = largePadding)
                 ) {
                     if (isError) {
                         Text(
@@ -1100,14 +1104,13 @@ fun CreateBundleDialog(
                     }
                     OutlinedTextField(
                         value = userInput ?: "",
-                        onValueChange = { setUserInput(it) },
+                        onValueChange = { setUserInput(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH)) },
                         label = { Text("Bundle name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
                     )
                 }
-                Spacer(modifier = Modifier.height(mediumPadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1127,7 +1130,7 @@ fun CreateBundleDialog(
                             }
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(if (editMode) "Confirm" else "Create") }
+                    ) { Text(if (editMode) "Save" else "Create") }
                 }
             }
         }
@@ -1148,7 +1151,9 @@ fun CreateDeckDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
+        val smallPadding = dimensionResource(R.dimen.padding_small)
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
+        val largePadding = dimensionResource(R.dimen.padding_large)
         var isError by remember { mutableStateOf(false) }
 
         Card(
@@ -1173,7 +1178,7 @@ fun CreateDeckDialog(
                     textAlign = TextAlign.Center,
                 )
                 Column(
-                    modifier = Modifier.padding(vertical = mediumPadding)
+                    modifier = Modifier.padding(top = smallPadding, bottom = largePadding)
                 ) {
                     if (isError) {
                         Text(
@@ -1185,14 +1190,13 @@ fun CreateDeckDialog(
                     }
                     OutlinedTextField(
                         value = userInput ?: "",
-                        onValueChange = { setUserInput(it) },
+                        onValueChange = { setUserInput(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH)) },
                         label = { Text("Deck name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
                     )
                 }
-                Spacer(modifier = Modifier.height(mediumPadding))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,

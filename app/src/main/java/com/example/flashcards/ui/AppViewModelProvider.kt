@@ -11,6 +11,8 @@ import com.example.flashcards.ui.deck.DeckViewModel
 import com.example.flashcards.ui.createCard.CreateCardViewModel
 import com.example.flashcards.ui.deck.ImportCardsViewModel
 import com.example.flashcards.ui.editCard.EditCardViewModel
+import com.example.flashcards.ui.mainMenu.MainMenuViewModel
+import com.example.flashcards.ui.priorityDecks.PriorityDecksViewModel
 import com.example.flashcards.ui.session.SessionViewModel
 
 
@@ -49,6 +51,16 @@ object AppViewModelProvider {
             ImportCardsViewModel(
                 cardsRepository = flashcardApplication().container.cardsRepository,
                 savedStateHandle = this.createSavedStateHandle(),
+            )
+        }
+        initializer {
+            PriorityDecksViewModel(
+                cardsRepository = flashcardApplication().container.cardsRepository,
+            )
+        }
+        initializer {
+            MainMenuViewModel(
+                cardsRepository = flashcardApplication().container.cardsRepository,
             )
         }
     }

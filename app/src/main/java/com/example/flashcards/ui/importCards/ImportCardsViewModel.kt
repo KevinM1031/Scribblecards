@@ -2,6 +2,7 @@ package com.example.flashcards.ui.deck
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.compose.ui.focus.FocusRequester
 import androidx.core.app.ActivityCompat.startActivityForResult
@@ -105,19 +106,15 @@ class ImportCardsViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 uCF_csvFileName = "",
+                uCF_csvFileSize = 0,
                 uCF_csvFileData = listOf(),
                 uCF_errorState = UCF_ErrorState.NO_ERROR,
-                uCF_errorState2 = UCF_ErrorState.NO_ERROR,
-                uCF_questionIndex = null,
-                uCF_answerIndex = null,
+                uCF_questionIndex = 1,
+                uCF_answerIndex = 2,
                 uCF_hintIndex = null,
                 uCF_exampleIndex = null,
                 uCF_focusRequested = false,
                 uCF_focusRequesterF = FocusRequester(),
-                uCF_focusRequesterQ = FocusRequester(),
-                uCF_focusRequesterA = FocusRequester(),
-                uCF_focusRequesterH = FocusRequester(),
-                uCF_focusRequesterE = FocusRequester(),
             )
         }
     }
@@ -581,16 +578,46 @@ class ImportCardsViewModel(
     }
 
     fun csvToStrList(context: Context, uri: Uri) {
+        var fileName = ""
+        var fileSize: Long = 0
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+            cursor.moveToFirst()
+            fileName = cursor.getString(nameIndex)
+            fileSize = cursor.getLong(sizeIndex)
+            cursor.close()
+        }
+
+        if (fileSize > Constants.MAX_FILE_SIZE) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    uCF_csvFileName = fileName,
+                    uCF_csvFileSize = fileSize,
+                    uCF_csvFileData = listOf(),
+                    uCF_errorState = UCF_ErrorState.FILE_TOO_LARGE
+                )
+            }
+            return
+        }
+
         val reader = context.contentResolver.openInputStream(uri)?.bufferedReader()
         val strList = mutableListOf<List<String>>()
         while (reader?.ready() == true) {
-            strList.add(reader.readLine()?.split(",") ?: listOf())
+            val row = reader.readLine()?.split(",")
+            if (!row.isNullOrEmpty()) {
+                strList.add(row)
+            }
         }
         reader?.close()
         _uiState.update { currentState ->
             currentState.copy(
-                uCF_csvFileName = uri.path.toString().split("/").last(),
+                uCF_csvFileName = fileName,
+                uCF_csvFileSize = fileSize,
                 uCF_csvFileData = strList,
+                uCF_errorState =
+                    if (strList.size > Constants.MAX_CARDS) UCF_ErrorState.FILE_TOO_LARGE
+                    else currentState.uCF_errorState,
             )
         }
     }

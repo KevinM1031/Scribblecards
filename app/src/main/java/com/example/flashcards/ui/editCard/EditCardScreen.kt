@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
+import com.example.flashcards.data.Constants
 import com.example.flashcards.ui.AppViewModelProvider
 import kotlinx.coroutines.launch
 
@@ -104,6 +105,7 @@ fun EditCardScreen (
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = mediumPadding)
                     ) {
                         TextButton(
                             onClick = onBackButtonClicked,
@@ -129,7 +131,7 @@ fun EditCardScreen (
                                 }
                             },
                             modifier = Modifier.size(160.dp, 40.dp)
-                        ) { Text("Confirm") }
+                        ) { Text("Save") }
                     }
                 }
             )
@@ -236,7 +238,7 @@ fun CustomTextField(
         )
         TextField(
             value = value,
-            onValueChange = { onValueChange(it) },
+            onValueChange = { onValueChange(if (it.length <= Constants.MAX_LONG_STRING_LENGTH) it else it.substring(0..Constants.MAX_LONG_STRING_LENGTH)) },
             label = { Text(text = label) },
             isError = isError,
             minLines = minLines,

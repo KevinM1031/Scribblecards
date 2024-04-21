@@ -1,8 +1,10 @@
 package com.example.flashcards.ui.navigation
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -14,17 +16,18 @@ import com.example.flashcards.ui.deck.DeckScreen
 import com.example.flashcards.ui.editCard.EditCardScreen
 import com.example.flashcards.ui.importCards.ImportCardsScreen
 import com.example.flashcards.ui.mainMenu.MainMenuScreen
+import com.example.flashcards.ui.priorityDecks.PriorityDecksScreen
 import com.example.flashcards.ui.session.SessionScreen
 
 enum class FlashcardScreen() {
     MainMenu,
+    PriorityDecks,
     Dashboard,
     Deck,
     CreateCard,
     EditCard,
     ImportCards,
     Session,
-    Tutorial,
     Settings,
 }
 
@@ -39,17 +42,26 @@ fun FlashcardNavHost(
         modifier = modifier
     ) {
         composable(route = FlashcardScreen.MainMenu.name) {
+            BackHandler(true) {}
             MainMenuScreen(
-                onCardButtonClicked = { navController.navigate(FlashcardScreen.Dashboard.name) },
-                onTutorialButtonClicked = { navController.navigate(FlashcardScreen.Tutorial.name) },
+                onAllCardsButtonClicked = { navController.navigate(FlashcardScreen.Dashboard.name) },
+                onPriorityDecksButtonClicked = { navController.navigate(FlashcardScreen.PriorityDecks.name) },
+                onLanguageButtonClicked = {  },
                 onSettingsButtonClicked = { navController.navigate(FlashcardScreen.Settings.name) },
+            )
+        }
+        composable(route = FlashcardScreen.PriorityDecks.name) {
+            BackHandler(true) { navController.navigate(FlashcardScreen.MainMenu.name) }
+            PriorityDecksScreen(
+                onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
+                onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(route = FlashcardScreen.Dashboard.name) {
             BackHandler(true) { navController.navigate(FlashcardScreen.MainMenu.name) }
             DashboardScreen(
                 onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
-                onBackButtonClicked = { navController.navigate(FlashcardScreen.MainMenu.name) },
+                onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(
@@ -58,9 +70,8 @@ fun FlashcardNavHost(
                 navArgument("id") { type = NavType.LongType },
             )
         ) {
-            BackHandler(true) { navController.navigate(FlashcardScreen.Dashboard.name) }
             DeckScreen(
-                onBackButtonClicked = { navController.navigate(FlashcardScreen.Dashboard.name) },
+                onBackButtonClicked = { navController.navigateUp() },
                 onStartButtonClicked = { navController.navigate("${FlashcardScreen.Session.name}/$it") },
                 onCreateCardButtonClicked = { navController.navigate("${FlashcardScreen.CreateCard.name}/$it") },
                 onEditCardButtonClicked = { navController.navigate("${FlashcardScreen.EditCard.name}/$it") },
@@ -105,7 +116,9 @@ fun FlashcardNavHost(
         ) {
             BackHandler(true) {}
             SessionScreen(
-                onQuit = { navController.navigateUp() }
+                onQuit = {
+                    navController.popBackStack()
+                }
             )
         }
     }

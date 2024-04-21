@@ -14,6 +14,7 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -102,6 +103,7 @@ import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
 import kotlinx.coroutines.launch
+import java.lang.Math.random
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -1011,6 +1013,18 @@ fun Notepad(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                .pointerInput(true) {
+                    detectTapGestures(
+                        onTap = {
+                            if (!isDrawing) {
+                                onStroke(listOf(Line(
+                                    Offset((it.x+10*random()).toFloat()-5, (it.y+10*random()).toFloat()-5),
+                                    Offset((it.x+10*random()).toFloat()-5, (it.y+10*random()).toFloat()-5)
+                                )))
+                            }
+                        }
+                    )
+                }
                 .pointerInput(true) {
                     detectDragGestures(
                         onDragStart = {

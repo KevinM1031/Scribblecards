@@ -55,23 +55,18 @@ data class ImportCardsUiState(
 
     // upload csv file screen states
     val uCF_csvFileName: String = "",
+    val uCF_csvFileSize: Long = 0,
     val uCF_csvFileData: List<List<String>> = listOf(),
 
-    val uCF_questionIndex: Int? = null,
-    val uCF_answerIndex: Int? = null,
+    val uCF_questionIndex: Int? = 1,
+    val uCF_answerIndex: Int? = 2,
     val uCF_hintIndex: Int? = null,
     val uCF_exampleIndex: Int? = null,
 
-    val uCF_errorState: UCF_ErrorState = UCF_ErrorState.NO_ERROR,
-    val uCF_errorState2: UCF_ErrorState = UCF_ErrorState.NO_ERROR,
-
     val uCF_focusRequested: Boolean = false,
     val uCF_focusRequesterF: FocusRequester = FocusRequester(),
-    val uCF_focusRequesterQ: FocusRequester = FocusRequester(),
-    val uCF_focusRequesterA: FocusRequester = FocusRequester(),
-    val uCF_focusRequesterH: FocusRequester = FocusRequester(),
-    val uCF_focusRequesterE: FocusRequester = FocusRequester(),
 
+    val uCF_errorState: UCF_ErrorState = UCF_ErrorState.NO_ERROR,
     )
 
 data class SubDeck(
@@ -105,17 +100,11 @@ enum class ITT_ErrorState(
 }
 
 enum class UCF_ErrorState(
-    val isCsvFileError: Boolean,
-    val isQuestionIndexError: Boolean,
-    val isAnswerIndexError: Boolean,
-    val isHintIndexError: Boolean,
-    val isExampleIndexError: Boolean,
+    val isError: Boolean,
 ) {
-    NO_ERROR(false, false, false, false, false),
-    FILE_EMPTY(true, false, false, false, false),
-    FILE_INCOMPLETE(true, false, false, false, false),
-    QUESTION_INDEX_DUPLICATE(false, true, false, false, false),
-    ANSWER_INDEX_DUPLICATE(false, false, true, false, false),
-    HINT_INDEX_DUPLICATE(false, false, false, true, false),
-    EXAMPLE_INDEX_DUPLICATE(false, false, false, false, true),
+    NO_ERROR(false),
+    FILE_EMPTY(true),
+    FILE_INCOMPLETE(true),
+    FILE_TOO_LONG(true),
+    FILE_TOO_LARGE(true),
 }
