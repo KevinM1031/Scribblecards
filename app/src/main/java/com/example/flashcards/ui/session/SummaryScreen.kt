@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
@@ -59,7 +61,6 @@ fun SummaryScreen (
 ) {
 
     val deck = viewModel.getCurrentDeck()
-    //val deck = DeckWithCards(Deck(), listOf())
 
     var saveSessionData by remember { mutableStateOf(true) }
 
@@ -67,6 +68,7 @@ fun SummaryScreen (
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
     ) {
 
         val mediumPadding = dimensionResource(R.dimen.padding_medium)

@@ -1,12 +1,15 @@
 package com.example.flashcards.ui.deck
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +34,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Star
@@ -67,14 +71,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,6 +93,8 @@ import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Constants
+import com.example.flashcards.data.Settings
+import com.example.flashcards.data.StringLength
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
@@ -303,6 +312,7 @@ fun DeckScreen (
                         onEditCardButtonClicked = { onEditCardButtonClicked(it) },
                         lastStudied = System.currentTimeMillis() - uiState.deck.deck.dateStudied,
                         lastUpdated = uiState.lastUpdated,
+                        isQnAFlipped = uiState.deck.deck.flipQnA,
                     )
                 }
             }
@@ -352,6 +362,12 @@ fun DeckScreen (
                 }
             },
         )
+
+    } else if (uiState.isSessionOptionsOpen) {
+        BackHandler { viewModel.toggleSessionOptions() }
+
+    } else if (uiState.isCardSelectorOpen) {
+        BackHandler { viewModel.closeCardSelector() }
     }
 }
 
@@ -426,11 +442,12 @@ fun CardEditorBar(
                 onClick = onSortButtonClicked,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.Start
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.List,
                         contentDescription = null,
+                        modifier = Modifier.width(24.dp)
                     )
                     Text(
                         text = when (currentSortType) {
@@ -439,7 +456,7 @@ fun CardEditorBar(
                             SortType.FAVORITE -> "★"
                         },
                         fontSize = 12.sp,
-                        modifier = Modifier.width(2.dp)
+                        modifier = Modifier.width(10.dp)
                     )
                 }
             }
@@ -469,15 +486,18 @@ fun CardComponent(
     onCardSelected: () -> Unit,
     onFavoriteCardButtonClicked: () -> Unit,
     onEditCardButtonClicked: (Long) -> Unit,
+    isQnAFlipped: Boolean,
     lastStudied: Long,
     lastUpdated: Long,
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    var isAnswerBlurred by remember { mutableStateOf(true) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .height(128.dp)
             .padding(bottom = smallPadding, start = smallPadding, end = smallPadding)
     ) {
         Row(
@@ -487,49 +507,72 @@ fun CardComponent(
                 .fillMaxWidth()
                 .padding(start = mediumPadding, end = smallPadding)
         ) {
-            Text(
-                text = card.questionText,
-                fontSize = 16.sp,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
+            Column(
                 modifier = Modifier
+                    .fillMaxHeight()
                     .weight(0.7f)
-                    .padding(end = smallPadding)
-            )
-            Text(
-                text = "${Math.round(card.getMasteryLevel(millisSinceStudied = lastStudied)*100)}%",
-                fontSize = 16.sp,
-                overflow = TextOverflow.Visible,
-                textAlign = TextAlign.End,
-                modifier = Modifier
-                    .width(56.dp)
-                    .padding(end = smallPadding)
-            )
-            IconButton(
-                onClick = onFavoriteCardButtonClicked
+                    .padding(vertical = smallPadding)
             ) {
-                if (card.isFavorite) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        tint = Color.Yellow,
-                        contentDescription = "Toggle favorite ($lastUpdated)"
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Outlined.Star,
-                        contentDescription = "Toggle favorite ($lastUpdated)"
+                Text(
+                    text = if (isQnAFlipped) card.answerText else card.questionText,
+                    fontSize = 16.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 2,
+                    modifier = Modifier.weight(2f)
+                )
+                Text(
+                    text = if (isQnAFlipped) card.questionText else card.answerText,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .weight(1f)
+                        .blur(if (isAnswerBlurred) 8.dp else 0.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { isAnswerBlurred = !isAnswerBlurred }
+                            )
+                        }
+                )
+                Row(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "${Math.round(card.getMasteryLevel(millisSinceStudied = lastStudied)*100)}% (${card.numPerfect}/${Settings.getMasteryStandard()})",
+                        fontSize = 16.sp,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
-            IconButton(
-                onClick = {
-                    onEditCardButtonClicked(card.id)
-                }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Edit,
-                    contentDescription = "Edit card"
-                )
+                IconButton(
+                    onClick = onFavoriteCardButtonClicked,
+                ) {
+                    if (card.isFavorite) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            tint = Color.Yellow,
+                            contentDescription = "Toggle favorite ($lastUpdated)"
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.Star,
+                            contentDescription = "Toggle favorite ($lastUpdated)"
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = { onEditCardButtonClicked(card.id) },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Edit card"
+                    )
+                }
             }
             Checkbox(
                 onCheckedChange = { onCardSelected() },
@@ -946,7 +989,7 @@ fun EditDeckNameDialog(
                     }
                     OutlinedTextField(
                         value = userInput ?: "",
-                        onValueChange = { setUserInput(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH)) },
+                        onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
                         label = { Text("Deck name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

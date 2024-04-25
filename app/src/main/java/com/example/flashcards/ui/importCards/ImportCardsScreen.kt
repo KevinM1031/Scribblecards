@@ -103,6 +103,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.FlashcardApplication
 import com.example.flashcards.R
 import com.example.flashcards.data.Constants
+import com.example.flashcards.data.StringLength
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks
@@ -373,10 +374,11 @@ fun ImportCardsScreen (
                     errorState2 = uiState.iTT_errorState2,
                     previewCard1 = uiState.iTT_previewCard1,
                     previewCard2 = uiState.iTT_previewCard2,
-                    updatePreviews = { viewModel.updateImportThroughScreenPreviewCards() },
+                    updatePreviews = { viewModel.updateImportThroughTextScreenPreviewCards() },
                 )
 
             } else if (uiState.isUploadCsvFileScreenOpen) {
+                BackHandler { viewModel.toggleImportThroughTextScreen() }
 
                 UploadCsvFileScreen(
                     parseCsvFile = { viewModel.csvToStrList(context, it) },
@@ -919,7 +921,7 @@ fun ImportThroughTextScreen(
                 minLines = inputTextUiNumLines,
                 maxLines = inputTextUiNumLines,
                 focusManager = focusManager,
-                isForLongString = true,
+                stringLength = StringLength.VLONG,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterT)
@@ -1420,7 +1422,7 @@ fun CustomTextField(
     isLast: Boolean = false,
     isError: Boolean = false,
     errorMessage: String = " - this field is required.",
-    isForLongString: Boolean = false,
+    stringLength: StringLength = StringLength.SHORT,
 ) {
     Column(
         verticalArrangement = Arrangement.Top,
@@ -1435,13 +1437,7 @@ fun CustomTextField(
         )
         TextField(
             value = value,
-            onValueChange = {
-                if (isForLongString) {
-                    onValueChange(if (it.length <= Constants.MAX_LONG_STRING_LENGTH) it else it.substring(0..Constants.MAX_LONG_STRING_LENGTH))
-                } else {
-                    onValueChange(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH))
-                }
-            },
+            onValueChange = { onValueChange(if (it.length <= stringLength.maxLength) it else it.substring(0..stringLength.maxLength)) },
             label = { Text(text = label) },
             isError = isError,
             minLines = minLines,

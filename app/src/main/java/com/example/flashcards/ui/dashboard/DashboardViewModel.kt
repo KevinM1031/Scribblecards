@@ -170,6 +170,7 @@ class DashboardViewModel(
     }
 
     fun openRemoveDeckFromBundleUi() {
+        Log.d("asdf","asdf")
         deselectAllDecks()
         _uiState.update { currentState ->
             currentState.copy(
@@ -206,7 +207,7 @@ class DashboardViewModel(
 
     fun closeBundle() {
         closeEditBundleNameDialog()
-        closeRemoveDeckFromBundleUi()
+        if (_uiState.value.isRemoveDeckFromBundleUiOpen) closeRemoveDeckFromBundleUi()
         _uiState.update { currentState ->
             currentState.copy(
                 currentBundleIndex = null,

@@ -155,7 +155,7 @@ fun PriorityDecksScreen(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "cards remaining.",
+                    text = if (uiState.decks?.size == 1) "deck remaining." else "decks remaining.",
                     fontSize = 20.sp,
                 )
             }

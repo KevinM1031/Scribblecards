@@ -21,8 +21,6 @@ data class DashboardUiState(
     val isEditBundleNameDialogOpen: Boolean = false,
     val isDeckCreatorDialogOpen: Boolean = false,
     val isTipOpen: Boolean = false,
-    val isSessionOptionsOpen: Boolean = false,
-    val isCardSelectorOpen: Boolean = false,
 
     val isBundleCloseAnimRequested: Boolean = false,
     val isCreateOptionsCloseAnimRequested: Boolean = false,

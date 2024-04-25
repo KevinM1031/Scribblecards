@@ -52,6 +52,7 @@ import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Constants
+import com.example.flashcards.data.StringLength
 import com.example.flashcards.ui.AppViewModelProvider
 import kotlinx.coroutines.launch
 
@@ -238,7 +239,7 @@ fun CustomTextField(
         )
         TextField(
             value = value,
-            onValueChange = { onValueChange(if (it.length <= Constants.MAX_LONG_STRING_LENGTH) it else it.substring(0..Constants.MAX_LONG_STRING_LENGTH)) },
+            onValueChange = { onValueChange(if (it.length <= StringLength.LONG.maxLength) it else it.substring(0..StringLength.LONG.maxLength)) },
             label = { Text(text = label) },
             isError = isError,
             minLines = minLines,

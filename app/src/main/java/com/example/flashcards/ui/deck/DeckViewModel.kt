@@ -31,6 +31,9 @@ class DeckViewModel(
 
     fun softReset() {
 
+        Log.d("","SR")
+
+
         if (!_uiState.value.isDeckDeleted) {
             viewModelScope.launch {
                 val deck = cardsRepository.getDeckWithCards(id = _uiState.value.param)
@@ -181,13 +184,7 @@ class DeckViewModel(
         _uiState.value.deck.cards[index].deselect()
         cardsRepository.updateCard(_uiState.value.deck.cards[index])
         _uiState.value.deck.cards[index].isSelected = isSelected
-        update()
-        _uiState.update { currentState ->
-            currentState.copy(
-                deck = cardsRepository.getDeckWithCards(_uiState.value.param),
-            )
-        }
-        sortCards()
+        softReset()
     }
 
     fun selectAllCardsInCurrentDeck() {
@@ -222,13 +219,12 @@ class DeckViewModel(
             }
         }
         updateDeck()
+        softReset()
         _uiState.update { currentState ->
             currentState.copy(
-                deck = cardsRepository.getDeckWithCards(_uiState.value.param),
                 numSelectedCards = 0,
             )
         }
-        sortCards()
     }
 
     fun getNumCardsInCurrentDeck() : Int {
@@ -236,6 +232,7 @@ class DeckViewModel(
     }
 
     fun sortCards() {
+        Log.d("","asdf")
         when (_uiState.value.sortType) {
             SortType.MASTERY -> {
                 _uiState.value.deck.sortByMastery()
@@ -251,6 +248,7 @@ class DeckViewModel(
                 }
             }
         }
+        update()
     }
 
     fun cycleCardSort() {
@@ -264,5 +262,6 @@ class DeckViewModel(
                 sortType = sortType,
             )
         }
+        softReset()
     }
 }

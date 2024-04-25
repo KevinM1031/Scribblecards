@@ -567,12 +567,12 @@ class ImportCardsViewModel(
         return parsedLines
     }
 
-    fun updateImportThroughScreenPreviewCards() {
+    fun updateImportThroughTextScreenPreviewCards() {
         val cards = textToCards(maxCards = 2)
         _uiState.update { currentState ->
             currentState.copy(
                 iTT_previewCard1 = cards?.getOrNull(0),
-                iTT_previewCard2 = cards?.getOrNull(0),
+                iTT_previewCard2 = cards?.getOrNull(1),
             )
         }
     }

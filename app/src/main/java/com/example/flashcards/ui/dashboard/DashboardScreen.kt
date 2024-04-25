@@ -96,6 +96,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Constants
+import com.example.flashcards.data.StringLength
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks
@@ -104,8 +105,8 @@ import com.example.flashcards.ui.theme.FlashcardsTheme
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-private const val BOX_SIZE_DP = 110
-private const val BOX_SIZE_IN_BUNDLE_DP = 100
+private const val BOX_SIZE_DP = 100
+private const val BOX_SIZE_IN_BUNDLE_DP = 90
 
 @Composable
 fun DashboardScreen(
@@ -249,8 +250,6 @@ fun DashboardScreen(
             )
 
             if (isBundleOpen) {
-                BackHandler { viewModel.requestCloseBundleAnim() }
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -261,7 +260,7 @@ fun DashboardScreen(
                     configuration = LocalConfiguration.current,
                     onDeckOpened = { onDeckButtonClicked(it) },
                     onDeckSelected = {
-                        if (!uiState.isRemoveDeckFromBundleUiOpen) {
+                        if (!uiState.isRemoveDeckFromBundleUiOpen && !uiState.isBundleCreatorOpen) {
                             viewModel.openRemoveDeckFromBundleUi()
                         }
                         viewModel.toggleDeckSelection(it)
@@ -326,6 +325,19 @@ fun DashboardScreen(
             userInput = uiState.userInput,
             focusManager = focusManager,
         )
+
+    } else if (uiState.isCreateOptionsOpen) {
+        BackHandler { viewModel.requestCloseCreateOptionsAnim() }
+
+    } else if (uiState.isRemoveDeckFromBundleUiOpen && !uiState.isBundleCreatorOpen) {
+        BackHandler { viewModel.closeRemoveDeckFromBundleUi()}
+
+    } else if (isBundleOpen) {
+        BackHandler { viewModel.requestCloseBundleAnim() }
+
+    } else if (uiState.isBundleCreatorOpen) {
+        BackHandler { viewModel.closeBundleCreator() }
+
     }
 }
 
@@ -1104,7 +1116,7 @@ fun CreateBundleDialog(
                     }
                     OutlinedTextField(
                         value = userInput ?: "",
-                        onValueChange = { setUserInput(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH)) },
+                        onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
                         label = { Text("Bundle name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -1190,7 +1202,7 @@ fun CreateDeckDialog(
                     }
                     OutlinedTextField(
                         value = userInput ?: "",
-                        onValueChange = { setUserInput(if (it.length <= Constants.MAX_SHORT_STRING_LENGTH) it else it.substring(0..Constants.MAX_SHORT_STRING_LENGTH)) },
+                        onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
                         label = { Text("Deck name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
