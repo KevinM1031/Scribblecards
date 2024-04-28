@@ -1,5 +1,6 @@
 package com.example.flashcards.data.entities
 
+import android.util.Log
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.flashcards.data.Settings
@@ -24,7 +25,11 @@ data class Card (
             return if (numStudied == 0) {
                 0f
             } else if (isAffectedByTime) {
-                (numStudied.coerceAtMost(Settings.getMasteryStandard()).toFloat() / Settings.getMasteryStandard()) / (millisSinceStudied.toFloat() / (3600000f * numStudied.coerceAtMost(Settings.getMasteryStandard())).pow(numPerfect.coerceAtMost(Settings.getMasteryStandard()) + 1) + 1f)
+                val adjustedNumStudied = numStudied.coerceAtMost(Settings.getMasteryStandard()).toFloat()
+                val adjustedNumPerfect = numPerfect.coerceAtMost(Settings.getMasteryStandard()).toFloat() / (1 + (Math.E.toFloat() - 1) * Settings.getTimeImpactCoefficient())
+                val n = (adjustedNumStudied / Settings.getMasteryStandard()) / ((millisSinceStudied.toFloat()) / (3600000f * adjustedNumStudied).pow(adjustedNumPerfect + 1) + 1f)
+                Log.d("", "$n")
+                n
             } else {
                 numPerfect.coerceAtMost(Settings.getMasteryStandard()).toFloat() / Settings.getMasteryStandard()
             }

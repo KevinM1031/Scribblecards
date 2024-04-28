@@ -204,7 +204,7 @@ fun ImportCardsScreen (
                                 ) {
                                     TextButton(
                                         onClick = { viewModel.toggleBringFromDecksScreen() },
-                                        modifier = Modifier.size(160.dp, 40.dp)
+                                        modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text("Cancel") }
                                     Button(
                                         enabled = uiState.bFD_selectedDeck != null,
@@ -224,7 +224,7 @@ fun ImportCardsScreen (
                                                 }
                                             }
                                         },
-                                        modifier = Modifier.size(160.dp, 40.dp)
+                                        modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text("Import") }
                                 }
 
@@ -237,7 +237,7 @@ fun ImportCardsScreen (
                                 ) {
                                     TextButton(
                                         onClick = { viewModel.toggleImportThroughTextScreen() },
-                                        modifier = Modifier.size(160.dp, 40.dp)
+                                        modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text("Cancel") }
                                     Button(
                                         enabled = uiState.iTT_inputText.isNotBlank() && uiState.iTT_questionLines.isNotBlank() && uiState.iTT_answerLines.isNotBlank(),
@@ -255,7 +255,7 @@ fun ImportCardsScreen (
                                                 )
                                             }
                                         },
-                                        modifier = Modifier.size(160.dp, 40.dp)
+                                        modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text("Import") }
                                 }
                             } else if (uiState.isUploadCsvFileScreenOpen) {
@@ -267,7 +267,7 @@ fun ImportCardsScreen (
                                 ) {
                                     TextButton(
                                         onClick = { viewModel.toggleUploadCsvFileScreen() },
-                                        modifier = Modifier.size(160.dp, 40.dp)
+                                        modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text("Cancel") }
                                     Button(
                                         enabled = uiState.uCF_csvFileData.isNotEmpty() && uiState.uCF_questionIndex != null && uiState.uCF_answerIndex != null,
@@ -285,7 +285,7 @@ fun ImportCardsScreen (
                                                 )
                                             }
                                         },
-                                        modifier = Modifier.size(160.dp, 40.dp)
+                                        modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text("Import") }
                                 }
                             } else {
@@ -378,7 +378,7 @@ fun ImportCardsScreen (
                 )
 
             } else if (uiState.isUploadCsvFileScreenOpen) {
-                BackHandler { viewModel.toggleImportThroughTextScreen() }
+                BackHandler { viewModel.toggleUploadCsvFileScreen() }
 
                 UploadCsvFileScreen(
                     parseCsvFile = { viewModel.csvToStrList(context, it) },
@@ -581,7 +581,7 @@ fun UploadCsvFileScreen(
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val mediumLargePadding = dimensionResource(R.dimen.padding_medium_large)
 
-    val onSelectCsvClicked = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()
+    val onSelectCsvClicked = rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocument()
     ) { fileUri ->
         if (fileUri != null) {
             parseCsvFile(fileUri)
@@ -608,6 +608,7 @@ fun UploadCsvFileScreen(
                         UCF_ErrorState.FILE_INCOMPLETE -> " - file contains inconsistent data."
                         UCF_ErrorState.FILE_TOO_LONG -> " - too many cards (will only import the first ${Constants.MAX_CARDS} cards).."
                         UCF_ErrorState.FILE_TOO_LARGE -> " - file is too large (maximum: ${Constants.MAX_FILE_SIZE/1000000} MB)."
+                        UCF_ErrorState.INVALID_FILE_FORMAT -> " - invalid file format."
                         else -> ""
                     }
                 ),
@@ -639,7 +640,7 @@ fun UploadCsvFileScreen(
                 }
 
                 Button(
-                    onClick = { onSelectCsvClicked.launch("*/*") },
+                    onClick = { onSelectCsvClicked.launch(arrayOf("*/*")) },
                     modifier = Modifier
                         .size(120.dp, 40.dp)
                         .focusRequester(focusRequesterF)

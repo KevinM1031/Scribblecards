@@ -107,4 +107,5 @@ enum class UCF_ErrorState(
     FILE_INCOMPLETE(true),
     FILE_TOO_LONG(true),
     FILE_TOO_LARGE(true),
+    INVALID_FILE_FORMAT(true),
 }

@@ -31,9 +31,6 @@ class DeckViewModel(
 
     fun softReset() {
 
-        Log.d("","SR")
-
-
         if (!_uiState.value.isDeckDeleted) {
             viewModelScope.launch {
                 val deck = cardsRepository.getDeckWithCards(id = _uiState.value.param)
@@ -232,7 +229,6 @@ class DeckViewModel(
     }
 
     fun sortCards() {
-        Log.d("","asdf")
         when (_uiState.value.sortType) {
             SortType.MASTERY -> {
                 _uiState.value.deck.sortByMastery()

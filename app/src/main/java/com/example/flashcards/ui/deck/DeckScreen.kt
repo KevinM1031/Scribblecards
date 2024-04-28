@@ -652,8 +652,8 @@ fun DeckStats(
             } else if (days < 1) {
                 Text(
                     text =
-                        "${hours} hour" + (if(hours > 1) "s, " else ", ") +
-                        "${minutes} minute" + (if(minutes > 1) "s" else ""),
+                        "${hours} hour" + (if(hours == 1.toLong()) ", " else "s, ") +
+                        "${minutes} minute" + (if(minutes == 1.toLong()) "" else "s"),
                     fontSize = 32.sp,
                     modifier = Modifier
                 )
@@ -665,8 +665,8 @@ fun DeckStats(
             } else {
                 Text(
                     text =
-                        "${days} day" + (if(days > 1) "s, " else ", ") +
-                        "${hours} hour" + (if(hours > 1) "s" else ""),
+                        "${days} day" + (if(days == 1.toLong()) ", " else "s, ") +
+                        "${hours} hour" + (if(hours == 1.toLong()) "" else "s"),
                     fontSize = 32.sp,
                     modifier = Modifier
                 )

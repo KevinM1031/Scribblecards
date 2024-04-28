@@ -539,6 +539,12 @@ class ImportCardsViewModel(
                 )
             }
             return null
+        } else {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    iTT_errorState = ITT_ErrorState.NO_ERROR
+                )
+            }
         }
 
         return subDeckCards
@@ -578,6 +584,7 @@ class ImportCardsViewModel(
     }
 
     fun csvToStrList(context: Context, uri: Uri) {
+
         var fileName = ""
         var fileSize: Long = 0
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -589,7 +596,18 @@ class ImportCardsViewModel(
             cursor.close()
         }
 
-        if (fileSize > Constants.MAX_FILE_SIZE) {
+        if (!fileName.endsWith(".csv")) {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    uCF_csvFileName = fileName,
+                    uCF_csvFileSize = fileSize,
+                    uCF_csvFileData = listOf(),
+                    uCF_errorState = UCF_ErrorState.INVALID_FILE_FORMAT
+                )
+            }
+            return
+
+        } else if (fileSize > Constants.MAX_FILE_SIZE) {
             _uiState.update { currentState ->
                 currentState.copy(
                     uCF_csvFileName = fileName,
@@ -616,8 +634,8 @@ class ImportCardsViewModel(
                 uCF_csvFileSize = fileSize,
                 uCF_csvFileData = strList,
                 uCF_errorState =
-                    if (strList.size > Constants.MAX_CARDS) UCF_ErrorState.FILE_TOO_LARGE
-                    else currentState.uCF_errorState,
+                    if (strList.size > Constants.MAX_CARDS) UCF_ErrorState.FILE_TOO_LONG
+                    else UCF_ErrorState.NO_ERROR,
             )
         }
     }
@@ -658,6 +676,12 @@ class ImportCardsViewModel(
                     )
                 )
             }
+        }
+
+        _uiState.update { currentState ->
+            currentState.copy(
+                uCF_errorState = UCF_ErrorState.NO_ERROR
+            )
         }
         return cards
     }

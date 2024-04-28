@@ -110,7 +110,7 @@ fun EditCardScreen (
                     ) {
                         TextButton(
                             onClick = onBackButtonClicked,
-                            modifier = Modifier.size(160.dp, 40.dp)
+                            modifier = Modifier.size(120.dp, 40.dp)
                         ) { Text("Cancel") }
                         Button(
                             onClick = {
@@ -131,7 +131,7 @@ fun EditCardScreen (
                                     }
                                 }
                             },
-                            modifier = Modifier.size(160.dp, 40.dp)
+                            modifier = Modifier.size(120.dp, 40.dp)
                         ) { Text("Save") }
                     }
                 }

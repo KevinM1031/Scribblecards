@@ -112,7 +112,7 @@ fun CreateCardScreen (
                         ) {
                             TextButton(
                                 onClick = onBackButtonClicked,
-                                modifier = Modifier.size(160.dp, 40.dp)
+                                modifier = Modifier.size(120.dp, 40.dp)
                             ) { Text("Cancel") }
                             Button(
                                 enabled = uiState.questionTextInput.isNotBlank() && uiState.answerTextInput.isNotBlank(),
@@ -122,7 +122,7 @@ fun CreateCardScreen (
                                         onBackButtonClicked()
                                     }
                                 },
-                                modifier = Modifier.size(160.dp, 40.dp)
+                                modifier = Modifier.size(120.dp, 40.dp)
                             ) { Text("Create") }
                         }
                     }

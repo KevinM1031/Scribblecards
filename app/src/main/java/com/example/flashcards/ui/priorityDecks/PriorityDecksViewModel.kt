@@ -53,7 +53,9 @@ class PriorityDecksViewModel(
         }
 
         val priorityDecksWithCards = decksWithCards.filter {
-            it.deck.masteryLevel <= Settings.getPriorityDeckThreshold() && it.cards.isNotEmpty()
+            it.deck.masteryLevel <= Settings.getPriorityDeckMasteryLevel() &&
+            it.cards.isNotEmpty() &&
+            System.currentTimeMillis() - it.deck.dateStudied > Settings.getPriorityDeckRefreshTime()
         }.sortedBy { it.deck.masteryLevel }
 
         val priorityDecks = mutableListOf<Deck>()
