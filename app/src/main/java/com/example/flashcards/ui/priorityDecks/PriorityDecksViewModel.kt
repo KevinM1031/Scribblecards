@@ -1,14 +1,10 @@
 package com.example.flashcards.ui.priorityDecks
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
 import com.example.flashcards.data.Settings
-import com.example.flashcards.data.entities.Bundle
-import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
-import com.example.flashcards.data.relations.BundleWithDecks
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,9 +49,9 @@ class PriorityDecksViewModel(
         }
 
         val priorityDecksWithCards = decksWithCards.filter {
-            it.deck.masteryLevel <= Settings.getPriorityDeckMasteryLevel() &&
+            it.deck.masteryLevel <= Settings.priorityDeckMasteryLevel &&
             it.cards.isNotEmpty() &&
-            System.currentTimeMillis() - it.deck.dateStudied > Settings.getPriorityDeckRefreshTime()
+            System.currentTimeMillis() - it.deck.dateStudied > Settings.priorityDeckRefreshTime
         }.sortedBy { it.deck.masteryLevel }
 
         val priorityDecks = mutableListOf<Deck>()

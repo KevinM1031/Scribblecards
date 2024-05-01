@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -55,8 +56,10 @@ fun MainMenuScreen(
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
 
     LaunchedEffect(Unit) {
+        viewModel.loadSettings(context, configuration)
         viewModel.softReset()
     }
 
@@ -81,8 +84,10 @@ fun MainMenuScreen(
                 .padding(mediumPadding)
             ) {
             Text(
-                text = "All cards",
+                text = stringResource(id = R.string.mms_cards),
                 fontSize = 48.sp,
+                lineHeight = 52.sp,
+                textAlign = TextAlign.Center,
             )
         }
 
@@ -99,31 +104,20 @@ fun MainMenuScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Text(
-                    text = "Priority decks",
+                    text = stringResource(id = R.string.mms_priority),
                     fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "${uiState.numPriorityDecks} remaining",
+                    text = "${uiState.numPriorityDecks} " + stringResource(id = R.string.mms_priority_remaining),
                     fontSize = 32.sp,
                     overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
                 )
             }
         }
 
         Spacer(Modifier.weight(1.0f))
-        Button(
-            onClick = { onLanguageButtonClicked() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(mediumPadding)
-        ) {
-            Text(
-                text = "Language",
-                fontSize = 24.sp,
-                onTextLayout = {}
-            )
-        }
-
         Button(
             onClick = { onSettingsButtonClicked() },
             modifier = Modifier
@@ -131,7 +125,20 @@ fun MainMenuScreen(
                 .padding(mediumPadding)
         ) {
             Text(
-                text = "Settings",
+                text = stringResource(id = R.string.mms_settings),
+                fontSize = 24.sp,
+                onTextLayout = {}
+            )
+        }
+
+        Button(
+            onClick = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(mediumPadding)
+        ) {
+            Text(
+                text = stringResource(id = R.string.mms_credits),
                 fontSize = 24.sp,
                 onTextLayout = {}
             )
@@ -180,7 +187,7 @@ fun CloseDialog(
 
             ) {
                 Text(
-                    text = "Close app?",
+                    text = stringResource(id = R.string.mms_d_close),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -195,11 +202,11 @@ fun CloseDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(id = R.string.cancel)) }
                     Button(
                         onClick = onCloseButtonClicked,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Close") }
+                    ) { Text(stringResource(id = R.string.close)) }
                 }
             }
         }

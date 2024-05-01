@@ -16,6 +16,7 @@ import com.example.flashcards.ui.deck.DeckScreen
 import com.example.flashcards.ui.editCard.EditCardScreen
 import com.example.flashcards.ui.importCards.ImportCardsScreen
 import com.example.flashcards.ui.mainMenu.MainMenuScreen
+import com.example.flashcards.ui.mainMenu.SettingsScreen
 import com.example.flashcards.ui.priorityDecks.PriorityDecksScreen
 import com.example.flashcards.ui.session.SessionScreen
 
@@ -48,6 +49,11 @@ fun FlashcardNavHost(
                 onPriorityDecksButtonClicked = { navController.navigate(FlashcardScreen.PriorityDecks.name) },
                 onLanguageButtonClicked = {  },
                 onSettingsButtonClicked = { navController.navigate(FlashcardScreen.Settings.name) },
+            )
+        }
+        composable(route = FlashcardScreen.Settings.name) {
+            SettingsScreen(
+                onBackButtonClicked = { navController.navigateUp() },
             )
         }
         composable(route = FlashcardScreen.PriorityDecks.name) {

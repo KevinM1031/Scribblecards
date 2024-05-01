@@ -539,7 +539,7 @@ fun CardComponent(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "${Math.round(card.getMasteryLevel(millisSinceStudied = lastStudied)*100)}% (${card.numPerfect}/${Settings.getMasteryStandard()})",
+                        text = "${Math.round(card.getMasteryLevel(millisSinceStudied = lastStudied)*100)}% (${card.numPerfect}/${Settings.masteryStandard})",
                         fontSize = 16.sp,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center,

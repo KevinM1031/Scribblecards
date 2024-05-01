@@ -3,11 +3,14 @@ package com.example.flashcards.data
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.entities.SavedSettings
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.data.relations.BundleWithDecksWithCards
 import com.example.flashcards.data.relations.DeckWithCards
 
 interface CardsRepository {
+
+    suspend fun insertSavedSettings(savedSettings: SavedSettings): Long
 
     suspend fun insertBundle(bundle: Bundle): Long
 
@@ -19,6 +22,8 @@ interface CardsRepository {
 
     suspend fun insertCardToDeck(card: Card, deckId: Long): Long
 
+    suspend fun updateSavedSettings(savedSettings: SavedSettings)
+
     suspend fun updateBundle(bundle: Bundle)
 
     suspend fun updateDeck(deck: Deck)
@@ -27,6 +32,8 @@ interface CardsRepository {
 
     suspend fun updateCard(card: Card)
 
+    suspend fun deleteSavedSettings(savedSettings: SavedSettings)
+
     suspend fun deleteBundle(bundle: Bundle)
 
     suspend fun deleteDeck(deck: Deck)
@@ -34,6 +41,10 @@ interface CardsRepository {
     suspend fun deleteDeckWithCards(deckWithCards: DeckWithCards)
 
     suspend fun deleteCard(card: Card)
+
+    suspend fun getSavedSettings(id: Long): SavedSettings
+
+    suspend fun getAllSavedSettings(): List<SavedSettings>
 
     suspend fun getBundle(id: Long): Bundle
 

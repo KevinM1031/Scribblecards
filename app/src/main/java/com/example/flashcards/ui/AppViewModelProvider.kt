@@ -12,6 +12,7 @@ import com.example.flashcards.ui.createCard.CreateCardViewModel
 import com.example.flashcards.ui.deck.ImportCardsViewModel
 import com.example.flashcards.ui.editCard.EditCardViewModel
 import com.example.flashcards.ui.mainMenu.MainMenuViewModel
+import com.example.flashcards.ui.mainMenu.SettingsViewModel
 import com.example.flashcards.ui.priorityDecks.PriorityDecksViewModel
 import com.example.flashcards.ui.session.SessionViewModel
 
@@ -60,6 +61,11 @@ object AppViewModelProvider {
         }
         initializer {
             MainMenuViewModel(
+                cardsRepository = flashcardApplication().container.cardsRepository,
+            )
+        }
+        initializer {
+            SettingsViewModel(
                 cardsRepository = flashcardApplication().container.cardsRepository,
             )
         }

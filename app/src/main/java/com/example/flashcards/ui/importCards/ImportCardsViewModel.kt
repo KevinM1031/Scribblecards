@@ -3,15 +3,12 @@ package com.example.flashcards.ui.deck
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.util.Log
 import androidx.compose.ui.focus.FocusRequester
-import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
 import com.example.flashcards.data.Constants
-import com.example.flashcards.data.Settings
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks

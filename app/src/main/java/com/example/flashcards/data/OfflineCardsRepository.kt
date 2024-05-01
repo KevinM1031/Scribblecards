@@ -1,14 +1,15 @@
 package com.example.flashcards.data
 
-import android.util.Log
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.entities.SavedSettings
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.data.relations.BundleWithDecksWithCards
 import com.example.flashcards.data.relations.DeckWithCards
 
 class OfflineCardsRepository(private val cardsDao: CardsDao) : CardsRepository {
+    override suspend fun insertSavedSettings(savedSettings: SavedSettings): Long = cardsDao.insertSavedSettings(savedSettings)
 
     override suspend fun insertBundle(bundle: Bundle): Long = cardsDao.insertBundle(bundle)
 
@@ -26,6 +27,8 @@ class OfflineCardsRepository(private val cardsDao: CardsDao) : CardsRepository {
         cardsDao.insertCard(card)
     }
 
+    override suspend fun updateSavedSettings(savedSettings: SavedSettings) = cardsDao.updateSavedSettings(savedSettings)
+
     override suspend fun updateBundle(bundle: Bundle) = cardsDao.updateBundle(bundle)
 
     override suspend fun updateDeck(deck: Deck) = cardsDao.updateDeck(deck)
@@ -33,6 +36,7 @@ class OfflineCardsRepository(private val cardsDao: CardsDao) : CardsRepository {
     override suspend fun updateAllDecks(vararg deck: Deck) = cardsDao.updateAllDecks(*deck)
 
     override suspend fun updateCard(card: Card) = cardsDao.updateCard(card)
+    override suspend fun deleteSavedSettings(savedSettings: SavedSettings) = cardsDao.deleteSavedSettings(savedSettings)
 
     override suspend fun deleteBundle(bundle: Bundle) = cardsDao.deleteBundle(bundle)
 
@@ -46,6 +50,9 @@ class OfflineCardsRepository(private val cardsDao: CardsDao) : CardsRepository {
     }
 
     override suspend fun deleteCard(card: Card) = cardsDao.deleteCard(card)
+    override suspend fun getSavedSettings(id: Long): SavedSettings = cardsDao.getSavedSettings(id)
+
+    override suspend fun getAllSavedSettings(): List<SavedSettings> = cardsDao.getAllSavedSettings()
 
     override suspend fun getBundle(id: Long): Bundle = cardsDao.getBundle(id)
 

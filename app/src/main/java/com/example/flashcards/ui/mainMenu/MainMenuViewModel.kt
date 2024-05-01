@@ -1,14 +1,14 @@
 package com.example.flashcards.ui.mainMenu
 
+import android.content.Context
+import android.content.res.Configuration
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
 import com.example.flashcards.data.Settings
-import com.example.flashcards.data.entities.Bundle
-import com.example.flashcards.data.entities.Card
-import com.example.flashcards.data.entities.Deck
-import com.example.flashcards.data.relations.BundleWithDecks
+import com.example.flashcards.data.entities.SavedSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,10 +22,6 @@ class MainMenuViewModel(
     private val _uiState = MutableStateFlow(MainMenuUiState())
     val uiState: StateFlow<MainMenuUiState> = _uiState.asStateFlow()
 
-    init {
-        reset()
-    }
-
     fun softReset() {
         viewModelScope.launch {
             countProprityDecks()
@@ -35,6 +31,15 @@ class MainMenuViewModel(
     fun reset() {
         softReset()
         closeCloseDialog()
+    }
+
+    suspend fun loadSettings(context: Context, configuration: Configuration) {
+        val savedSettings = cardsRepository.getAllSavedSettings()
+        if (savedSettings.isEmpty()) {
+            cardsRepository.insertSavedSettings(SavedSettings())
+        }
+        Settings.update(cardsRepository.getAllSavedSettings().first(), context, configuration)
+        reset()
     }
 
     /**
@@ -47,10 +52,12 @@ class MainMenuViewModel(
             cardsRepository.updateDeck(deck.deck)
         }
 
+        Log.d("", "${decksWithCards[0].deck.masteryLevel} <= ${Settings.priorityDeckMasteryLevel}")
+
         val priorityDecksWithCards = decksWithCards.filter {
-            it.deck.masteryLevel <= Settings.getPriorityDeckMasteryLevel() &&
+            it.deck.masteryLevel <= Settings.priorityDeckMasteryLevel &&
             it.cards.isNotEmpty() &&
-            System.currentTimeMillis() - it.deck.dateStudied > Settings.getPriorityDeckRefreshTime()
+            System.currentTimeMillis() - it.deck.dateStudied > Settings.priorityDeckRefreshTime
         }.sortedBy { it.deck.masteryLevel }
 
         _uiState.update { currentState ->

@@ -3,8 +3,8 @@ package com.example.flashcards.data.entities
 import android.util.Log
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.flashcards.data.Settings
 import kotlin.math.pow
+import com.example.flashcards.data.Settings
 
 @Entity(tableName = "cards")
 data class Card (
@@ -21,33 +21,32 @@ data class Card (
 ) : Selectable() {
 
     companion object {
-        fun calculateMasteryLevel(numStudied: Int, numPerfect: Int, isAffectedByTime: Boolean = true, millisSinceStudied: Long = 0): Float {
+        fun calculateMasteryLevel(numStudied: Int, numPerfect: Int, isAffectedByTime: Boolean = Settings.isMasteryAffectedByTime, millisSinceStudied: Long = 0): Float {
             return if (numStudied == 0) {
                 0f
             } else if (isAffectedByTime) {
-                val adjustedNumStudied = numStudied.coerceAtMost(Settings.getMasteryStandard()).toFloat()
-                val adjustedNumPerfect = numPerfect.coerceAtMost(Settings.getMasteryStandard()).toFloat() / (1 + (Math.E.toFloat() - 1) * Settings.getTimeImpactCoefficient())
-                val n = (adjustedNumStudied / Settings.getMasteryStandard()) / ((millisSinceStudied.toFloat()) / (3600000f * adjustedNumStudied).pow(adjustedNumPerfect + 1) + 1f)
-                Log.d("", "$n")
+                val adjustedNumStudied = numStudied.coerceAtMost(Settings.masteryStandard).toFloat()
+                val adjustedNumPerfect = numPerfect.coerceAtMost(Settings.masteryStandard).toFloat() / (1 + (Math.E.toFloat() - 1) * Settings.timeImpactCoefficient)
+                val n = (adjustedNumStudied / Settings.masteryStandard) / ((millisSinceStudied.toFloat()) / (3600000f * adjustedNumStudied).pow(adjustedNumPerfect + 1) + 1f)
                 n
             } else {
-                numPerfect.coerceAtMost(Settings.getMasteryStandard()).toFloat() / Settings.getMasteryStandard()
+                numPerfect.coerceAtMost(Settings.masteryStandard).toFloat() / Settings.masteryStandard
             }
         }
     }
 
     fun applySessionResults(isPerfect: Boolean) {
         if (isPerfect) {
-            numPerfect = (++numPerfect).coerceAtMost(Settings.getMasteryStandard())
-        } else if (numStudied >= Settings.getMasteryStandard()) {
+            numPerfect = (++numPerfect).coerceAtMost(Settings.masteryStandard)
+        } else if (numStudied >= Settings.masteryStandard) {
             numPerfect--
         }
-        numStudied = (++numStudied).coerceAtMost(Settings.getMasteryStandard())
+        numStudied = (++numStudied).coerceAtMost(Settings.masteryStandard)
     }
 
     fun getMasteryLevel(isAffectedByTime: Boolean = true, millisSinceStudied: Long = 0): Float {
-        numStudied = numStudied.coerceAtMost(Settings.getMasteryStandard())
-        numPerfect = numPerfect.coerceAtMost(Settings.getMasteryStandard())
+        numStudied = numStudied.coerceAtMost(Settings.masteryStandard)
+        numPerfect = numPerfect.coerceAtMost(Settings.masteryStandard)
         return calculateMasteryLevel(numStudied, numPerfect, isAffectedByTime, millisSinceStudied)
     }
 

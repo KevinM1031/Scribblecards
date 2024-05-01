@@ -10,12 +10,16 @@ import androidx.room.Update
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.entities.SavedSettings
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.data.relations.BundleWithDecksWithCards
 import com.example.flashcards.data.relations.DeckWithCards
 
 @Dao
 interface CardsDao {
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSavedSettings(savedSettings: SavedSettings): Long
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBundle(bundle: Bundle): Long
@@ -25,6 +29,9 @@ interface CardsDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertCard(card: Card): Long
+
+    @Update
+    suspend fun updateSavedSettings(savedSettings: SavedSettings)
 
     @Update
     suspend fun updateBundle(bundle: Bundle)
@@ -39,6 +46,9 @@ interface CardsDao {
     suspend fun updateCard(card: Card)
 
     @Delete
+    suspend fun deleteSavedSettings(savedSettings: SavedSettings)
+
+    @Delete
     suspend fun deleteBundle(bundle: Bundle)
 
     @Delete
@@ -46,6 +56,14 @@ interface CardsDao {
 
     @Delete
     suspend fun deleteCard(card: Card)
+
+    @Transaction
+    @Query("SELECT * FROM savedSettings WHERE id = :id")
+    suspend fun getSavedSettings(id: Long): SavedSettings
+
+    @Transaction
+    @Query("SELECT * FROM savedSettings")
+    suspend fun getAllSavedSettings(): List<SavedSettings>
 
     @Transaction
     @Query("SELECT * FROM bundles WHERE id = :id")

@@ -3,7 +3,6 @@ package com.example.flashcards.data.entities
 import android.util.Log
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.flashcards.data.Settings
 import kotlin.math.pow
 
 @Entity(tableName = "decks")

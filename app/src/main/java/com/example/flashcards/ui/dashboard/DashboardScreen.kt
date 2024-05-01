@@ -302,6 +302,7 @@ fun DashboardScreen(
             onDismissRequest = { viewModel.closeDeckCreatorDialog() },
             onCreateClicked = {
                 viewModel.closeDeckCreatorDialog()
+                viewModel.closeCreateOptions()
                 coroutineScope.launch {
                     viewModel.createDeck(it)
                 }
@@ -1158,6 +1159,7 @@ fun CreateDeckDialog(
     userInput: String?,
     focusManager: FocusManager,
 ) {
+
     Box(modifier = Modifier
         .fillMaxSize()
         .background(Color(0, 0, 0, 127))) {}

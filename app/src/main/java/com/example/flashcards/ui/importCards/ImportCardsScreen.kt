@@ -88,6 +88,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -668,6 +669,7 @@ fun UploadCsvFileScreen(
                 onValueChange = { setQuestionIndex(it) },
                 label = "Column number",
                 maxLines = 1,
+                useNumberKeyboard = true,
                 focusManager = focusManager,
                 modifier = Modifier
                     .padding(top = mediumLargePadding, bottom = smallPadding)
@@ -678,6 +680,7 @@ fun UploadCsvFileScreen(
                 onValueChange = { setAnswerIndex(it) },
                 label = "Column number",
                 maxLines = 1,
+                useNumberKeyboard = true,
                 focusManager = focusManager,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
@@ -688,6 +691,7 @@ fun UploadCsvFileScreen(
                 onValueChange = { setHintIndex(it) },
                 label = "Column number",
                 maxLines = 1,
+                useNumberKeyboard = true,
                 focusManager = focusManager,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
@@ -698,6 +702,7 @@ fun UploadCsvFileScreen(
                 onValueChange = { setExampleIndex(it) },
                 label = "Column number",
                 maxLines = 1,
+                useNumberKeyboard = true,
                 focusManager = focusManager,
                 isLast = true,
                 modifier = Modifier
@@ -1422,6 +1427,7 @@ fun CustomTextField(
     focusManager: FocusManager,
     isLast: Boolean = false,
     isError: Boolean = false,
+    useNumberKeyboard: Boolean = false,
     errorMessage: String = " - this field is required.",
     stringLength: StringLength = StringLength.SHORT,
 ) {
@@ -1443,7 +1449,10 @@ fun CustomTextField(
             isError = isError,
             minLines = minLines,
             maxLines = maxLines,
-            keyboardOptions = KeyboardOptions(imeAction = if (isLast) ImeAction.Done else ImeAction.Next),
+            keyboardOptions = KeyboardOptions(
+                imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
+                keyboardType = KeyboardType.Number
+            ),
             keyboardActions = KeyboardActions(
                 onNext = {
                     focusManager.moveFocus(if (isLast) FocusDirection.Exit else FocusDirection.Down)

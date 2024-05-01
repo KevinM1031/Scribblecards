@@ -1,46 +1,33 @@
 <resources>
     <string name="app_name">Scribblecards</string>
 
-    <string name="screen_main_menu">Menu</string>
-    <string name="screen_dashboard">Dashboard</string>
-    <string name="screen_deck">Deck Overview</string>
-    <string name="screen_create_card">Create Card</string>
-    <string name="screen_import_cards">Import Cards</string>
-    <string name="screen_session">Flashcard Session</string>
-    <string name="screen_summary">Session Summary</string>
-    <string name="screen_tutorial">Tutorial</string>
-    <string name="screen_settings">Settings</string>
+    <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="save_changes">Save changes</string>
+
+    <string name="mms_cards">All cards</string>
+    <string name="mms_priority">Priority decks</string>
+    <string name="mms_priority_remaining"> remaining</string>
+    <string name="mms_settings">Settings</string>
+    <string name="mms_credits">Credits</string>
+    <string name="mms_d_close">Close app?</string>
+
+    <string name="ss">Settings</string>
+    <string name="ss_mastery">Flashcard mastery</string>
+    <string name="ss_mastery_target">Mastery target</string>
+    <string name="ss_mastery_target_tip">The number of recent "perfect sessions" (in which the card is guessed correctly in one try) required for it to be considered "fully mastered" (100%).</string>
+    <string name="ss_mastery_time">Time affects mastery level</string>
+    <string name="ss_mastery_time_tip">When calculating mastery level, choose whether forgetting studied cards over time should be considered.</string>
+    <string name="ss_mastery_rate">Forgetting rate</string>
+    <string name="ss_mastery_rate_tip">Adjusts the rate at which mastery level decreases over time. At 100%, mastery level is halved every hour. Guessing a card correctly in one try significantly reduces its forgetting rate.</string>
+    <string name="ss_primary">Primary decks</string>
+    <string name="ss_primary_mastery">Maximum mastery level</string>
+    <string name="ss_primary_mastery_tip">Decks at or below this level are considered "first priority" and will appear in the "Priority decks" section.</string>
+    <string name="ss_primary_cooldown">Deck reappearance cooldown</string>
+    <string name="ss_primary_cooldown_tip">Time required after studying a deck for it to be able to appear/reappear in the "Priority decks" section.</string>
+    <string name="ss_language">Language</string>
+    <string name="ss_d_revert">Revert to default values?</string>
 
 
-    <string name="loading_title">Loading cards...</string>
-
-    <string name="main_menu_button_cards">Cards</string>
-    <string name="main_menu_button_tutorial">Tutorial</string>
-    <string name="main_menu_button_settings">Settings</string>
-
-    <string name="deck_overview_button_view_contents">View Contents</string>
-    <string name="deck_overview_button_start">Start Session</string>
-
-    <string name="deck_contents_button_add">Create New Card</string>
-    <string name="deck_contents_button_import">Import Cards</string>
-
-    <string name="import_cards_label_quizlet">Import from Quizlet</string>
-    <string name="import_cards_label_csv">Import from .csv file</string>
-    <string name="import_cards_label_another_deck">Import from another deck</string>
-
-    <string name="create_card_label_question">Question</string>
-    <string name="create_card_label_answer">Answer</string>
-    <string name="create_card_label_hint">Hint</string>
-    <string name="create_card_label_example">Example</string>
-
-    <string name="flashcard_session_button_hint">Show Hint</string>
-    <string name="flashcard_session_label_progress">Progress</string>
-    <string name="flashcard_session_button_quit">Quit</string>
-    <string name="flashcard_session_dialogue_quit_title">Quit session?</string>
-    <string name="flashcard_session_dialogue_quit_subtitle">Your progress during this session will not be saved.</string>
-
-    <string name="flashcard_summary_title">Summary</string>
-    <string name="flashcard_summary_label_perfect">Mastered</string>
-    <string name="flashcard_summary_label_wrong_once">Grasped</string>
-    <string name="flashcard_summary_label_wrong_many_times">Studied</string>
 </resources>
