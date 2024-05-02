@@ -8,5 +8,8 @@ data class MainMenuUiState(
 
     val isCloseDialogOpen: Boolean = false,
 
+    val allCardsBtnAnimRequested: Boolean = false,
+    val priorityDecksBtnAnimRequested: Boolean = false,
+
     val lastUpdated: Long = 0,
 )

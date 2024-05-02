@@ -20,5 +20,5 @@ enum class Language(val localeString: String, val displayName: String) {
     KOR(localeString = "kr", displayName = "한국어"),
     ENG(localeString = "", displayName = "English"),
     JPN(localeString = "jp", displayName = "日本語"),
-    UNSET(localeString = "unset", displayName = "Unset")
+    UNSET(localeString = "unset", displayName = "Default")
 }

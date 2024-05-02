@@ -1,7 +1,11 @@
 package com.example.flashcards.ui.mainMenu
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -53,10 +58,37 @@ fun MainMenuScreen(
     onSettingsButtonClicked: () -> Unit,
 ) {
 
+    val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
+
+    val allCardsBtnAnim = animateFloatAsState(
+        targetValue = if (uiState.allCardsBtnAnimRequested) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 250,
+            easing = FastOutSlowInEasing,
+        ),
+        finishedListener = {
+            if (uiState.allCardsBtnAnimRequested) {
+                onAllCardsButtonClicked()
+            }
+        }
+    )
+
+    val priorityDecksBtnAnim = animateFloatAsState(
+        targetValue = if (uiState.priorityDecksBtnAnimRequested) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 250,
+            easing = FastOutSlowInEasing,
+        ),
+        finishedListener = {
+            if (uiState.priorityDecksBtnAnimRequested) {
+                onPriorityDecksButtonClicked()
+            }
+        }
+    )
 
     LaunchedEffect(Unit) {
         viewModel.loadSettings(context, configuration)
@@ -72,16 +104,18 @@ fun MainMenuScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
-            .padding(mediumPadding)
             .verticalScroll(rememberScrollState())
     ) {
         Spacer(Modifier.weight(0.7f))
         FilledTonalButton(
-            onClick = { onAllCardsButtonClicked() },
-            shape = RoundedCornerShape(10),
+            onClick = { viewModel.requestAllCardsBtnAnim() },
+            shape = RoundedCornerShape(percent = (10 * (1 - allCardsBtnAnim.value).toInt())),
             modifier = Modifier
-                .size(300.dp, 300.dp)
-                .padding(mediumPadding)
+                .size(
+                    width = 300.dp + ((configuration.screenWidthDp - 300) * allCardsBtnAnim.value).dp,
+                    height = (300 * (1-priorityDecksBtnAnim.value)).dp + ((configuration.screenHeightDp - 300) * allCardsBtnAnim.value).dp
+                )
+                .padding(mediumPadding * (1f - allCardsBtnAnim.value - priorityDecksBtnAnim.value))
             ) {
             Text(
                 text = stringResource(id = R.string.mms_cards),
@@ -92,15 +126,18 @@ fun MainMenuScreen(
         }
 
         FilledTonalButton(
-            onClick = { onPriorityDecksButtonClicked() },
-            shape = RoundedCornerShape(20),
+            onClick = { viewModel.requestPriorityDecksBtnAnim() },
+            shape = RoundedCornerShape(percent = (20 * (1 - priorityDecksBtnAnim.value).toInt())),
             modifier = Modifier
-                .size(300.dp, 150.dp)
-                .padding(mediumPadding)
+                .size(
+                    width = 300.dp + ((configuration.screenWidthDp - 300) * priorityDecksBtnAnim.value).dp,
+                    height = 150.dp + ((configuration.screenHeightDp - 150) * priorityDecksBtnAnim.value).dp
+                )
+                .padding(mediumPadding * (1f - priorityDecksBtnAnim.value))
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceEvenly,
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
                 Text(
@@ -108,6 +145,7 @@ fun MainMenuScreen(
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.height(smallPadding))
                 Text(
                     text = "${uiState.numPriorityDecks} " + stringResource(id = R.string.mms_priority_remaining),
                     fontSize = 32.sp,

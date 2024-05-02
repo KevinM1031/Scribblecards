@@ -26,11 +26,13 @@ class MainMenuViewModel(
         viewModelScope.launch {
             countProprityDecks()
         }
+        closeCloseDialog()
+        closeAllCardsBtnAnimRequest()
+        closePriorityDecksBtnAnimRequest()
     }
 
     fun reset() {
         softReset()
-        closeCloseDialog()
     }
 
     suspend fun loadSettings(context: Context, configuration: Configuration) {
@@ -52,8 +54,6 @@ class MainMenuViewModel(
             cardsRepository.updateDeck(deck.deck)
         }
 
-        Log.d("", "${decksWithCards[0].deck.masteryLevel} <= ${Settings.priorityDeckMasteryLevel}")
-
         val priorityDecksWithCards = decksWithCards.filter {
             it.deck.masteryLevel <= Settings.priorityDeckMasteryLevel &&
             it.cards.isNotEmpty() &&
@@ -63,6 +63,38 @@ class MainMenuViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 numPriorityDecks = priorityDecksWithCards.size,
+            )
+        }
+    }
+
+    fun requestAllCardsBtnAnim() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                allCardsBtnAnimRequested = true,
+            )
+        }
+    }
+
+    fun closeAllCardsBtnAnimRequest() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                allCardsBtnAnimRequested = false,
+            )
+        }
+    }
+
+    fun requestPriorityDecksBtnAnim() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                priorityDecksBtnAnimRequested = true,
+            )
+        }
+    }
+
+    fun closePriorityDecksBtnAnimRequest() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                priorityDecksBtnAnimRequested = false,
             )
         }
     }
