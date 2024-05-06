@@ -1,6 +1,8 @@
 package com.example.flashcards.ui.dashboard
 
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
@@ -21,15 +23,25 @@ class DashboardViewModel(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    init {
-        reset()
-    }
-
     fun softReset() {
+        closeBundleCreator()
+        closeCreateOptions()
+        closeBundleCreatorDialog()
+        closeDeckCreatorDialog()
+        closeEditBundleNameDialog()
+        drop()
+
         viewModelScope.launch {
             updateMasteryLevels()
             loadCards()
             deleteAllEmptyBundles()
+        }
+
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCloseAnimRequested = false,
+                isCreateOptionsCloseAnimRequested = false,
+            )
         }
     }
 
@@ -37,11 +49,6 @@ class DashboardViewModel(
         softReset()
 
         closeBundle()
-        closeBundleCreator()
-        closeCreateOptions()
-        closeBundleCreatorDialog()
-        closeDeckCreatorDialog()
-        closeEditBundleNameDialog()
     }
 
     suspend fun loadCards() {
@@ -68,6 +75,27 @@ class DashboardViewModel(
         }
     }
 
+    fun dragStart(position: Offset, content: @Composable () -> Unit, data: DragData) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isDragging = true,
+                dragPosition = position,
+                dragContent = content,
+                dragData = data,
+            )
+        }
+    }
+
+    fun drop() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isDragging = false,
+                dragPosition = Offset.Zero,
+                dragContent = null,
+                dragData = null,
+            )
+        }
+    }
 
     fun closeCreateOptions() {
         _uiState.update { currentState ->
@@ -91,6 +119,14 @@ class DashboardViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 isCreateOptionsCloseAnimRequested = true,
+            )
+        }
+    }
+
+    fun requestOpenAnim() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isOpenAnimRequested = true,
             )
         }
     }
@@ -200,6 +236,8 @@ class DashboardViewModel(
             currentState.copy(
                 currentBundleIndex = bundleIndex,
                 isBundleCloseAnimRequested = false,
+                isBundleOpen = true,
+                isBundleFakeClosed = false,
             )
         }
     }
@@ -211,6 +249,8 @@ class DashboardViewModel(
             currentState.copy(
                 currentBundleIndex = null,
                 isBundleCloseAnimRequested = false,
+                isBundleOpen = false,
+                isBundleFakeClosed = false,
             )
         }
     }
@@ -223,8 +263,13 @@ class DashboardViewModel(
         }
     }
 
-    fun isBundleOpen(): Boolean {
-        return _uiState.value.currentBundleIndex != null
+    fun fakeCloseBundle() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCloseAnimRequested = true,
+                isBundleFakeClosed = true,
+            )
+        }
     }
 
     suspend fun deleteAllEmptyBundles() {
@@ -271,17 +316,24 @@ class DashboardViewModel(
                 currentBundleIndex = null,
                 currentDeckIndex = null,
                 numSelectedCards = 0,
+                isBundleOpen = false,
             )
         }
 
         deleteAllEmptyBundles()
     }
 
-    suspend fun moveDeckToBundle(deckIndex: Int, bundleIndex: Int) {
-        if (_uiState.value.decks.getOrNull(deckIndex) == null || _uiState.value.bundles.getOrNull(bundleIndex) == null) return
-        _uiState.value.decks[deckIndex].bundleId = _uiState.value.bundles[bundleIndex].bundle.id
-        _uiState.value.decks[deckIndex].deselect()
-        cardsRepository.updateDeck(_uiState.value.decks[deckIndex])
+    suspend fun moveDeckToBundle(deckIndex: Int, bundleIndex: Int, deckBundleIndex: Int? = null) {
+        if (deckBundleIndex != null && _uiState.value.bundles.getOrNull(deckBundleIndex) == null) return
+        val deck = if (deckBundleIndex != null)
+            _uiState.value.bundles[deckBundleIndex].decks.getOrNull(deckIndex)
+            else _uiState.value.decks.getOrNull(deckIndex)
+        val bundle = _uiState.value.bundles.getOrNull(bundleIndex)
+
+        if (deck == null || bundle == null) return
+        deck.bundleId = bundle.bundle.id
+        deck.deselect()
+        cardsRepository.updateDeck(deck)
         loadCards()
     }
 
@@ -298,12 +350,27 @@ class DashboardViewModel(
         deleteAllEmptyBundles()
     }
 
-    suspend fun mergeDecksIntoBundle(deck1Index: Int, deck2Index: Int) {
+    suspend fun moveDeckOutOfBundle(deckIndex: Int, bundleIndex: Int) {
+        if (_uiState.value.bundles.getOrNull(bundleIndex) == null) return
+        val deck = _uiState.value.bundles[bundleIndex].decks.getOrElse(deckIndex) { return }
+        deck.bundleId = -1
+        cardsRepository.updateDeck(deck)
+        deleteAllEmptyBundles()
+    }
+
+    suspend fun mergeDecksIntoBundle(deck1Index: Int, deck2Index: Int, deck1BundleIndex: Int? = null) {
+        if (deck1BundleIndex != null && _uiState.value.bundles.getOrNull(deck1BundleIndex) == null) return
+        val deck1 = if (deck1BundleIndex != null)
+            _uiState.value.bundles[deck1BundleIndex].decks.getOrNull(deck1Index)
+        else _uiState.value.decks.getOrNull(deck1Index)
+        if (deck1 == null) return
+
         val bundleId = cardsRepository.insertBundle(Bundle(
-            name = _uiState.value.decks[deck1Index].name + " & " + _uiState.value.decks[deck2Index].name
+            name = deck1.name + " & " + _uiState.value.decks[deck2Index].name
         ))
-        _uiState.value.decks[deck1Index].bundleId = bundleId
-        _uiState.value.decks[deck1Index].deselect()
+
+        deck1.bundleId = bundleId
+        deck1.deselect()
         cardsRepository.updateDeck(_uiState.value.decks[deck1Index])
         _uiState.value.decks[deck2Index].bundleId = bundleId
         _uiState.value.decks[deck2Index].deselect()
@@ -325,7 +392,7 @@ class DashboardViewModel(
 
         val deck = Deck(name = name.trim())
 
-        if (isBundleOpen()) {
+        if (_uiState.value.isBundleOpen) {
             cardsRepository.insertDeckToBundle(deck, _uiState.value.bundles[_uiState.value.currentBundleIndex!!].bundle.id)
         } else {
             cardsRepository.insertDeck(deck)
@@ -377,9 +444,10 @@ class DashboardViewModel(
         return _uiState.value.decks[index]
     }
 
-    fun getDeckFromCurrentBundle(index: Int) : Deck {
+    fun getDeckFromCurrentBundle(index: Int) : Deck? {
         val bundleIndex = _uiState.value.currentBundleIndex
-        return _uiState.value.bundles[bundleIndex!!].decks[index]
+        if (bundleIndex == null) return null
+        return _uiState.value.bundles[bundleIndex].decks[index]
     }
 
     fun getBundle(index: Int) : BundleWithDecks? {

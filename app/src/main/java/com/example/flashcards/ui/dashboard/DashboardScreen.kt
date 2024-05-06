@@ -61,6 +61,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,10 +76,15 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -99,6 +105,7 @@ import com.example.flashcards.data.Constants
 import com.example.flashcards.data.StringLength
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Deck
+import com.example.flashcards.data.entities.Selectable
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.ui.AppViewModelProvider
 import com.example.flashcards.ui.theme.FlashcardsTheme
@@ -107,6 +114,7 @@ import kotlin.math.roundToInt
 
 private const val BOX_SIZE_DP = 100
 private const val BOX_SIZE_IN_BUNDLE_DP = 90
+private const val BOX_SIZE_DRAGGING_DP = 110
 
 @Composable
 fun DashboardScreen(
@@ -117,12 +125,23 @@ fun DashboardScreen(
 
     LaunchedEffect(Unit) {
         viewModel.softReset()
+        viewModel.requestOpenAnim()
     }
+
     val uiState by viewModel.uiState.collectAsState()
-    val isBundleOpen = viewModel.isBundleOpen()
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val configuration = LocalConfiguration.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var topAppBarHeight by remember { mutableStateOf(0) }
+
+    val openAnim = animateFloatAsState(
+        targetValue = if (uiState.isOpenAnimRequested) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 250,
+            easing = FastOutSlowInEasing,
+        ),
+    )
 
     Scaffold(
         topBar = {
@@ -133,7 +152,7 @@ fun DashboardScreen(
                     onCreateClicked = { viewModel.openBundleCreatorDialog() },
                 )
 
-            } else if (isBundleOpen) {
+            } else if (uiState.isBundleOpen) {
                 if (uiState.isRemoveDeckFromBundleUiOpen) {
                     RemoveDeckFromBundleTopBar(
                         numSelected = uiState.numSelectedDecks,
@@ -156,6 +175,7 @@ fun DashboardScreen(
             } else {
                 DashboardTopAppBar(
                     onBackButtonClicked = onBackButtonClicked,
+                    setHeight = { topAppBarHeight = it }
                 )
             }
         },
@@ -191,15 +211,18 @@ fun DashboardScreen(
         },
     ) { innerPadding ->
 
+        //Log.d("", "recompose")
+
         var containerSize by remember { mutableStateOf(IntSize.Zero) }
+        var dragOffset by remember { mutableStateOf(Offset.Zero) }
         val bundleCloseAnim = animateFloatAsState(
-            targetValue = if (uiState.isBundleCloseAnimRequested) 0f else if (isBundleOpen) 1f else 0f,
+            targetValue = if (uiState.isBundleCloseAnimRequested) 0f else if (uiState.isBundleOpen) 1f else 0f,
             animationSpec = tween(
                 durationMillis = 250,
                 easing = FastOutSlowInEasing,
             ),
             finishedListener = {
-                if (uiState.isBundleCloseAnimRequested) viewModel.closeBundle()
+                if (uiState.isBundleCloseAnimRequested && !uiState.isBundleFakeClosed) { viewModel.closeBundle() }
             }
         )
 
@@ -215,68 +238,260 @@ fun DashboardScreen(
                     containerSize = coordinates.size
                 }
         ) {
-            CardsList(
-                onDeckOpened = { onDeckButtonClicked(it) },
-                onDeckSelected = { viewModel.toggleDeckSelection(it) },
-                getDeck = { viewModel.getDeck(it) },
-                numDecks = viewModel.getNumDecks(),
 
-                onBundleOpened = { viewModel.openBundle(it) },
-                onBundleSelected = { viewModel.toggleBundleSelection(it) },
-                getBundle = { viewModel.getBundle(it) ?: BundleWithDecks(Bundle(), listOf()) },
-                numBundles = viewModel.getNumBundles(),
+            var targetBundleIndex by remember { mutableStateOf<Int?>(null) }
+            var targetDeckIndex by remember { mutableStateOf<Int?>(null) }
 
-                moveDeckToBundle = { d, b ->
-                    coroutineScope.launch {
-                        viewModel.moveDeckToBundle(d, b)
+            var newTargetBundleIndex by remember { mutableStateOf<Int?>(null) }
+            var newTargetDeckIndex by remember { mutableStateOf<Int?>(null) }
+
+            val density = LocalDensity.current
+            val mediumPadding = dimensionResource(id = R.dimen.padding_medium)
+            val paddingOffset by remember { mutableStateOf(with(density) { Offset(0f, mediumPadding.toPx()) }) }
+
+            val lazyGridState = rememberLazyGridState()
+            val cardIconSize = (BOX_SIZE_DP * if (uiState.isOpenAnimRequested) openAnim.value else 1f).toInt().coerceAtLeast(1)
+            val adjustedCardIconSize by remember { derivedStateOf {
+                with(density) {
+                    lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
+                } ?: cardIconSize
+            } }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur((12 * bundleCloseAnim.value).dp)
+            ) {
+
+                LazyVerticalGrid(
+                    state = lazyGridState,
+                    columns = GridCells.Adaptive(minSize = (cardIconSize).dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(mediumPadding)
+                ) {
+
+                    newTargetBundleIndex = null
+                    newTargetDeckIndex = null
+
+                    items(viewModel.getNumBundles()) { i ->
+                        DraggableComposable(
+                            index = i,
+                            onBundleOpened = { viewModel.openBundle(it) },
+                            onBundleSelected = { viewModel.toggleBundleSelection(i) },
+                            getBundle = { viewModel.getBundle(it) ?: BundleWithDecks(Bundle(), listOf()) },
+                            isBundleCreatorOpen = uiState.isBundleCreatorOpen,
+                            isBundle = true,
+                            size = adjustedCardIconSize,
+                            onDragStart = { position, content -> viewModel.dragStart(position, content, DragData(i, null, true)) },
+                            onDrag = { dragOffset += it },
+                            onDrop = {
+                                coroutineScope.launch {
+                                    if (targetBundleIndex != null) {
+                                        viewModel.mergeBundleWithBundle(
+                                            selectedBundleIndex = i,
+                                            targetBundleIndex = targetBundleIndex!!,
+                                        )
+                                    }
+                                }
+                                viewModel.drop()
+                                dragOffset = Offset.Zero
+                                if (uiState.isBundleFakeClosed) viewModel.closeBundle()
+                            },
+                            testForCollision = { if ((!uiState.isBundleOpen || uiState.isBundleFakeClosed) && (newTargetBundleIndex ?: -1) < 0)
+                                newTargetBundleIndex = if (it != null && it.contains(uiState.dragPosition + dragOffset + paddingOffset)) i else -1
+                            },
+                            isHighlighted = targetBundleIndex == i,
+                            isClickEnabled = !uiState.isDragging,
+                        )
                     }
-                },
-                mergeDecksIntoBundle = { d, b ->
-                    coroutineScope.launch {
-                        viewModel.mergeDecksIntoBundle(d, b)
-                    }
-                },
-                mergeBundleWithBundle = { s, t ->
-                    coroutineScope.launch {
-                        viewModel.mergeBundleWithBundle(s, t)
-                    }
-                },
 
-                isBundleCreatorOpen = uiState.isBundleCreatorOpen,
-                isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
-                cardIconSize = BOX_SIZE_DP,
-                padding = dimensionResource(R.dimen.padding_medium),
-                blur = bundleCloseAnim.value,
-            )
+                    items(viewModel.getNumDecks()) { i ->
+                        DraggableComposable(
+                            index = i,
+                            onDeckOpened = { onDeckButtonClicked(it) },
+                            onDeckSelected = { viewModel.toggleDeckSelection(it) },
+                            getDeck = { viewModel.getDeck(i) },
+                            isBundleCreatorOpen = uiState.isBundleCreatorOpen,
+                            isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
+                            isBundle = false,
+                            size = adjustedCardIconSize,
+                            onDragStart = { position, content -> viewModel.dragStart(position, content, DragData(null, i, false)) },
+                            onDrag = { dragOffset += it },
+                            onDrop = {
+                                coroutineScope.launch {
+                                    if (targetDeckIndex != null) {
+                                        viewModel.mergeDecksIntoBundle(
+                                            deck1Index = i,
+                                            deck2Index = targetDeckIndex!!,
+                                        )
+                                    } else if (targetBundleIndex != null) {
+                                        viewModel.moveDeckToBundle(
+                                            deckIndex = i,
+                                            bundleIndex = targetBundleIndex!!,
+                                        )
+                                    }
+                                }
+                                viewModel.drop()
+                                dragOffset = Offset.Zero
+                                if (uiState.isBundleFakeClosed) viewModel.closeBundle()
+                            },
+                            testForCollision = { if ((!uiState.isBundleOpen || uiState.isBundleFakeClosed) && (newTargetDeckIndex ?: -1) < 0)
+                                newTargetDeckIndex = if (it != null && it.contains(uiState.dragPosition + dragOffset + paddingOffset)) i else -1
+                            },
+                            isHighlighted = targetDeckIndex == i,
+                            isClickEnabled = !uiState.isDragging,
+                        )
+                    }
+                }
 
-            if (isBundleOpen) {
+                if (newTargetBundleIndex != null) {
+                    targetBundleIndex = if (newTargetBundleIndex == -1) null else newTargetBundleIndex
+                }
+
+                if (newTargetDeckIndex != null) {
+                    targetDeckIndex = if (newTargetDeckIndex == -1) null else newTargetDeckIndex
+                }
+            }
+
+            if (uiState.isBundleOpen) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(Unit) { detectTapGestures { viewModel.requestCloseBundleAnim() } }
                 )
 
-                OpenBundle(
-                    configuration = LocalConfiguration.current,
-                    onDeckOpened = { onDeckButtonClicked(it) },
-                    onDeckSelected = {
-                        if (!uiState.isRemoveDeckFromBundleUiOpen && !uiState.isBundleCreatorOpen) {
-                            viewModel.openRemoveDeckFromBundleUi()
+                val off = dragOffset
+
+                val smallPadding = dimensionResource(R.dimen.padding_small)
+
+                var bundleContainerSize by remember { mutableStateOf(IntSize.Zero) }
+                var bundleContainerPosition by remember { mutableStateOf(Offset.Zero) }
+
+                val overlayWidth =
+                    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
+                        (configuration.screenWidthDp - mediumPadding.value*2)*0.6f
+                    else
+                        configuration.screenWidthDp - mediumPadding.value*2
+                val overlayHeight =
+                    if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
+                        configuration.screenHeightDp - mediumPadding.value*2
+                    else
+                        configuration.screenWidthDp - mediumPadding.value*2
+
+                Card(
+                    modifier = Modifier
+                        .alpha(bundleCloseAnim.value)
+                        .padding(mediumPadding)
+                        .size(overlayWidth.dp, overlayHeight.dp)
+                        .onGloballyPositioned {
+                            it
+                                .boundsInWindow()
+                                .let { rect ->
+                                    if (uiState.isDragging && !rect.contains(uiState.dragPosition + dragOffset)) {
+                                        viewModel.fakeCloseBundle()
+                                    }
+                                }
                         }
-                        viewModel.toggleDeckSelection(it)
-                    },
-                    getDeck = { viewModel.getDeckFromCurrentBundle(it) },
-                    numDecks = viewModel.getNumDecksInCurrentBundle(),
-                    getBundle = { viewModel.getBundle(it) ?: BundleWithDecks(Bundle(), listOf()) },
-                    isBundleCreatorOpen = uiState.isBundleCreatorOpen,
-                    isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
-                    cardIconSize = BOX_SIZE_IN_BUNDLE_DP,
-                    modifier = Modifier.alpha(bundleCloseAnim.value)
-                )
+
+                ) {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(smallPadding)
+                            .onGloballyPositioned { coordinates ->
+                                bundleContainerSize = coordinates.size
+                                bundleContainerPosition = coordinates.positionInRoot()
+                            }
+                    ) {
+
+                        val bundleLazyGridState = rememberLazyGridState()
+                        val bundleAdjustedCardIconSize by remember { derivedStateOf {
+                            with(density) {
+                                lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
+                            } ?: cardIconSize
+                        } }
+
+                        LazyVerticalGrid(
+                            state = bundleLazyGridState,
+                            columns = GridCells.Adaptive(minSize = (cardIconSize).dp)
+                        ) {
+
+                            items(viewModel.getNumDecksInCurrentBundle()) { i ->
+                                DraggableComposable(
+                                    index = i,
+                                    onDeckOpened = { onDeckButtonClicked(it) },
+                                    onDeckSelected = {
+                                        if (!uiState.isRemoveDeckFromBundleUiOpen && !uiState.isBundleCreatorOpen) {
+                                            viewModel.openRemoveDeckFromBundleUi()
+                                        }
+                                        viewModel.toggleDeckSelection(it)
+                                    },
+                                    getDeck = { viewModel.getDeckFromCurrentBundle(it) ?: Deck() },
+                                    getBundle = { viewModel.getBundle(it) ?: BundleWithDecks(Bundle(), listOf()) },
+                                    isBundleCreatorOpen = uiState.isBundleCreatorOpen,
+                                    isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
+                                    isBundle = false,
+                                    size = bundleAdjustedCardIconSize,
+                                    onDragStart = { position, content -> viewModel.dragStart(position, content, DragData(uiState.currentBundleIndex, i, false)) },
+                                    onDrag = { dragOffset += it },
+                                    onDrop = {
+                                        coroutineScope.launch {
+                                            if (targetDeckIndex != null) {
+                                                viewModel.mergeDecksIntoBundle(
+                                                    deck1Index = i,
+                                                    deck1BundleIndex = uiState.currentBundleIndex,
+                                                    deck2Index = targetDeckIndex!!
+                                                )
+                                            } else if (targetBundleIndex != null) {
+                                                viewModel.moveDeckToBundle(
+                                                    deckIndex = i,
+                                                    bundleIndex = targetBundleIndex!!,
+                                                    deckBundleIndex = uiState.currentBundleIndex
+                                                )
+                                            } else {
+                                                viewModel.moveDeckOutOfBundle(
+                                                    deckIndex = i,
+                                                    bundleIndex = uiState.currentBundleIndex ?: -1
+                                                )
+                                            }
+                                        }
+                                        viewModel.drop()
+                                        dragOffset = Offset.Zero
+                                        if (uiState.isBundleFakeClosed) viewModel.closeBundle()
+                                    },
+                                    onDropCancel = {
+                                        viewModel.drop()
+                                        dragOffset = Offset.Zero
+                                        if (uiState.isBundleFakeClosed) viewModel.closeBundle()
+                                    },
+                                    isHighlighted = false,
+                                    isDeckInsideBundle = true,
+                                    isClickEnabled = !uiState.isDragging,
+                                )
+                            }
+                        }
+                    }
+                }
 
                 if (uiState.isBundleCloseAnimRequested) {
                     Box(modifier = Modifier.fillMaxSize())
                 }
+            }
+        }
+
+        if (uiState.isDragging && uiState.dragContent != null) {
+            Box(
+                modifier = Modifier
+                    .size(BOX_SIZE_DRAGGING_DP.dp)
+                    .graphicsLayer {
+                        val size = BOX_SIZE_DRAGGING_DP.dp.toPx() / 2
+                        translationX = uiState.dragPosition.x + dragOffset.x - size
+                        translationY = uiState.dragPosition.y + dragOffset.y - size
+                    }
+            ) {
+                uiState.dragContent?.invoke()
             }
         }
     }
@@ -333,188 +548,14 @@ fun DashboardScreen(
     } else if (uiState.isRemoveDeckFromBundleUiOpen && !uiState.isBundleCreatorOpen) {
         BackHandler { viewModel.closeRemoveDeckFromBundleUi()}
 
-    } else if (isBundleOpen) {
+    } else if (uiState.isBundleOpen) {
         BackHandler { viewModel.requestCloseBundleAnim() }
 
     } else if (uiState.isBundleCreatorOpen) {
         BackHandler { viewModel.closeBundleCreator() }
-
     }
 }
 
-@Composable
-fun CardsList(
-    onDeckOpened: (Long) -> Unit,
-    onDeckSelected: (Int) -> Unit,
-    getDeck: (Int) -> Deck,
-    numDecks: Int,
-
-    onBundleOpened: (Int) -> Unit,
-    onBundleSelected: (Int) -> Unit,
-    getBundle: (Int) -> BundleWithDecks,
-    numBundles: Int,
-
-    moveDeckToBundle: (Int, Int) -> Unit,
-    mergeDecksIntoBundle: (Int, Int) -> Unit,
-    mergeBundleWithBundle: (Int, Int) -> Unit,
-
-    isBundleCreatorOpen: Boolean,
-    isRemoveDeckFromBundleUiOpen: Boolean,
-    cardIconSize: Int,
-    padding: Dp = dimensionResource(R.dimen.padding_medium),
-    blur: Float = 0f,
-) {
-
-    val bundlePositions = remember { mutableStateMapOf<Int, Offset>() }
-    val deckPositions = remember { mutableStateMapOf<Int, Offset>() }
-    var draggingBundleIndex by remember { mutableStateOf<Int?>(null) }
-    var draggingDeckIndex by remember { mutableStateOf<Int?>(null) }
-    var highlightedBundleIndex by remember { mutableStateOf<Int?>(null) }
-    var highlightedDeckIndex by remember { mutableStateOf<Int?>(null) }
-    var isDropped by remember { mutableStateOf(false) }
-    val density = LocalDensity.current
-    val sizePx = with(density) { BOX_SIZE_DP.dp.toPx()/2 }.toInt()
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .blur((12 * blur).dp)
-    ) {
-
-        val lazyGridState = rememberLazyGridState()
-        val adjustedCardIconSize by remember { derivedStateOf {
-            with(density) {
-                lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
-            } ?: cardIconSize
-        } }
-
-        LazyVerticalGrid(
-            state = lazyGridState,
-            columns = GridCells.Adaptive(minSize = (cardIconSize).dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-
-            items(numBundles) { i ->
-                DraggableComposable(
-                    index = i,
-                    onBundleOpened = onBundleOpened,
-                    onBundleSelected = onBundleSelected,
-                    getBundle = getBundle,
-                    isBundleCreatorOpen = isBundleCreatorOpen,
-                    isBundle = true,
-                    size = adjustedCardIconSize,
-                    setPosition = { bundlePositions[i] = it },
-                    onDrag = { draggingBundleIndex = it },
-                    onDrop = { isDropped = true },
-                    isHighlighted = highlightedBundleIndex == i,
-                    isClickEnabled = draggingBundleIndex == null,
-                )
-            }
-
-            items(numDecks) { i ->
-                DraggableComposable(
-                    index = i,
-                    onDeckOpened = onDeckOpened,
-                    onDeckSelected = onDeckSelected,
-                    getDeck = getDeck,
-                    getBundle = getBundle,
-                    isBundleCreatorOpen = isBundleCreatorOpen,
-                    isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
-                    isBundle = false,
-                    size = adjustedCardIconSize,
-                    setPosition = { deckPositions[i] = it },
-                    onDrag = { draggingDeckIndex = it },
-                    onDrop = { isDropped = true },
-                    isHighlighted = highlightedDeckIndex == i,
-                    isClickEnabled = draggingDeckIndex == null,
-                )
-            }
-
-            if (!isBundleCreatorOpen) {
-
-                highlightedBundleIndex = null
-                highlightedDeckIndex = null
-
-                // check for dragging bundles
-                if (draggingBundleIndex != null) {
-                    for (pos in bundlePositions) {
-                        if (pos.key != draggingBundleIndex && iconOverlaps(
-                                bundlePositions[draggingBundleIndex]!!,
-                                pos.value,
-                                sizePx
-                            )
-                        ) {
-
-                            // bundle dropped on bundle - merge bundles
-                            if (isDropped) {
-                                mergeBundleWithBundle(draggingBundleIndex!!, pos.key)
-                                bundlePositions.remove(draggingBundleIndex)
-                                isDropped = false
-                                draggingBundleIndex = null
-
-                            } else highlightedBundleIndex = pos.key
-                            break
-                        }
-                    }
-
-                    if (isDropped) {
-                        isDropped = false
-                        draggingBundleIndex = null
-                    }
-
-                    // check for dragging decks
-                } else if (draggingDeckIndex != null) {
-                    var pass = false
-                    for (pos in bundlePositions) {
-                        if (iconOverlaps(deckPositions[draggingDeckIndex]!!, pos.value, sizePx)) {
-                            pass = true
-
-                            // deck dropped on bundle - move deck to bundle
-                            if (isDropped) {
-                                moveDeckToBundle(draggingDeckIndex!!, pos.key)
-                                deckPositions.remove(draggingDeckIndex)
-                                isDropped = false
-                                draggingDeckIndex = null
-
-                            } else highlightedBundleIndex = pos.key
-                            break
-                        }
-                    }
-
-                    if (!pass) {
-                        for (pos in deckPositions) {
-                            if (pos.key != draggingDeckIndex && iconOverlaps(
-                                    deckPositions[draggingDeckIndex]!!,
-                                    pos.value,
-                                    sizePx
-                                )
-                            ) {
-
-                                // deck dropped on deck - merge decks into bundle
-                                if (isDropped) {
-                                    mergeDecksIntoBundle(draggingDeckIndex!!, pos.key)
-                                    deckPositions.remove(draggingDeckIndex)
-                                    deckPositions.remove(pos.key)
-                                    isDropped = false
-                                    draggingDeckIndex = null
-
-                                } else highlightedDeckIndex = pos.key
-                                break
-                            }
-                        }
-                    }
-
-                    if (isDropped) {
-                        isDropped = false
-                        draggingDeckIndex = null
-                    }
-                }
-            }
-        }
-    }
-}
 
 fun iconOverlaps(p1: Offset, p2: Offset, size: Int): Boolean {
     return p1.x+size > p2.x && p1.x < p2.x+size && p1.y+size > p2.y && p1.y < p2.y+size
@@ -533,86 +574,84 @@ fun DraggableComposable(
     isRemoveDeckFromBundleUiOpen: Boolean = false,
     isBundle: Boolean,
     size: Int,
-    setPosition: (Offset) -> Unit = {},
-    onDrag: (Int?) -> Unit = {},
+    onDragStart: (Offset, @Composable () -> Unit) -> Unit = {a,b -> },
+    onDrag: (Offset) -> Unit = {},
     onDrop: () -> Unit = {},
+    onDropCancel: () -> Unit = {},
     isHighlighted: Boolean = false,
     isClickEnabled: Boolean = true,
+    testForCollision: (Rect?) -> Unit = {},
     isDeckInsideBundle: Boolean = false,
     alpha: Float = 1f,
 ) {
 
     var isDragging by remember { mutableStateOf(false) }
-    var xOff by remember { mutableFloatStateOf(0f) }
-    var yOff by remember { mutableFloatStateOf(0f) }
-    val d = LocalDensity.current
+    var posInRoot by remember { mutableStateOf(Offset.Zero) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    val content = @Composable {
+        if (isBundle && onBundleOpened != null && onBundleSelected != null && getBundle != null) {
+            BundleComponent(
+                index = index,
+                onBundleOpened = onBundleOpened,
+                onBundleSelected = onBundleSelected,
+                getBundle = getBundle,
+                isHighlighted = isHighlighted,
+                isClickEnabled = isClickEnabled,
+            )
+        } else if (onDeckOpened != null && onDeckSelected != null && getDeck != null) {
+            DeckComponent(
+                onDeckOpened = { onDeckOpened(it) },
+                onDeckSelected = { onDeckSelected(index) },
+                getDeck = { getDeck(index) },
+                isBundleCreatorOpen = isBundleCreatorOpen,
+                isHighlighted = isHighlighted,
+                isClickEnabled = isClickEnabled,
+                isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
+                isInBundle = isDeckInsideBundle,
+            )
+        } else Box {}
+    }
 
     Box(
         modifier = Modifier
             .size(size.dp)
-            .padding(
-                if (isBundle || isDeckInsideBundle) dimensionResource(R.dimen.padding_small)
-                else dimensionResource(R.dimen.padding_medium_small)
-            )
-            .offset(x = (xOff / d.density).dp, y = (yOff / d.density).dp)
+            .padding(dimensionResource(R.dimen.padding_small))
             .alpha(alpha * (if (isDragging) 0.5f else 1f))
             .zIndex(if (isDragging) 1f else 0f)
-            .onGloballyPositioned { coordinates ->
-                setPosition(coordinates.positionInRoot())
+            .onGloballyPositioned {
+                posInRoot = it.positionInRoot()
+                it
+                    .boundsInWindow()
+                    .let { rect -> testForCollision(if (isDragging) null else rect) }
             }
             .pointerInput(Unit) {
-                if (!isDeckInsideBundle && !isBundleCreatorOpen) {
+                if (!isBundleCreatorOpen) {
                     detectDragGesturesAfterLongPress(
                         onDragStart = {
                             isDragging = true
-                            onDrag(index)
+                            onDragStart(posInRoot + it, content)
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            onDrag(dragAmount)
+                            offset += dragAmount
                         },
                         onDragEnd = {
                             isDragging = false
-                            xOff = 0f
-                            yOff = 0f
                             onDrop()
+                            offset = Offset.Zero
                         },
                         onDragCancel = {
                             isDragging = false
-                            xOff = 0f
-                            yOff = 0f
-                            onDrag(null)
+                            onDropCancel()
+                            offset = Offset.Zero
                         },
-                    ) { change, dragAmount ->
-                        change.consume()
-                        xOff += dragAmount.x
-                        yOff += dragAmount.y
-                    }
+                    )
                 }
             }
     ) {
-
-        if (isBundle) {
-            if (onBundleOpened != null && onBundleSelected != null && getBundle != null) {
-                BundleComponent(
-                    index = index,
-                    onBundleOpened = onBundleOpened,
-                    onBundleSelected = onBundleSelected,
-                    getBundle = getBundle,
-                    isHighlighted = isHighlighted,
-                    isClickEnabled = isClickEnabled,
-                )
-            }
-        } else {
-            if (onDeckOpened != null && onDeckSelected != null && getDeck != null) {
-                DeckComponent(
-                    onDeckOpened = { onDeckOpened(it) },
-                    onDeckSelected = { onDeckSelected(index) },
-                    getDeck = { getDeck(index) },
-                    isBundleCreatorOpen = isBundleCreatorOpen,
-                    isHighlighted = isHighlighted,
-                    isClickEnabled = isClickEnabled,
-                    isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
-                    isInBundle = isDeckInsideBundle,
-                )
-            }
-        }
+        content()
     }
 }
 
@@ -721,15 +760,10 @@ fun DeckComponent(
             .combinedClickable(
                 enabled = isClickEnabled,
                 onClick = {
-                    if (isBundleCreatorOpen || (isInBundle && isRemoveDeckFromBundleUiOpen)) {
+                    if (isBundleCreatorOpen) {
                         onDeckSelected()
                     } else {
                         onDeckOpened(deck.id)
-                    }
-                },
-                onLongClick = {
-                    if (isInBundle) {
-                        onDeckSelected()
                     }
                 },
             )
@@ -759,97 +793,16 @@ fun DeckComponent(
     }
 }
 
-@Composable
-fun OpenBundle(
-    modifier: Modifier = Modifier,
-    numDecks: Int,
-    configuration: Configuration,
-    cardIconSize: Int,
-    onDeckOpened: ((Long) -> Unit)? = null,
-    onDeckSelected: ((Int) -> Unit)? = null,
-    getDeck: ((Int) -> Deck)? = null,
-    getBundle: ((Int) -> BundleWithDecks)? = null,
-    isBundleCreatorOpen: Boolean,
-    isRemoveDeckFromBundleUiOpen: Boolean,
-) {
-
-    val density = LocalDensity.current
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val smallPadding = dimensionResource(R.dimen.padding_small)
-
-    var containerSize by remember { mutableStateOf(IntSize.Zero) }
-    var containerPosition by remember { mutableStateOf(Offset.Zero) }
-
-    val overlayWidth =
-        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
-            (configuration.screenWidthDp - mediumPadding.value*2)*0.6f
-        else
-            configuration.screenWidthDp - mediumPadding.value*2
-    val overlayHeight =
-        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
-            configuration.screenHeightDp - mediumPadding.value*2
-        else
-            configuration.screenWidthDp - mediumPadding.value*2
-
-    Card(
-        modifier = modifier
-            .padding(mediumPadding)
-            .size(overlayWidth.dp, overlayHeight.dp)
-
-    ) {
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(smallPadding)
-                .onGloballyPositioned { coordinates ->
-                    containerSize = coordinates.size
-                    containerPosition = coordinates.positionInRoot()
-                }
-        ) {
-
-            val lazyGridState = rememberLazyGridState()
-            val adjustedCardIconSize by remember { derivedStateOf {
-                with(density) {
-                    lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
-                } ?: cardIconSize
-            } }
-
-            LazyVerticalGrid(
-                state = lazyGridState,
-                columns = GridCells.Adaptive(minSize = (cardIconSize).dp)
-            ) {
-
-                items(numDecks) { i ->
-                    DraggableComposable(
-                        index = i,
-                        onDeckOpened = onDeckOpened,
-                        onDeckSelected = onDeckSelected,
-                        getDeck = getDeck,
-                        getBundle = getBundle,
-                        isBundleCreatorOpen = isBundleCreatorOpen,
-                        isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
-                        isBundle = false,
-                        size = adjustedCardIconSize,
-                        isHighlighted = false,
-                        isClickEnabled = true,
-                        isDeckInsideBundle = true,
-                    )
-                }
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardTopAppBar(
     onBackButtonClicked: () -> Unit,
+    setHeight: (Int) -> Unit,
 ) {
     TopAppBar(
         title = { Text(text = "Dashboard", overflow = TextOverflow.Ellipsis,) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-        containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
         navigationIcon = {
             IconButton(onClick = onBackButtonClicked) {
@@ -858,7 +811,11 @@ fun DashboardTopAppBar(
                     contentDescription = "Back"
                 )
             }
-        }
+        },
+        modifier = Modifier
+            .onGloballyPositioned {
+                setHeight(it.size.height)
+            }
     )
 }
 
@@ -1160,9 +1117,11 @@ fun CreateDeckDialog(
     focusManager: FocusManager,
 ) {
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127))) {}
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0, 0, 0, 127))
+    ) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -1204,11 +1163,21 @@ fun CreateDeckDialog(
                     }
                     OutlinedTextField(
                         value = userInput ?: "",
-                        onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
+                        onValueChange = {
+                            setUserInput(
+                                if (it.length <= StringLength.SHORT.maxLength) it else it.substring(
+                                    0..StringLength.SHORT.maxLength
+                                )
+                            )
+                        },
                         label = { Text("Deck name") },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
+                        keyboardActions = KeyboardActions(onNext = {
+                            focusManager.moveFocus(
+                                FocusDirection.Exit
+                            )
+                        }),
                     )
                 }
                 Row(
