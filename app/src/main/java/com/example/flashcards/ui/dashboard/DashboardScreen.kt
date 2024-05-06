@@ -211,8 +211,6 @@ fun DashboardScreen(
         },
     ) { innerPadding ->
 
-        //Log.d("", "recompose")
-
         var containerSize by remember { mutableStateOf(IntSize.Zero) }
         var dragOffset by remember { mutableStateOf(Offset.Zero) }
         val bundleCloseAnim = animateFloatAsState(
