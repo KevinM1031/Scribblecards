@@ -353,6 +353,7 @@ fun DashboardScreen(
                 )
 
                 val smallPadding = dimensionResource(R.dimen.padding_small)
+                var bundleRect by remember { mutableStateOf(Rect.Zero) }
 
                 var bundleContainerSize by remember { mutableStateOf(IntSize.Zero) }
                 var bundleContainerPosition by remember { mutableStateOf(Offset.Zero) }
@@ -377,9 +378,7 @@ fun DashboardScreen(
                             it
                                 .boundsInWindow()
                                 .let { rect ->
-                                    if (uiState.isDragging && !rect.contains(uiState.dragPosition + dragOffset)) {
-                                        viewModel.fakeCloseBundle()
-                                    }
+                                    bundleRect = rect
                                 }
                         }
 
@@ -424,7 +423,12 @@ fun DashboardScreen(
                                     isBundle = false,
                                     size = bundleAdjustedCardIconSize,
                                     onDragStart = { position, content -> viewModel.dragStart(position, content, DragData(uiState.currentBundleIndex, i, false)) },
-                                    onDrag = { dragOffset += it },
+                                    onDrag = {
+                                        dragOffset += it
+                                        if (uiState.isDragging && !bundleRect.contains(uiState.dragPosition + dragOffset)) {
+                                            viewModel.fakeCloseBundle()
+                                        }
+                                    },
                                     onDrop = {
                                         coroutineScope.launch {
                                             if (targetDeckIndex != null) {
