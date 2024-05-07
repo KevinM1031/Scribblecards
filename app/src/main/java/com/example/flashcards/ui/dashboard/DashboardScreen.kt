@@ -240,12 +240,8 @@ fun DashboardScreen(
             var targetBundleIndex by remember { mutableStateOf<Int?>(null) }
             var targetDeckIndex by remember { mutableStateOf<Int?>(null) }
 
-            var newTargetBundleIndex by remember { mutableStateOf<Int?>(null) }
-            var newTargetDeckIndex by remember { mutableStateOf<Int?>(null) }
-
             val density = LocalDensity.current
             val mediumPadding = dimensionResource(id = R.dimen.padding_medium)
-            val paddingOffset by remember { mutableStateOf(with(density) { Offset(0f, mediumPadding.toPx()) }) }
 
             val lazyGridState = rememberLazyGridState()
             val cardIconSize = (BOX_SIZE_DP * if (uiState.isOpenAnimRequested) openAnim.value else 1f).toInt().coerceAtLeast(1)
@@ -269,8 +265,7 @@ fun DashboardScreen(
                         .padding(mediumPadding)
                 ) {
 
-                    newTargetBundleIndex = null
-                    newTargetDeckIndex = null
+                    Log.d("", "asdf")
 
                     items(viewModel.getNumBundles()) { i ->
                         DraggableComposable(
@@ -291,15 +286,19 @@ fun DashboardScreen(
                                             targetBundleIndex = targetBundleIndex!!,
                                         )
                                     }
+                                    targetBundleIndex = null
+                                    targetDeckIndex = null
                                 }
                                 viewModel.drop()
                                 dragOffset = Offset.Zero
                                 if (uiState.isBundleFakeClosed) viewModel.closeBundle()
                             },
-                            testForCollision = { if ((!uiState.isBundleOpen || uiState.isBundleFakeClosed) && (newTargetBundleIndex ?: -1) < 0)
-                                newTargetBundleIndex = if (it != null && it.contains(uiState.dragPosition + dragOffset + paddingOffset)) i else -1
+                            onDraggedOver = {
+                                targetBundleIndex = i
+                                targetDeckIndex = null
                             },
-                            isHighlighted = targetBundleIndex == i,
+                            dragPosition = uiState.dragPosition + dragOffset,
+                            isDropOnAllowed = uiState.isBundleFakeClosed || !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging,
                         )
                     }
@@ -329,26 +328,22 @@ fun DashboardScreen(
                                             bundleIndex = targetBundleIndex!!,
                                         )
                                     }
+                                    targetBundleIndex = null
+                                    targetDeckIndex = null
                                 }
                                 viewModel.drop()
                                 dragOffset = Offset.Zero
                                 if (uiState.isBundleFakeClosed) viewModel.closeBundle()
                             },
-                            testForCollision = { if ((!uiState.isBundleOpen || uiState.isBundleFakeClosed) && (newTargetDeckIndex ?: -1) < 0)
-                                newTargetDeckIndex = if (it != null && it.contains(uiState.dragPosition + dragOffset + paddingOffset)) i else -1
+                            onDraggedOver = {
+                                targetBundleIndex = null
+                                targetDeckIndex = i
                             },
-                            isHighlighted = targetDeckIndex == i,
+                            dragPosition = uiState.dragPosition + dragOffset,
+                            isDropOnAllowed = uiState.isBundleFakeClosed || !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging,
                         )
                     }
-                }
-
-                if (newTargetBundleIndex != null) {
-                    targetBundleIndex = if (newTargetBundleIndex == -1) null else newTargetBundleIndex
-                }
-
-                if (newTargetDeckIndex != null) {
-                    targetDeckIndex = if (newTargetDeckIndex == -1) null else newTargetDeckIndex
                 }
             }
 
@@ -358,8 +353,6 @@ fun DashboardScreen(
                         .fillMaxSize()
                         .pointerInput(Unit) { detectTapGestures { viewModel.requestCloseBundleAnim() } }
                 )
-
-                val off = dragOffset
 
                 val smallPadding = dimensionResource(R.dimen.padding_small)
 
@@ -448,12 +441,14 @@ fun DashboardScreen(
                                                     bundleIndex = targetBundleIndex!!,
                                                     deckBundleIndex = uiState.currentBundleIndex
                                                 )
-                                            } else {
+                                            } else if (uiState.isBundleFakeClosed) {
                                                 viewModel.moveDeckOutOfBundle(
                                                     deckIndex = i,
                                                     bundleIndex = uiState.currentBundleIndex ?: -1
                                                 )
                                             }
+                                            targetBundleIndex = null
+                                            targetDeckIndex = null
                                         }
                                         viewModel.drop()
                                         dragOffset = Offset.Zero
@@ -464,7 +459,12 @@ fun DashboardScreen(
                                         dragOffset = Offset.Zero
                                         if (uiState.isBundleFakeClosed) viewModel.closeBundle()
                                     },
-                                    isHighlighted = false,
+                                    onDraggedOver = {
+                                        targetBundleIndex = null
+                                        targetDeckIndex = null
+                                    },
+                                    isDropOnAllowed = false,
+                                    dragPosition = uiState.dragPosition + dragOffset,
                                     isDeckInsideBundle = true,
                                     isClickEnabled = !uiState.isDragging,
                                 )
@@ -576,9 +576,10 @@ fun DraggableComposable(
     onDrag: (Offset) -> Unit = {},
     onDrop: () -> Unit = {},
     onDropCancel: () -> Unit = {},
-    isHighlighted: Boolean = false,
+    onDraggedOver: () -> Unit,
+    dragPosition: Offset,
+    isDropOnAllowed: Boolean,
     isClickEnabled: Boolean = true,
-    testForCollision: (Rect?) -> Unit = {},
     isDeckInsideBundle: Boolean = false,
     alpha: Float = 1f,
 ) {
@@ -586,6 +587,7 @@ fun DraggableComposable(
     var isDragging by remember { mutableStateOf(false) }
     var posInRoot by remember { mutableStateOf(Offset.Zero) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var isHighlighted by remember { mutableStateOf(false) }
 
     val content = @Composable {
         if (isBundle && onBundleOpened != null && onBundleSelected != null && getBundle != null) {
@@ -621,7 +623,14 @@ fun DraggableComposable(
                 posInRoot = it.positionInRoot()
                 it
                     .boundsInWindow()
-                    .let { rect -> testForCollision(if (isDragging) null else rect) }
+                    .let { rect ->
+                        if (isDropOnAllowed && !isDragging && rect.contains(dragPosition) ) {
+                            isHighlighted = true
+                            onDraggedOver()
+                        } else {
+                            isHighlighted = false
+                        }
+                    }
             }
             .pointerInput(Unit) {
                 if (!isBundleCreatorOpen) {
