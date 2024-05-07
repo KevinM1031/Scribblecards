@@ -599,7 +599,7 @@ fun DraggableComposable(
                 onBundleSelected = onBundleSelected,
                 getBundle = getBundle,
                 isHighlighted = isHighlighted,
-                isClickEnabled = isClickEnabled,
+                isClickEnabled = isClickEnabled && !isDragging,
             )
         } else if (onDeckOpened != null && onDeckSelected != null && getDeck != null) {
             DeckComponent(
@@ -608,7 +608,7 @@ fun DraggableComposable(
                 getDeck = { getDeck(index) },
                 isBundleCreatorOpen = isBundleCreatorOpen,
                 isHighlighted = isHighlighted,
-                isClickEnabled = isClickEnabled,
+                isClickEnabled = isClickEnabled && !isDragging,
                 isRemoveDeckFromBundleUiOpen = isRemoveDeckFromBundleUiOpen,
                 isInBundle = isDeckInsideBundle,
             )
