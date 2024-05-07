@@ -265,8 +265,6 @@ fun DashboardScreen(
                         .padding(mediumPadding)
                 ) {
 
-                    Log.d("", "asdf")
-
                     items(viewModel.getNumBundles()) { i ->
                         DraggableComposable(
                             index = i,
