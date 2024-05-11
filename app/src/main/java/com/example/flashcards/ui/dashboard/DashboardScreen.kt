@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -114,7 +115,10 @@ import com.example.flashcards.data.entities.Selectable
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.ui.AppViewModelProvider
 import com.example.flashcards.ui.theme.FlashcardsTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 private const val BOX_SIZE_DP = 100
@@ -127,6 +131,8 @@ fun DashboardScreen(
     onDeckButtonClicked: (Long) -> Unit,
     onBackButtonClicked: () -> Unit,
 ) {
+
+    Log.d("", "recomposition")
 
     LaunchedEffect(Unit) {
         viewModel.softReset()
@@ -240,6 +246,7 @@ fun DashboardScreen(
             val mediumPadding = dimensionResource(id = R.dimen.padding_medium)
 
             val lazyGridState = rememberLazyGridState()
+            var lazyGridHeight by remember { mutableIntStateOf(0) }
             val cardIconSize = BOX_SIZE_DP
             val adjustedCardIconSize by remember { derivedStateOf {
                 with(density) {
@@ -253,12 +260,26 @@ fun DashboardScreen(
                     .blur((12 * bundleCloseAnim.value).dp)
             ) {
 
+                LaunchedEffect(uiState.isDragging && (!uiState.isBundleOpen || uiState.isBundleFakeClosed)) {
+                    launch {
+                        while (uiState.isDragging) {
+                            val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight
+                            val scrollAmount = 32f * (y / lazyGridHeight - 0.5f).pow(5f)
+                            if (scrollAmount.absoluteValue > 0.2f) {
+                                lazyGridState.scrollBy(16f * scrollAmount)
+                            }
+                            delay(40)
+                        }
+                    }
+                }
+
                 LazyVerticalGrid(
                     state = lazyGridState,
                     columns = GridCells.Adaptive(minSize = (cardIconSize).dp),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(mediumPadding)
+                        .onGloballyPositioned { lazyGridHeight = it.size.height }
                 ) {
 
                     items(viewModel.getNumBundles()) { i ->
@@ -623,69 +644,53 @@ fun DraggableComposable(
         } else Box {}
     }
 
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = scaleIn(
-            animationSpec = tween(
-                durationMillis = 250,
-                easing = FastOutSlowInEasing,
-            )
-        ) + fadeIn(initialAlpha = 0.3f),
-        exit = scaleOut(
-            animationSpec = tween(
-                durationMillis = 250,
-                easing = FastOutSlowInEasing,
-            )
-        ) + fadeOut(targetAlpha = 0.3f),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(size.dp)
-                .padding(dimensionResource(R.dimen.padding_small))
-                .alpha(alpha * (if (isDragging) 0.5f else 1f))
-                .zIndex(if (isDragging) 1f else 0f)
-                .onGloballyPositioned {
-                    posInRoot = it.positionInRoot()
-                    it
-                        .boundsInWindow()
-                        .let { rect ->
-                            if (isDropOnAllowed && !isDragging && rect.contains(dragPosition)) {
-                                isHighlighted = true
-                                onDraggedOver()
-                            } else {
-                                isHighlighted = false
-                                onDraggedAway()
-                            }
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .padding(dimensionResource(R.dimen.padding_small))
+            .alpha(alpha * (if (isDragging) 0.5f else 1f))
+            .zIndex(if (isDragging) 1f else 0f)
+            .onGloballyPositioned {
+                posInRoot = it.positionInRoot()
+                it
+                    .boundsInWindow()
+                    .let { rect ->
+                        if (isDropOnAllowed && !isDragging && rect.contains(dragPosition)) {
+                            isHighlighted = true
+                            onDraggedOver()
+                        } else {
+                            isHighlighted = false
+                            onDraggedAway()
                         }
-                }
-                .pointerInput(Unit) {
-                    if (!isBundleCreatorOpen) {
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = {
-                                isDragging = true
-                                onDragStart(posInRoot + it, content)
-                            },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                onDrag(dragAmount)
-                                offset += dragAmount
-                            },
-                            onDragEnd = {
-                                isDragging = false
-                                onDrop()
-                                offset = Offset.Zero
-                            },
-                            onDragCancel = {
-                                isDragging = false
-                                onDropCancel()
-                                offset = Offset.Zero
-                            },
-                        )
                     }
+            }
+            .pointerInput(Unit) {
+                if (!isBundleCreatorOpen) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = {
+                            isDragging = true
+                            onDragStart(posInRoot + it, content)
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            onDrag(dragAmount)
+                            offset += dragAmount
+                        },
+                        onDragEnd = {
+                            isDragging = false
+                            onDrop()
+                            offset = Offset.Zero
+                        },
+                        onDragCancel = {
+                            isDragging = false
+                            onDropCancel()
+                            offset = Offset.Zero
+                        },
+                    )
                 }
-        ) {
-            content()
-        }
+            }
+    ) {
+        content()
     }
 }
 
