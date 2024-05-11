@@ -2,6 +2,9 @@ package com.example.flashcards.ui.deck
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -30,11 +33,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Star
@@ -146,7 +151,7 @@ fun DeckScreen (
                 actions = {
                     IconButton(onClick = { onImportCardsButtonClicked(uiState.param) }) {
                         Icon(
-                            imageVector = Icons.Filled.Add,
+                            imageVector = Icons.Filled.Download,
                             contentDescription = "Import cards"
                         )
                     }
@@ -388,7 +393,7 @@ fun CardEditorBar(
     onCardDeleteButtonClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val mediumPadding = dimensionResource(R.dimen.padding_medium_small)
+    val smallPadding = dimensionResource(R.dimen.padding_small)
 
     TopAppBar(
         colors = topAppBarColors(
@@ -407,7 +412,10 @@ fun CardEditorBar(
         },
         navigationIcon = {
             if (isCardSelectorOpen) {
-                IconButton(onClick = onCardSelectorClosed) {
+                IconButton(
+                    onClick = onCardSelectorClosed,
+                    modifier = Modifier.size(42.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Clear,
                         contentDescription = "Quit selector"
@@ -420,7 +428,8 @@ fun CardEditorBar(
                 onClick = {
                     if (numCards < Constants.MAX_CARDS) onCreateButtonClicked()
                     else onTooManyCards()
-                }
+                },
+                modifier = Modifier.size(42.dp)
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
@@ -431,6 +440,7 @@ fun CardEditorBar(
                 IconButton(
                     onClick = onCardDeleteButtonClicked,
                     enabled = numCards > 0 && numSelectedCards > 0,
+                    modifier = Modifier.size(42.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
@@ -440,12 +450,13 @@ fun CardEditorBar(
             }
             IconButton(
                 onClick = onSortButtonClicked,
+                modifier = Modifier.size(42.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
-                        imageVector = Icons.Default.List,
+                        imageVector = Icons.Default.Sort,
                         contentDescription = null,
                         modifier = Modifier.width(24.dp)
                     )
@@ -472,7 +483,8 @@ fun CardEditorBar(
                 checked = numCards > 0 && numCards == numSelectedCards,
                 enabled = numCards > 0,
                 modifier = Modifier
-                    .padding(end = mediumPadding)
+                    .size(52.dp)
+                    .padding(end = smallPadding)
             )
         },
         modifier = modifier
@@ -546,11 +558,18 @@ fun CardComponent(
                     )
                 }
             }
+            Spacer(modifier = Modifier.width(smallPadding))
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Checkbox(
+                    onCheckedChange = { onCardSelected() },
+                    checked = card.isSelected,
+                    modifier = Modifier.size(36.dp)
+                )
                 IconButton(
                     onClick = onFavoriteCardButtonClicked,
+                    modifier = Modifier.size(36.dp)
                 ) {
                     if (card.isFavorite) {
                         Icon(
@@ -567,6 +586,7 @@ fun CardComponent(
                 }
                 IconButton(
                     onClick = { onEditCardButtonClicked(card.id) },
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Edit,
@@ -574,10 +594,6 @@ fun CardComponent(
                     )
                 }
             }
-            Checkbox(
-                onCheckedChange = { onCardSelected() },
-                checked = card.isSelected,
-            )
         }
     }
 }
@@ -596,6 +612,14 @@ fun DeckStats(
     val days = timeSinceStudied/86400000
     val hours = timeSinceStudied/3600000%24
     val minutes = (timeSinceStudied/60000).coerceAtLeast(1)%60
+
+    val displayedMasteryLevel = animateFloatAsState(
+        targetValue = masteryLevel,
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing,
+        ),
+    )
 
     Box(
         modifier = modifier
@@ -620,7 +644,7 @@ fun DeckStats(
                     .wrapContentSize(Alignment.Center)
                 ) {
                     CircularProgressIndicator(
-                        progress = masteryLevel,
+                        progress = displayedMasteryLevel.value,
                         modifier = Modifier.size(circleSize),
                         strokeWidth = 8.dp,
                         trackColor = Color.Gray,
@@ -630,7 +654,7 @@ fun DeckStats(
                         .wrapContentSize(Alignment.Center)
                     ) {
                         Text(
-                            text = "${Math.round(masteryLevel*100)}%",
+                            text = "${Math.round(displayedMasteryLevel.value*100)}%",
                             fontSize = 58.sp,
                         )
                     }

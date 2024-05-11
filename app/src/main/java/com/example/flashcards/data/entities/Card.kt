@@ -47,7 +47,7 @@ data class Card (
     fun getMasteryLevel(isAffectedByTime: Boolean = true, millisSinceStudied: Long = 0): Float {
         numStudied = numStudied.coerceAtMost(Settings.masteryStandard)
         numPerfect = numPerfect.coerceAtMost(Settings.masteryStandard)
-        return calculateMasteryLevel(numStudied, numPerfect, isAffectedByTime, millisSinceStudied)
+        return calculateMasteryLevel(numStudied.coerceAtMost(Settings.masteryStandard), numPerfect.coerceAtMost(Settings.masteryStandard), isAffectedByTime, millisSinceStudied)
     }
 
     fun clearHistory() {

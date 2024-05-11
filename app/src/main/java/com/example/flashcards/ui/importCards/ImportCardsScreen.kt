@@ -9,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -35,12 +36,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.DashboardCustomize
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.outlined.DashboardCustomize
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
@@ -87,6 +92,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -214,14 +220,16 @@ fun ImportCardsScreen (
                                                 coroutineScope.launch {
                                                     val cards =
                                                         viewModel.getAllCardsFromDeck(uiState.bFD_selectedDeck!!)
-                                                    viewModel.toggleBringFromDecksScreen()
-                                                    viewModel.addSubDeck(
-                                                        SubDeck(
-                                                            name = ("${cards.size} " + if (cards.size == 1) "card" else "cards") + " - import from \"${uiState.bFD_selectedDeck!!.name}\"",
-                                                            type = SubDeckType.DEFAULT,
-                                                            cards = cards,
+                                                    if (cards != null) {
+                                                        viewModel.toggleBringFromDecksScreen()
+                                                        viewModel.addSubDeck(
+                                                            SubDeck(
+                                                                name = ("${cards.size} " + if (cards.size == 1) "card" else "cards") + " - import from \"${uiState.bFD_selectedDeck!!.name}\"",
+                                                                type = SubDeckType.DEFAULT,
+                                                                cards = cards,
+                                                            )
                                                         )
-                                                    )
+                                                    }
                                                 }
                                             }
                                         },
@@ -336,14 +344,17 @@ fun ImportCardsScreen (
                 BringFromDecksScreen(
                     bundles = uiState.bundles,
                     decks = uiState.decks,
+                    maxMasteryLevel = uiState.bFD_maxMasteryLevel,
                     excludeMastered = uiState.bFD_excludeMastered,
                     resetHistory = uiState.bFD_resetHistory,
+                    setMaxMasteryLevel = { viewModel.setMaxMasteryLevel(it) },
                     setExcludeMastered = { viewModel.setExcludeMastered(it) },
                     setResetHistory = { viewModel.setResetHistory(it) },
                     selectedBundle = uiState.bFD_selectedBundle,
                     selectedDeck = uiState.bFD_selectedDeck,
                     selectBundle = { viewModel.selectBundle(it) },
                     selectDeck = { viewModel.selectDeck(it) },
+                    focusManager = focusManager,
                 )
 
             } else if (uiState.isImportThroughTextScreenOpen) {
@@ -423,7 +434,7 @@ fun ImportCardsScreen (
                                 .padding(mediumPadding)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.List,
+                                imageVector = Icons.Outlined.DashboardCustomize,
                                 contentDescription = "Bring from other decks",
                                 modifier = Modifier.size(32.dp)
                             )
@@ -451,7 +462,7 @@ fun ImportCardsScreen (
                                 .padding(mediumPadding)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Search,
+                                imageVector = Icons.Default.PostAdd,
                                 contentDescription = "Import through text",
                                 modifier = Modifier.size(32.dp)
                             )
@@ -479,7 +490,7 @@ fun ImportCardsScreen (
                                 .padding(mediumPadding)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ExitToApp,
+                                imageVector = Icons.Default.UploadFile,
                                 contentDescription = "Upload .CSV file",
                                 modifier = Modifier.size(32.dp)
                             )
@@ -553,6 +564,10 @@ fun ImportCardsScreen (
         TipDialog(
             onDismissRequest = { viewModel.toggleTip() },
             tip = tip,
+        )
+    } else if (uiState.isNoCardErrorDialogOpen) {
+        NoCardsErrorDialog(
+            onDismissRequest = { viewModel.toggleNoCardErrorDialog() },
         )
     }
 }
@@ -1182,14 +1197,17 @@ fun ImportThroughTextScreen(
 fun BringFromDecksScreen(
     bundles: List<BundleWithDecks>,
     decks: List<Deck>,
+    maxMasteryLevel: Float?,
     excludeMastered: Boolean,
     resetHistory: Boolean,
+    setMaxMasteryLevel: (Float?) -> Unit,
     setExcludeMastered: (Boolean) -> Unit,
     setResetHistory: (Boolean) -> Unit,
     selectedBundle: BundleWithDecks?,
     selectedDeck: Deck?,
     selectBundle: (BundleWithDecks?) -> Unit,
     selectDeck: (Deck?) -> Unit,
+    focusManager: FocusManager,
 ) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -1351,10 +1369,33 @@ fun BringFromDecksScreen(
                 )
                 Spacer(modifier = Modifier.width(mediumPadding))
                 Text(
-                    text = "Exclude mastered cards",
+                    text = "Filter by mastery level",
                     fontSize = 16.sp,
                 )
             }
+
+            AnimatedVisibility(
+                visible = excludeMastered
+            ) {
+                CustomTextField(
+                    text = "Maximum mastery level",
+                    value = if (maxMasteryLevel != null) "${(maxMasteryLevel*100f).toInt()}" else "",
+                    onValueChange = {
+                        val n = it.toIntOrNull()
+                        if (n != null) setMaxMasteryLevel(n.coerceIn(1..99)/100f)
+                        else setMaxMasteryLevel(null)
+                    },
+                    label = "Mastery Level",
+                    unit = "%",
+                    maxLines = 1,
+                    useNumberKeyboard = true,
+                    focusManager = focusManager,
+                    isLast = true,
+                    modifier = Modifier
+                        .padding(bottom = mediumPadding)
+                )
+            }
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -1428,6 +1469,7 @@ fun CustomTextField(
     isLast: Boolean = false,
     isError: Boolean = false,
     useNumberKeyboard: Boolean = false,
+    unit: String = "",
     errorMessage: String = " - this field is required.",
     stringLength: StringLength = StringLength.SHORT,
 ) {
@@ -1449,6 +1491,7 @@ fun CustomTextField(
             isError = isError,
             minLines = minLines,
             maxLines = maxLines,
+            suffix = { Text(unit) },
             keyboardOptions = KeyboardOptions(
                 imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
                 keyboardType = KeyboardType.Number
@@ -1461,6 +1504,55 @@ fun CustomTextField(
             modifier = Modifier
                 .fillMaxWidth()
         )
+    }
+}
+
+@Composable
+fun NoCardsErrorDialog(
+    onDismissRequest: () -> Unit,
+) {
+    val mediumPadding = dimensionResource(R.dimen.padding_medium)
+    val largePadding = dimensionResource(R.dimen.padding_large)
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color(0, 0, 0, 127)))
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(mediumPadding)
+                    .fillMaxWidth()
+
+            ) {
+                Text(
+                    text = "No cards found",
+                    fontSize = 24.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .padding(top = largePadding)
+                        .fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = onDismissRequest,
+                        modifier = Modifier.size(120.dp, 40.dp)
+                    ) { Text(stringResource(id = R.string.confirm)) }
+                }
+            }
+        }
     }
 }
 

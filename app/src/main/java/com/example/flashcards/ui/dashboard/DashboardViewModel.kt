@@ -123,14 +123,6 @@ class DashboardViewModel(
         }
     }
 
-    fun requestOpenAnim() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isOpenAnimRequested = true,
-            )
-        }
-    }
-
     fun openBundleCreator() {
         deselectAllDecks()
         _uiState.update { currentState ->
@@ -371,11 +363,11 @@ class DashboardViewModel(
 
         deck1.bundleId = bundleId
         deck1.deselect()
-        cardsRepository.updateDeck(_uiState.value.decks[deck1Index])
+        cardsRepository.updateDeck(deck1)
         _uiState.value.decks[deck2Index].bundleId = bundleId
         _uiState.value.decks[deck2Index].deselect()
         cardsRepository.updateDeck(_uiState.value.decks[deck2Index])
-        loadCards()
+        deleteAllEmptyBundles()
     }
 
     suspend fun mergeBundleWithBundle(selectedBundleIndex: Int, targetBundleIndex: Int) {

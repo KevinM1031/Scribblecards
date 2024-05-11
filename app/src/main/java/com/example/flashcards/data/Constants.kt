@@ -5,6 +5,7 @@ class Constants {
         const val MAX_DECKS = 100
         const val MAX_CARDS = 100
         const val MAX_FILE_SIZE: Long = 10000000
+        const val MAX_STROKES = 200
     }
 }
 

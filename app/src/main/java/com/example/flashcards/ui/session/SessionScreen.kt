@@ -11,11 +11,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.Draggable2DState
 import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.draggable2D
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -39,16 +43,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -70,6 +83,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,12 +116,15 @@ import androidx.compose.ui.zIndex
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
+import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
 import kotlinx.coroutines.launch
 import java.lang.Math.random
+import kotlin.math.absoluteValue
 import kotlin.math.floor
+import kotlin.math.log
 import kotlin.math.roundToInt
 
 private const val SWIPER_SIZE = 48
@@ -626,7 +643,7 @@ fun CardComponent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun Flashcard(
     card: Card,
@@ -652,6 +669,8 @@ fun Flashcard(
     ) {
 
     var verticalSlide by remember { mutableStateOf(false) }
+    val localDensity = LocalDensity.current
+    val rotationDuration = 250
 
     val cardSkip = animateFloatAsState(
         targetValue = if (verticalSlide || isSlideAnimRequested) 1f else 0f,
@@ -668,21 +687,72 @@ fun Flashcard(
         }
     )
 
+    var oppositeSwipe by remember { mutableStateOf(false) }
+    var resetRotation by remember { mutableStateOf(false) }
+    val cardRotation = animateFloatAsState(
+        targetValue =
+            if (resetRotation) {
+                if (isFlipped) 180f
+                else 0f
+            } else if (isFlipped) {
+                if (oppositeSwipe) -180f
+                else 180f
+            } else {
+                if (oppositeSwipe) 360f
+                else 0f
+            },
+        animationSpec = tween(
+            durationMillis = if (cardSkip.value > 0 || resetRotation) 0 else rotationDuration,
+            easing = FastOutSlowInEasing,
+        ),
+        finishedListener = {
+            if (oppositeSwipe && !resetRotation) {
+                resetRotation = true
+                oppositeSwipe = false
+            } else if (resetRotation) {
+                resetRotation = false
+            }
+        }
+    )
+
     val contentRotation = animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(
-            durationMillis = if (cardSkip.value > 0) 0 else 90,
+            durationMillis = if (cardSkip.value > 0) 0 else (rotationDuration*0.35f).toInt(),
             easing = { fraction -> floor(fraction) }
         ),
-        finishedListener = { setContentFlip(isFlipped) }
+        finishedListener = {
+            setContentFlip(isFlipped)
+        }
     )
 
-    val cardRotation = animateFloatAsState(
-        targetValue = if (isFlipped) 180f else 0f,
+    var swipeCardRotation by remember { mutableStateOf(Offset.Zero) }
+    var isSwipeReturnRequested by remember { mutableStateOf(false) }
+    val swipeCardRotationReturn = animateFloatAsState(
+        targetValue = if (isSwipeReturnRequested) 0f else 1f,
         animationSpec = tween(
-            durationMillis = if (cardSkip.value > 0) 0 else 250,
+            durationMillis = if (isSwipeReturnRequested) 250 else 0,
             easing = FastOutSlowInEasing,
         ),
+        finishedListener = {
+            if (isSwipeReturnRequested) {
+                isSwipeReturnRequested = false
+                swipeCardRotation = Offset.Zero
+            }
+        }
+    )
+
+    var finalVelocityX by remember { mutableFloatStateOf(0f) }
+    val swipeableState = Draggable2DState(
+        onDelta = {
+            with(localDensity) {
+                swipeCardRotation = swipeCardRotation.copy(
+                    x = swipeCardRotation.x + it.x.toDp().value/250f,
+                    y = swipeCardRotation.y - it.y.toDp().value/250f,
+                )
+                finalVelocityX = it.x
+            }
+        }
     )
 
     val cardText =
@@ -708,8 +778,34 @@ fun Flashcard(
             .zIndex(if (cardSkip.value > 0) -100f else 100f)
             .offset(y = cardSkip.value.dp * 100f)
             .alpha(1f - cardSkip.value)
+            .draggable2D(
+                state = swipeableState,
+                onDragStarted = {
+                    isSwipeReturnRequested = false
+                },
+                onDragStopped = {
+                    isSwipeReturnRequested = true
+                    if (finalVelocityX.absoluteValue > 10f) {
+                        oppositeSwipe = (it.x < 0f && !isFlipped) || (it.x > 0f && isFlipped)
+                        onFlipButtonClicked()
+                        finalVelocityX = 0f
+                    }
+                },
+            )
             .graphicsLayer {
-                rotationY = cardRotation.value
+                val x = swipeCardRotation.x * swipeCardRotationReturn.value
+                val y = swipeCardRotation.y * swipeCardRotationReturn.value
+                val swipeRotationX = if (y == 0f) 0f else (180f * log(y.absoluteValue+1, 20f) * if(y < 0) -1 else 1).coerceIn(-20f..20f)
+                val swipeRotationY = if (x == 0f) 0f else (180f * log(x.absoluteValue+1, 20f) * if(x < 0) -1 else 1).coerceIn(-20f..20f)
+
+                rotationX = swipeRotationX
+                rotationY = swipeRotationY + cardRotation.value
+
+                if (!flipContent && ((rotationY <= 180f && rotationY > 90f) || rotationY < -90f)) {
+                    setContentFlip(true)
+                } else if (flipContent && ((rotationY >= 0f && rotationY < 90f) || rotationY > 270f)) {
+                    setContentFlip(false)
+                }
                 cameraDistance = 20f * density
             },
     ) {
@@ -736,7 +832,7 @@ fun Flashcard(
                         onClick = { verticalSlide = true }
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
+                            imageVector = Icons.Default.SkipNext,
                             contentDescription = "Skip"
                         )
                     }
@@ -903,7 +999,7 @@ fun FlipBar(
             AnchoredDraggableState(
                 initialValue = 0,
                 positionalThreshold = { distance -> distance * 0.5f },
-                velocityThreshold = { with(density) { 100.dp.toPx() } },
+                velocityThreshold = { with(density) { 250.dp.toPx() } },
                 animationSpec = tween()
             )
         }
@@ -933,17 +1029,25 @@ fun FlipBar(
                 .anchoredDraggable(state = swipeableState, orientation = Orientation.Horizontal)
         ) {
             Icon(
-                imageVector = Icons.Default.Clear,
+                imageVector = Icons.Default.Cancel,
                 tint = Color.Red,
                 contentDescription = "Wrong",
                 modifier = Modifier
                     .size(SWIPER_SIZE.dp)
             )
+            for (i in 1..3) {
+                Icon(
+                    imageVector = Icons.Default.ChevronLeft,
+                    tint = Color.Gray,
+                    contentDescription = "Left arrow",
+                )
+            }
             Icon(
-                imageVector = Icons.Default.AddCircle,
+                imageVector = Icons.Outlined.Circle,
                 tint = Color.Black,
-                contentDescription = "Correct",
+                contentDescription = "Selector",
                 modifier = Modifier
+                    .size(SWIPER_SIZE.dp)
                     .offset {
                         IntOffset(
                             x = swipeableState
@@ -951,11 +1055,17 @@ fun FlipBar(
                                 .toInt(), y = 0
                         )
                     }
-                    .size(SWIPER_SIZE.dp)
                     .zIndex(10f)
             )
+            for (i in 1..3) {
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    tint = Color.Gray,
+                    contentDescription = "Right arrow",
+                )
+            }
             Icon(
-                imageVector = Icons.Default.Check,
+                imageVector = Icons.Default.CheckCircle,
                 tint = Color.Green,
                 contentDescription = "Correct",
                 modifier = Modifier
@@ -973,21 +1083,35 @@ fun FlipBar(
                 .padding(smallPadding)
         ) {
             Icon(
-                imageVector = Icons.Default.Clear,
+                imageVector = Icons.Default.Cancel,
                 tint = Color.Gray,
                 contentDescription = "Wrong",
                 modifier = Modifier
                     .size(SWIPER_SIZE.dp)
             )
+            for (i in 1..3) {
+                Icon(
+                    imageVector = Icons.Default.ChevronLeft,
+                    tint = Color.Gray,
+                    contentDescription = "Left arrow",
+                )
+            }
             Icon(
-                imageVector = Icons.Default.AddCircle,
+                imageVector = Icons.Outlined.Circle,
                 tint = Color.Gray,
-                contentDescription = "Correct",
+                contentDescription = "Selector",
                 modifier = Modifier
                     .size(SWIPER_SIZE.dp)
             )
+            for (i in 1..3) {
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    tint = Color.Gray,
+                    contentDescription = "Right arrow",
+                )
+            }
             Icon(
-                imageVector = Icons.Default.Check,
+                imageVector = Icons.Default.CheckCircle,
                 tint = Color.Gray,
                 contentDescription = "Correct",
                 modifier = Modifier
@@ -1023,10 +1147,20 @@ fun Notepad(
                     detectTapGestures(
                         onTap = {
                             if (!isDrawing) {
-                                onStroke(listOf(Line(
-                                    Offset((it.x+10*random()).toFloat()-5, (it.y+10*random()).toFloat()-5),
-                                    Offset((it.x+10*random()).toFloat()-5, (it.y+10*random()).toFloat()-5)
-                                )))
+                                onStroke(
+                                    listOf(
+                                        Line(
+                                            Offset(
+                                                (it.x + 10 * random()).toFloat() - 5,
+                                                (it.y + 10 * random()).toFloat() - 5
+                                            ),
+                                            Offset(
+                                                (it.x + 10 * random()).toFloat() - 5,
+                                                (it.y + 10 * random()).toFloat() - 5
+                                            )
+                                        )
+                                    )
+                                )
                             }
                         }
                     )
@@ -1077,6 +1211,7 @@ fun Notepad(
             drawLine(color = Color.LightGray, start = Offset(size.width/2, size.height/2), end = Offset(size.width, size.height/2), pathEffect = pathEffect, strokeWidth = 2.dp.toPx(),)
 
             val currStrokes = strokes.toMutableList()
+            val thickness = 4.dp.toPx()
             if (newStroke.isNotEmpty()) {
                 currStrokes.add(newStroke)
             }
@@ -1085,9 +1220,11 @@ fun Notepad(
 
                 val path = Path()
                 path.moveTo(stroke[0].start.x, stroke[0].start.y)
+                drawCircle(color = Color.Black, radius = thickness/2, center = stroke[0].start)
 
                 if (stroke.size == 1) {
                     path.lineTo(stroke[0].end.x, stroke[0].end.y)
+                    drawCircle(color = Color.Black, radius = thickness/2, center = stroke[0].end)
 
                 } else {
 
@@ -1106,16 +1243,18 @@ fun Notepad(
 //                        drawCircle(color = Color.Blue, radius = 10f, center = cp2)
 
                         path.cubicTo(cp1.x, cp1.y, cp2.x, cp2.y, stroke[i].end.x, stroke[i].end.y,)
+                        drawCircle(color = Color.Black, radius = thickness/2, center = stroke[i].end)
                     }
 
                     val i = stroke.size-1
                     cp = getControlPoint(stroke[i].end, stroke[i].start, stroke[i].start, -k)
                     path.quadraticBezierTo(cp.x, cp.y, stroke[i].end.x, stroke[i].end.y)
+                    drawCircle(color = Color.Black, radius = thickness/2, center = stroke[i].end)
                 }
                 drawPath(
                     path = path,
                     color = Color.Black,
-                    style = Stroke(4.dp.toPx())
+                    style = Stroke(thickness)
                 )
             }
         }
@@ -1142,7 +1281,7 @@ fun Notepad(
                 }
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.Default.Undo,
                     contentDescription = "Undo"
                 )
             }

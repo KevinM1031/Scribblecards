@@ -18,6 +18,7 @@ data class ImportCardsUiState(
 
     val isTipOpen: Boolean = false,
     val tipText: String = "",
+    val isNoCardErrorDialogOpen: Boolean = false,
 
     val isBringFromDecksScreenOpen: Boolean = false,
     val isImportThroughTextScreenOpen: Boolean = false,
@@ -28,6 +29,7 @@ data class ImportCardsUiState(
     // bring from decks screen states
     val bFD_selectedBundle: BundleWithDecks? = null,
     val bFD_selectedDeck: Deck? = null,
+    val bFD_maxMasteryLevel: Float? = 1f,
     val bFD_excludeMastered: Boolean = false,
     val bFD_resetHistory: Boolean = true,
 

@@ -3,9 +3,14 @@ package com.example.flashcards.ui.dashboard
 import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -125,7 +130,6 @@ fun DashboardScreen(
 
     LaunchedEffect(Unit) {
         viewModel.softReset()
-        viewModel.requestOpenAnim()
     }
 
     val uiState by viewModel.uiState.collectAsState()
@@ -134,14 +138,6 @@ fun DashboardScreen(
     val configuration = LocalConfiguration.current
     val snackbarHostState = remember { SnackbarHostState() }
     var topAppBarHeight by remember { mutableStateOf(0) }
-
-    val openAnim = animateFloatAsState(
-        targetValue = if (uiState.isOpenAnimRequested) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = 250,
-            easing = FastOutSlowInEasing,
-        ),
-    )
 
     Scaffold(
         topBar = {
@@ -244,7 +240,7 @@ fun DashboardScreen(
             val mediumPadding = dimensionResource(id = R.dimen.padding_medium)
 
             val lazyGridState = rememberLazyGridState()
-            val cardIconSize = (BOX_SIZE_DP * if (uiState.isOpenAnimRequested) openAnim.value else 1f).toInt().coerceAtLeast(1)
+            val cardIconSize = BOX_SIZE_DP
             val adjustedCardIconSize by remember { derivedStateOf {
                 with(density) {
                     lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
@@ -278,7 +274,7 @@ fun DashboardScreen(
                             onDrag = { dragOffset += it },
                             onDrop = {
                                 coroutineScope.launch {
-                                    if (targetBundleIndex != null) {
+                                    if (targetBundleIndex != null && targetBundleIndex != i) {
                                         viewModel.mergeBundleWithBundle(
                                             selectedBundleIndex = i,
                                             targetBundleIndex = targetBundleIndex!!,
@@ -294,6 +290,9 @@ fun DashboardScreen(
                             onDraggedOver = {
                                 targetBundleIndex = i
                                 targetDeckIndex = null
+                            },
+                            onDraggedAway = {
+                                if (targetBundleIndex == i) targetBundleIndex = null
                             },
                             dragPosition = uiState.dragPosition + dragOffset,
                             isDropOnAllowed = uiState.isBundleFakeClosed || !uiState.isBundleOpen,
@@ -315,7 +314,7 @@ fun DashboardScreen(
                             onDrag = { dragOffset += it },
                             onDrop = {
                                 coroutineScope.launch {
-                                    if (targetDeckIndex != null) {
+                                    if (targetDeckIndex != null && targetDeckIndex != i) {
                                         viewModel.mergeDecksIntoBundle(
                                             deck1Index = i,
                                             deck2Index = targetDeckIndex!!,
@@ -336,6 +335,9 @@ fun DashboardScreen(
                             onDraggedOver = {
                                 targetBundleIndex = null
                                 targetDeckIndex = i
+                            },
+                            onDraggedAway = {
+                                if (targetDeckIndex == i) targetDeckIndex = null
                             },
                             dragPosition = uiState.dragPosition + dragOffset,
                             isDropOnAllowed = uiState.isBundleFakeClosed || !uiState.isBundleOpen,
@@ -579,6 +581,7 @@ fun DraggableComposable(
     onDrop: () -> Unit = {},
     onDropCancel: () -> Unit = {},
     onDraggedOver: () -> Unit,
+    onDraggedAway: () -> Unit = {},
     dragPosition: Offset,
     isDropOnAllowed: Boolean,
     isClickEnabled: Boolean = true,
@@ -586,10 +589,15 @@ fun DraggableComposable(
     alpha: Float = 1f,
 ) {
 
+    var isVisible by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
     var posInRoot by remember { mutableStateOf(Offset.Zero) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var isHighlighted by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
 
     val content = @Composable {
         if (isBundle && onBundleOpened != null && onBundleSelected != null && getBundle != null) {
@@ -615,52 +623,69 @@ fun DraggableComposable(
         } else Box {}
     }
 
-    Box(
-        modifier = Modifier
-            .size(size.dp)
-            .padding(dimensionResource(R.dimen.padding_small))
-            .alpha(alpha * (if (isDragging) 0.5f else 1f))
-            .zIndex(if (isDragging) 1f else 0f)
-            .onGloballyPositioned {
-                posInRoot = it.positionInRoot()
-                it
-                    .boundsInWindow()
-                    .let { rect ->
-                        if (isDropOnAllowed && !isDragging && rect.contains(dragPosition) ) {
-                            isHighlighted = true
-                            onDraggedOver()
-                        } else {
-                            isHighlighted = false
-                        }
-                    }
-            }
-            .pointerInput(Unit) {
-                if (!isBundleCreatorOpen) {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = {
-                            isDragging = true
-                            onDragStart(posInRoot + it, content)
-                        },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            onDrag(dragAmount)
-                            offset += dragAmount
-                        },
-                        onDragEnd = {
-                            isDragging = false
-                            onDrop()
-                            offset = Offset.Zero
-                        },
-                        onDragCancel = {
-                            isDragging = false
-                            onDropCancel()
-                            offset = Offset.Zero
-                        },
-                    )
-                }
-            }
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = scaleIn(
+            animationSpec = tween(
+                durationMillis = 250,
+                easing = FastOutSlowInEasing,
+            )
+        ) + fadeIn(initialAlpha = 0.3f),
+        exit = scaleOut(
+            animationSpec = tween(
+                durationMillis = 250,
+                easing = FastOutSlowInEasing,
+            )
+        ) + fadeOut(targetAlpha = 0.3f),
     ) {
-        content()
+        Box(
+            modifier = Modifier
+                .size(size.dp)
+                .padding(dimensionResource(R.dimen.padding_small))
+                .alpha(alpha * (if (isDragging) 0.5f else 1f))
+                .zIndex(if (isDragging) 1f else 0f)
+                .onGloballyPositioned {
+                    posInRoot = it.positionInRoot()
+                    it
+                        .boundsInWindow()
+                        .let { rect ->
+                            if (isDropOnAllowed && !isDragging && rect.contains(dragPosition)) {
+                                isHighlighted = true
+                                onDraggedOver()
+                            } else {
+                                isHighlighted = false
+                                onDraggedAway()
+                            }
+                        }
+                }
+                .pointerInput(Unit) {
+                    if (!isBundleCreatorOpen) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                isDragging = true
+                                onDragStart(posInRoot + it, content)
+                            },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                onDrag(dragAmount)
+                                offset += dragAmount
+                            },
+                            onDragEnd = {
+                                isDragging = false
+                                onDrop()
+                                offset = Offset.Zero
+                            },
+                            onDragCancel = {
+                                isDragging = false
+                                onDropCancel()
+                                offset = Offset.Zero
+                            },
+                        )
+                    }
+                }
+        ) {
+            content()
+        }
     }
 }
 

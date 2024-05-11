@@ -91,6 +91,8 @@ dependencies {
     implementation("org.jsoup:jsoup:1.17.2")
     implementation("androidx.documentfile:documentfile:1.0.1")
 
+    implementation("androidx.compose.material:material-icons-extended")
+
     testImplementation(libs.junit)
 
     androidTestImplementation(libs.androidx.junit)

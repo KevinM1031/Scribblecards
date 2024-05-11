@@ -1,5 +1,9 @@
 package com.example.flashcards.ui.session
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,8 +66,31 @@ fun SummaryScreen (
 ) {
 
     val deck = viewModel.getCurrentDeck()
-
     var saveSessionData by remember { mutableStateOf(true) }
+    var launched by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        launched = true
+    }
+
+    BackHandler {
+        if (saveSessionData) {
+            coroutineScope.launch {
+                viewModel.applySessionData()
+                onExit(uiState.param)
+            }
+        } else {
+            onExit(uiState.param)
+        }
+    }
+
+    val progressIndicatorAnim = animateFloatAsState(
+        targetValue = if (launched) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing,
+        ),
+    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -99,14 +127,14 @@ fun SummaryScreen (
                 .wrapContentSize(Alignment.Center)
             ) {
                 CircularProgressIndicator(
-                    progress = uiState.newMasteryLevel,
+                    progress = uiState.newMasteryLevel * progressIndicatorAnim.value,
                     modifier = Modifier.size(circleSize),
                     strokeWidth = 12.dp,
                     trackColor = Color.LightGray,
                     color = Color.Green,
                     )
                 CircularProgressIndicator(
-                    progress = uiState.oldMasteryLevel,
+                    progress = uiState.oldMasteryLevel * progressIndicatorAnim.value,
                     modifier = Modifier.size(circleSize),
                     strokeWidth = 12.dp,
                     trackColor = Color(0,0,0,0),
@@ -119,11 +147,11 @@ fun SummaryScreen (
                         .size(circleSize)
                 ) {
                     Text(
-                        text = "${Math.round(uiState.newMasteryLevel*100)}%",
+                        text = "${Math.round(uiState.newMasteryLevel*100 * progressIndicatorAnim.value)}%",
                         fontSize = 56.sp,
                     )
                     Text(
-                        text = "+${Math.round((uiState.newMasteryLevel-uiState.oldMasteryLevel)*100)}%",
+                        text = "+${Math.round((uiState.newMasteryLevel-uiState.oldMasteryLevel)*100  * progressIndicatorAnim.value)}%",
                         fontSize = 16.sp,
                         color = Color.Green,
                     )

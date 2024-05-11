@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcards.data.CardsRepository
+import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.DeckWithCards
@@ -354,6 +355,9 @@ class SessionViewModel(
         _uiState.update { currentState ->
             val strokes = currentState.strokes.toMutableList()
             strokes.add(stroke)
+            if (strokes.size > Constants.MAX_STROKES) {
+                strokes.removeFirst()
+            }
             currentState.copy(
                 strokes = strokes
             )

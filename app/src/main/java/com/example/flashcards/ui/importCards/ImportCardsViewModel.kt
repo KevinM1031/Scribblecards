@@ -58,6 +58,7 @@ class ImportCardsViewModel(
                     isImportThroughTextScreenOpen = false,
                     isUploadCsvFileScreenOpen = false,
                     isTipOpen = false,
+                    isNoCardErrorDialogOpen = false,
                     numSelectedCards = 0,
                 )
             }
@@ -69,6 +70,7 @@ class ImportCardsViewModel(
             currentState.copy(
                 bFD_selectedBundle = null,
                 bFD_selectedDeck = null,
+                bFD_maxMasteryLevel = 1f,
                 bFD_excludeMastered = false,
                 bFD_resetHistory = true,
             )
@@ -204,6 +206,14 @@ class ImportCardsViewModel(
         }
     }
 
+    fun setMaxMasteryLevel(maxMasteryLevel: Float?) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                bFD_maxMasteryLevel = maxMasteryLevel
+            )
+        }
+    }
+
     fun setExcludeMastered(excludeMastered: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -216,6 +226,14 @@ class ImportCardsViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 bFD_resetHistory = resetHistory
+            )
+        }
+    }
+
+    fun toggleNoCardErrorDialog() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isNoCardErrorDialogOpen = !_uiState.value.isNoCardErrorDialogOpen
             )
         }
     }
@@ -319,12 +337,12 @@ class ImportCardsViewModel(
 
     suspend fun getAllCardsFromDeck(
         deck: Deck,
-    ): List<Card> {
+    ): List<Card>? {
         val cards = cardsRepository.getDeckWithCards(deck.id).cards
         val subDeckCards = mutableListOf<Card>()
 
         for (card in cards) {
-            if (!_uiState.value.bFD_excludeMastered || card.getMasteryLevel() < 1f) {
+            if (!_uiState.value.bFD_excludeMastered || card.getMasteryLevel() < (_uiState.value.bFD_maxMasteryLevel ?: 0f)) {
                 subDeckCards.add(
                     if (_uiState.value.bFD_resetHistory)
                         Card(
@@ -345,6 +363,12 @@ class ImportCardsViewModel(
                 )
             }
         }
+
+        if (subDeckCards.isEmpty()) {
+            toggleNoCardErrorDialog()
+            return null
+        }
+
         return subDeckCards
     }
 
@@ -522,6 +546,9 @@ class ImportCardsViewModel(
                             )
                         }
                         return null
+                    } else if (checkForErrors && subDeckCards.isEmpty()) {
+                        toggleNoCardErrorDialog()
+                        return null
                     } else if (numCards == maxCards) {
                         return subDeckCards
                     }
@@ -536,14 +563,16 @@ class ImportCardsViewModel(
                 )
             }
             return null
-        } else {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    iTT_errorState = ITT_ErrorState.NO_ERROR
-                )
-            }
+        } else if (checkForErrors && subDeckCards.isEmpty()) {
+            toggleNoCardErrorDialog()
+            return null
         }
 
+        _uiState.update { currentState ->
+            currentState.copy(
+                iTT_errorState = ITT_ErrorState.NO_ERROR
+            )
+        }
         return subDeckCards
     }
 
@@ -673,6 +702,11 @@ class ImportCardsViewModel(
                     )
                 )
             }
+        }
+
+        if (cards.isEmpty() && checkForErrors) {
+            toggleNoCardErrorDialog()
+            return null
         }
 
         _uiState.update { currentState ->
