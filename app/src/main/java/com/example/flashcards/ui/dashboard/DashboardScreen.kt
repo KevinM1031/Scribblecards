@@ -130,9 +130,8 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel(factory = AppViewModelProvider.Factory),
     onDeckButtonClicked: (Long) -> Unit,
     onBackButtonClicked: () -> Unit,
+    onFullRecompositionRequested: () -> Unit,
 ) {
-
-    Log.d("", "recomposition")
 
     LaunchedEffect(Unit) {
         viewModel.softReset()
@@ -303,10 +302,11 @@ fun DashboardScreen(
                                     }
                                     targetBundleIndex = null
                                     targetDeckIndex = null
+                                    viewModel.drop()
+                                    dragOffset = Offset.Zero
+                                    if (uiState.isBundleFakeClosed) viewModel.closeBundle()
+                                    onFullRecompositionRequested()
                                 }
-                                viewModel.drop()
-                                dragOffset = Offset.Zero
-                                if (uiState.isBundleFakeClosed) viewModel.closeBundle()
                             },
                             onDraggedOver = {
                                 targetBundleIndex = i
@@ -348,10 +348,11 @@ fun DashboardScreen(
                                     }
                                     targetBundleIndex = null
                                     targetDeckIndex = null
+                                    viewModel.drop()
+                                    dragOffset = Offset.Zero
+                                    if (uiState.isBundleFakeClosed) viewModel.closeBundle()
+                                    onFullRecompositionRequested()
                                 }
-                                viewModel.drop()
-                                dragOffset = Offset.Zero
-                                if (uiState.isBundleFakeClosed) viewModel.closeBundle()
                             },
                             onDraggedOver = {
                                 targetBundleIndex = null
@@ -474,10 +475,11 @@ fun DashboardScreen(
                                             }
                                             targetBundleIndex = null
                                             targetDeckIndex = null
+                                            viewModel.drop()
+                                            dragOffset = Offset.Zero
+                                            if (uiState.isBundleFakeClosed) viewModel.closeBundle()
+                                            onFullRecompositionRequested()
                                         }
-                                        viewModel.drop()
-                                        dragOffset = Offset.Zero
-                                        if (uiState.isBundleFakeClosed) viewModel.closeBundle()
                                     },
                                     onDropCancel = {
                                         viewModel.drop()
@@ -1242,16 +1244,5 @@ fun CreateDeckDialog(
                 }
             }
         }
-    }
-}
-
-@Preview(
-    showBackground = true,
-    //device = "spec:orientation=landscape,width=333dp,height=808dp"
-)
-@Composable
-fun DashboardScreenPreview() {
-    FlashcardsTheme {
-        DashboardScreen(viewModel(), {}, {})
     }
 }

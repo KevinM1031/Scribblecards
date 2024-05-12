@@ -2,7 +2,14 @@ package com.example.flashcards.ui.navigation
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -65,10 +72,15 @@ fun FlashcardNavHost(
         }
         composable(route = FlashcardScreen.Dashboard.name) {
             BackHandler(true) { navController.navigate(FlashcardScreen.MainMenu.name) }
-            DashboardScreen(
-                onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
-                onBackButtonClicked = { navController.navigateUp() },
-            )
+
+            var forceRecomposition by remember { mutableStateOf(false) }
+            key(forceRecomposition) {
+                DashboardScreen(
+                    onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
+                    onBackButtonClicked = { navController.navigateUp() },
+                    onFullRecompositionRequested = { forceRecomposition = !forceRecomposition }
+                )
+            }
         }
         composable(
             route = "${FlashcardScreen.Deck.name}/{id}",
