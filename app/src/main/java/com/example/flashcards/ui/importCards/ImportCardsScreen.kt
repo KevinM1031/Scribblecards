@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -509,8 +508,8 @@ fun ImportCardsScreen (
                     Spacer(modifier = Modifier.height(smallPadding))
                     Divider()
 
-                    LazyColumn {
-                        items(uiState.subDecks.size) { i ->
+                    Column {
+                        for (i in 0..<uiState.subDecks.size) {
                             val subDeck = uiState.subDecks[i]
                             Card(
                                 modifier = Modifier
@@ -551,7 +550,7 @@ fun ImportCardsScreen (
                                 }
                             }
                         }
-                        item { Spacer(modifier = Modifier.height(smallPadding)) }
+                        Spacer(modifier = Modifier.height(smallPadding))
                     }
                 }
             }
@@ -610,7 +609,6 @@ fun UploadCsvFileScreen(
 
     Column(
         modifier = Modifier
-            .verticalScroll(rememberScrollState())
             .fillMaxSize()
     ) {
         Column(
@@ -921,7 +919,6 @@ fun ImportThroughTextScreen(
 
     Column(
         modifier = Modifier
-            .verticalScroll(rememberScrollState())
             .fillMaxSize()
     ) {
         Column(
@@ -947,6 +944,7 @@ fun ImportThroughTextScreen(
                 maxLines = inputTextUiNumLines,
                 focusManager = focusManager,
                 stringLength = StringLength.VLONG,
+                useNumberKeyboard = false,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterT)
@@ -963,6 +961,7 @@ fun ImportThroughTextScreen(
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
+                useNumberKeyboard = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterQ)
@@ -979,6 +978,7 @@ fun ImportThroughTextScreen(
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
+                useNumberKeyboard = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterA)
@@ -995,6 +995,7 @@ fun ImportThroughTextScreen(
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
+                useNumberKeyboard = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterH)
@@ -1011,6 +1012,7 @@ fun ImportThroughTextScreen(
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
+                useNumberKeyboard = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterE)
@@ -1027,6 +1029,7 @@ fun ImportThroughTextScreen(
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
+                useNumberKeyboard = true,
                 isLast = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
@@ -1223,7 +1226,6 @@ fun BringFromDecksScreen(
 
     Column(
         modifier = Modifier
-            .verticalScroll(rememberScrollState())
             .fillMaxSize()
     ) {
         Column(
@@ -1498,7 +1500,7 @@ fun CustomTextField(
             suffix = { Text(unit) },
             keyboardOptions = KeyboardOptions(
                 imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
-                keyboardType = KeyboardType.Number
+                keyboardType = if (useNumberKeyboard) KeyboardType.Number else KeyboardType.Text
             ),
             keyboardActions = KeyboardActions(
                 onNext = {

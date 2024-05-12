@@ -121,9 +121,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-private const val BOX_SIZE_DP = 100
-private const val BOX_SIZE_IN_BUNDLE_DP = 90
-private const val BOX_SIZE_DRAGGING_DP = 110
+private const val BOX_SIZE_DP = 110
 
 @Composable
 fun DashboardScreen(
@@ -247,11 +245,6 @@ fun DashboardScreen(
             val lazyGridState = rememberLazyGridState()
             var lazyGridHeight by remember { mutableIntStateOf(0) }
             val cardIconSize = BOX_SIZE_DP
-            val adjustedCardIconSize by remember { derivedStateOf {
-                with(density) {
-                    lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
-                } ?: cardIconSize
-            } }
 
             Box(
                 modifier = Modifier
@@ -289,7 +282,7 @@ fun DashboardScreen(
                             getBundle = { viewModel.getBundle(it) ?: BundleWithDecks(Bundle(), listOf()) },
                             isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                             isBundle = true,
-                            size = adjustedCardIconSize,
+                            size = cardIconSize,
                             onDragStart = { position, content -> viewModel.dragStart(position, content, DragData(i, null, true)) },
                             onDrag = { dragOffset += it },
                             onDrop = {
@@ -330,7 +323,7 @@ fun DashboardScreen(
                             isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                             isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                             isBundle = false,
-                            size = adjustedCardIconSize,
+                            size = cardIconSize,
                             onDragStart = { position, content -> viewModel.dragStart(position, content, DragData(null, i, false)) },
                             onDrag = { dragOffset += it },
                             onDrop = {
@@ -419,11 +412,6 @@ fun DashboardScreen(
                     ) {
 
                         val bundleLazyGridState = rememberLazyGridState()
-                        val bundleAdjustedCardIconSize by remember { derivedStateOf {
-                            with(density) {
-                                lazyGridState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.width?.toDp()?.value?.toInt()
-                            } ?: cardIconSize
-                        } }
 
                         LazyVerticalGrid(
                             state = bundleLazyGridState,
@@ -445,7 +433,7 @@ fun DashboardScreen(
                                     isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                                     isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                                     isBundle = false,
-                                    size = bundleAdjustedCardIconSize,
+                                    size = cardIconSize,
                                     onDragStart = { position, content -> viewModel.dragStart(position, content, DragData(uiState.currentBundleIndex, i, false)) },
                                     onDrag = {
                                         dragOffset += it
@@ -509,9 +497,9 @@ fun DashboardScreen(
         if (uiState.isDragging && uiState.dragContent != null) {
             Box(
                 modifier = Modifier
-                    .size(BOX_SIZE_DRAGGING_DP.dp)
+                    .size(BOX_SIZE_DP.dp)
                     .graphicsLayer {
-                        val size = BOX_SIZE_DRAGGING_DP.dp.toPx() / 2
+                        val size = BOX_SIZE_DP.dp.toPx() / 2
                         translationX = uiState.dragPosition.x + dragOffset.x - size
                         translationY = uiState.dragPosition.y + dragOffset.y - size
                     }
