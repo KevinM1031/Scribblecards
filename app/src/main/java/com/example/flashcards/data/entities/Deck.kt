@@ -20,6 +20,8 @@ data class Deck (
     var flipQnA: Boolean = false,
     var doubleDifficulty: Boolean = false,
 
+    var isLocked: Boolean = false,
+
     var masteryLevel: Float = 0f,
     var numSelected: Int = 0,
 ) : Selectable() {

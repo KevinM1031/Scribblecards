@@ -12,6 +12,14 @@ data class BundleWithDecks(
         parentColumn = "id",
         entityColumn = "bundleId",
     )
-    val decks: List<Deck>
+    var decks: List<Deck>
 ) {
+
+    fun sortByName() {
+        decks = decks.sortedBy { it.isLocked.toString() + it.name }
+    }
+
+    fun sortByMastery() {
+        decks = decks.sortedBy { it.masteryLevel + if (it.isLocked) 1f else 0f }
+    }
 }

@@ -15,6 +15,8 @@ data class DashboardUiState(
     val currentBundleIndex: Int? = null,
     val currentDeckIndex: Int? = null,
 
+    val sortType: SortType = SortType.MASTERY,
+
     val isDragging: Boolean = false,
     val dragPosition: Offset = Offset.Zero,
 
@@ -43,8 +45,7 @@ data class DashboardUiState(
     val lastUpdated: Long = 0,
 )
 
-data class DragData(
-    val bundleIndex: Int?,
-    val deckIndex: Int?,
-    val isBundle: Boolean,
-)
+enum class SortType {
+    ALPHANUMERICAL,
+    MASTERY,
+}

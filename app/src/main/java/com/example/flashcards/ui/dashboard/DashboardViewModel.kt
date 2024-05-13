@@ -34,8 +34,8 @@ class DashboardViewModel(
 
         viewModelScope.launch {
             updateMasteryLevels()
-            loadCards()
             deleteAllEmptyBundles()
+            sortCards()
         }
 
         _uiState.update { currentState ->
@@ -288,6 +288,53 @@ class DashboardViewModel(
                 isBundleCloseAnimRequested = true,
             )
         }
+    }
+
+    fun sortCards() {
+        when (_uiState.value.sortType) {
+            SortType.MASTERY -> {
+                for (bundle in _uiState.value.bundles) {
+                    bundle.sortByMastery()
+                }
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        bundles = currentState.bundles.sortedBy {
+                            var masteryLevel = 0f
+                            for (deck in it.decks) {
+                                masteryLevel += deck.masteryLevel
+                            }
+                            masteryLevel / it.decks.size
+                        },
+                        decks = currentState.decks.sortedBy { it.masteryLevel + if (it.isLocked) 1f else 0f },
+                    )
+                }
+            }
+            SortType.ALPHANUMERICAL -> {
+                for (bundle in _uiState.value.bundles) {
+                    bundle.sortByName()
+                }
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        bundles = currentState.bundles.sortedBy { it.bundle.name },
+                        decks = currentState.decks.sortedBy { it.isLocked.toString() + it.name },
+                    )
+                }
+            }
+        }
+        update()
+    }
+
+    fun cycleSortType() {
+        val sortType = when (_uiState.value.sortType) {
+            SortType.ALPHANUMERICAL -> SortType.MASTERY
+            SortType.MASTERY -> SortType.ALPHANUMERICAL
+        }
+        _uiState.update { currentState ->
+            currentState.copy(
+                sortType = sortType,
+            )
+        }
+        softReset()
     }
 
     suspend fun deleteAllEmptyBundles() {

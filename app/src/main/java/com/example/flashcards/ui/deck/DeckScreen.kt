@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
@@ -38,9 +39,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.BottomAppBar
@@ -149,22 +154,40 @@ fun DeckScreen (
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onImportCardsButtonClicked(uiState.param) }) {
+                    IconButton(
+                        onClick = { coroutineScope.launch { viewModel.toggleLock() } },
+                        modifier = Modifier.size(42.dp)
+                    ) {
                         Icon(
-                            imageVector = Icons.Filled.Download,
+                            imageVector = if (uiState.deck.deck.isLocked) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = "Hide deck"
+                        )
+                    }
+                    IconButton(
+                        onClick = { onImportCardsButtonClicked(uiState.param) },
+                        modifier = Modifier.size(42.dp)
+                        ) {
+                        Icon(
+                            imageVector = Icons.Default.AddBox,
                             contentDescription = "Import cards"
                         )
                     }
-                    IconButton(onClick = {
-                        viewModel.setUserInput(uiState.deck.deck.name)
-                        viewModel.toggleEditDeckNameDialog()
-                    }) {
+                    IconButton(
+                        onClick = {
+                            viewModel.setUserInput(uiState.deck.deck.name)
+                            viewModel.toggleEditDeckNameDialog()
+                        },
+                        modifier = Modifier.size(42.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Edit,
                             contentDescription = "Edit deck name"
                         )
                     }
-                    IconButton(onClick = { viewModel.toggleDeleteDeckDialog() }) {
+                    IconButton(
+                        onClick = { viewModel.toggleDeleteDeckDialog() },
+                        modifier = Modifier.size(42.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Delete,
                             contentDescription = "Delete deck"
@@ -667,12 +690,18 @@ fun DeckStats(
                         .weight(1f)
                 )
             }
-            if (deck.deck.isNeverStudied()) {
-                Text(
-                    text = "New deck!",
-                    fontSize = 32.sp,
-                    modifier = Modifier
-                )
+             if (deck.deck.isLocked) {
+                 Text(
+                     text = "Deck hidden!",
+                     fontSize = 32.sp,
+                     modifier = Modifier
+                 )
+            } else if (deck.deck.isNeverStudied()) {
+                 Text(
+                     text = "New deck!",
+                     fontSize = 32.sp,
+                     modifier = Modifier
+                 )
             } else if (days < 1) {
                 Text(
                     text =

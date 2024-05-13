@@ -49,6 +49,7 @@ class PriorityDecksViewModel(
         }
 
         val priorityDecksWithCards = decksWithCards.filter {
+            !it.deck.isLocked &&
             it.deck.masteryLevel <= Settings.priorityDeckMasteryLevel &&
             it.cards.isNotEmpty() &&
             System.currentTimeMillis() - it.deck.dateStudied > Settings.priorityDeckRefreshTime

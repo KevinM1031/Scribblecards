@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -46,6 +47,8 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -125,7 +128,8 @@ import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-private const val BOX_SIZE_DP = 100
+private const val BOX_SIZE_DP = 120
+private const val BOX_SIZE_IN_BUNDLE_DP = 110
 
 @Composable
 fun DashboardScreen(
@@ -190,6 +194,8 @@ fun DashboardScreen(
                     BundleTopAppBar(
                         onBackButtonClicked = { viewModel.requestCloseBundleAnim(); },
                         onEditBundleNameButtonClicked = { viewModel.openEditBundleNameDialog() },
+                        onSortButtonClicked = { viewModel.cycleSortType() },
+                        currentSortType = uiState.sortType,
                         title = viewModel.getBundle(uiState.currentBundleIndex!!)?.bundle?.name ?: "",
                     )
                 }
@@ -197,7 +203,9 @@ fun DashboardScreen(
             } else {
                 DashboardTopAppBar(
                     onBackButtonClicked = onBackButtonClicked,
-                    setHeight = { topAppBarHeight = it }
+                    onSortButtonClicked = { viewModel.cycleSortType() },
+                    currentSortType = uiState.sortType,
+                    setHeight = { topAppBarHeight = it },
                 )
             }
         },
@@ -268,7 +276,6 @@ fun DashboardScreen(
 
             val lazyGridState = rememberLazyGridState()
             var lazyGridHeight by remember { mutableIntStateOf(0) }
-            val cardIconSize = BOX_SIZE_DP
 
             Box(
                 modifier = Modifier
@@ -291,7 +298,7 @@ fun DashboardScreen(
 
                 LazyVerticalGrid(
                     state = lazyGridState,
-                    columns = GridCells.Adaptive(minSize = (cardIconSize).dp),
+                    columns = GridCells.Adaptive(minSize = BOX_SIZE_DP.dp),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(mediumPadding)
@@ -299,7 +306,7 @@ fun DashboardScreen(
                 ) {
 
                     items(viewModel.getNumBundles()) { i ->
-                        DraggableComposable(
+                        SelectableComposable(
                             index = i,
                             onBundleOpened = { viewModel.openBundle(it) },
                             onBundleSelected = {
@@ -312,15 +319,16 @@ fun DashboardScreen(
                             isBundleCreatorOpen = uiState.isBundleCreatorOpen,
                             isBundleSelectorOpen = uiState.isBundleSelectorOpen,
                             isBundle = true,
-                            size = cardIconSize,
+                            size = BOX_SIZE_DP,
                             dragPosition = uiState.dragPosition + dragOffset,
                             isDropOnAllowed = !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging,
+                            lastUpdated = uiState.lastUpdated,
                         )
                     }
 
                     items(viewModel.getNumDecks()) { i ->
-                        DraggableComposable(
+                        SelectableComposable(
                             index = i,
                             onDeckOpened = { onDeckButtonClicked(it) },
                             onDeckSelected = { viewModel.toggleDeckSelection(it) },
@@ -329,7 +337,7 @@ fun DashboardScreen(
                             isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                             isBundleSelectorOpen = uiState.isBundleSelectorOpen,
                             isBundle = false,
-                            size = cardIconSize,
+                            size = BOX_SIZE_DP,
                             onLongPress = { viewModel.openBundleCreator() },
                             onDragStart = {
                                 viewModel.dragStart(it)
@@ -358,6 +366,7 @@ fun DashboardScreen(
                             dragPosition = uiState.dragPosition + dragOffset,
                             isDropOnAllowed = !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
+                            lastUpdated = uiState.lastUpdated,
                         )
                     }
                 }
@@ -416,11 +425,11 @@ fun DashboardScreen(
 
                         LazyVerticalGrid(
                             state = bundleLazyGridState,
-                            columns = GridCells.Adaptive(minSize = (cardIconSize).dp)
+                            columns = GridCells.Adaptive(minSize = BOX_SIZE_IN_BUNDLE_DP.dp)
                         ) {
 
                             items(viewModel.getNumDecksInCurrentBundle()) { i ->
-                                DraggableComposable(
+                                SelectableComposable(
                                     index = i,
                                     onDeckOpened = { onDeckButtonClicked(it) },
                                     onDeckSelected = {
@@ -435,7 +444,7 @@ fun DashboardScreen(
                                     isRemoveDeckFromBundleUiOpen = uiState.isRemoveDeckFromBundleUiOpen,
                                     isBundleSelectorOpen = uiState.isBundleSelectorOpen,
                                     isBundle = false,
-                                    size = cardIconSize,
+                                    size = BOX_SIZE_IN_BUNDLE_DP,
                                     onLongPress = {
                                         if (!uiState.isBundleCreatorOpen) {
                                             viewModel.openRemoveDeckFromBundleUi()
@@ -470,6 +479,7 @@ fun DashboardScreen(
                                     isDropOnAllowed = true,
                                     dragPosition = uiState.dragPosition + dragOffset,
                                     isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
+                                    lastUpdated = uiState.lastUpdated,
                                 )
                             }
                         }
@@ -544,7 +554,7 @@ fun DashboardScreen(
 }
 
 @Composable
-fun DraggableComposable(
+fun SelectableComposable(
     index: Int,
     onDeckOpened: ((Long) -> Unit)? = null,
     onDeckSelected: ((Int) -> Unit)? = null,
@@ -568,6 +578,7 @@ fun DraggableComposable(
     isDropOnAllowed: Boolean,
     isClickEnabled: Boolean = true,
     alpha: Float = 1f,
+    lastUpdated: Long,
 ) {
 
     var isVisible by remember { mutableStateOf(false) }
@@ -589,7 +600,7 @@ fun DraggableComposable(
                 isHighlighted = isHighlighted,
                 isClickEnabled = isClickEnabled && !isDragging,
                 isBundleSelectorOpen = isBundleSelectorOpen,
-                )
+            )
         } else if (onDeckOpened != null && onDeckSelected != null && getDeck != null) {
             DeckComponent(
                 onDeckOpened = { onDeckOpened(it) },
@@ -790,11 +801,19 @@ fun DeckComponent(
                 textAlign = TextAlign.Center,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = "${(deck.masteryLevel*100).roundToInt()}%",
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-            )
+            if (deck.isLocked) {
+                Icon(
+                    imageVector = Icons.Default.VisibilityOff,
+                    contentDescription = "Deck hidden",
+                    modifier = Modifier.size(22.dp),
+                )
+            } else {
+                Text(
+                    text = "${(deck.masteryLevel * 100).roundToInt()}%",
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -803,6 +822,8 @@ fun DeckComponent(
 @Composable
 fun DashboardTopAppBar(
     onBackButtonClicked: () -> Unit,
+    onSortButtonClicked: () -> Unit,
+    currentSortType: SortType,
     setHeight: (Int) -> Unit,
 ) {
     TopAppBar(
@@ -818,6 +839,27 @@ fun DashboardTopAppBar(
                 )
             }
         },
+        actions = {
+            IconButton(onClick = onSortButtonClicked) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sort,
+                        contentDescription = null,
+                        modifier = Modifier.width(24.dp)
+                    )
+                    Text(
+                        text = when (currentSortType) {
+                            SortType.ALPHANUMERICAL -> "A"
+                            SortType.MASTERY -> "%"
+                        },
+                        fontSize = 12.sp,
+                        modifier = Modifier.width(10.dp)
+                    )
+                }
+            }
+        },
         modifier = Modifier
             .onGloballyPositioned {
                 setHeight(it.size.height)
@@ -830,6 +872,8 @@ fun DashboardTopAppBar(
 fun BundleTopAppBar(
     onBackButtonClicked: () -> Unit,
     onEditBundleNameButtonClicked: () -> Unit,
+    onSortButtonClicked: () -> Unit,
+    currentSortType: SortType,
     title: String,
 ) {
     TopAppBar(
@@ -851,6 +895,25 @@ fun BundleTopAppBar(
                     imageVector = Icons.Filled.Edit,
                     contentDescription = "Edit bundle name"
                 )
+            }
+            IconButton(onClick = onSortButtonClicked) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sort,
+                        contentDescription = null,
+                        modifier = Modifier.width(24.dp)
+                    )
+                    Text(
+                        text = when (currentSortType) {
+                            SortType.ALPHANUMERICAL -> "A"
+                            SortType.MASTERY -> "%"
+                        },
+                        fontSize = 12.sp,
+                        modifier = Modifier.width(10.dp)
+                    )
+                }
             }
         }
     )

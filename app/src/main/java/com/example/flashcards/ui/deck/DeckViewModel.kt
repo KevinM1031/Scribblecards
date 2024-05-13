@@ -184,6 +184,15 @@ class DeckViewModel(
         softReset()
     }
 
+    suspend fun toggleLock() {
+        val isSelected = _uiState.value.deck.deck.isSelected
+        _uiState.value.deck.deck.isLocked = !_uiState.value.deck.deck.isLocked
+        _uiState.value.deck.deck.deselect()
+        cardsRepository.updateDeck(_uiState.value.deck.deck)
+        _uiState.value.deck.deck.isSelected = isSelected
+        softReset()
+    }
+
     fun selectAllCardsInCurrentDeck() {
         deselectAllCards()
         val cards = _uiState.value.deck.cards
