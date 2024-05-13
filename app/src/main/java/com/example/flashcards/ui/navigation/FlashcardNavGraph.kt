@@ -72,15 +72,10 @@ fun FlashcardNavHost(
         }
         composable(route = FlashcardScreen.Dashboard.name) {
             BackHandler(true) { navController.navigate(FlashcardScreen.MainMenu.name) }
-
-            var forceRecomposition by remember { mutableStateOf(false) }
-            key(forceRecomposition) {
-                DashboardScreen(
-                    onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
-                    onBackButtonClicked = { navController.navigateUp() },
-                    onFullRecompositionRequested = { forceRecomposition = !forceRecomposition }
-                )
-            }
+            DashboardScreen(
+                onDeckButtonClicked = { navController.navigate("${FlashcardScreen.Deck.name}/$it") },
+                onBackButtonClicked = { navController.navigateUp() },
+            )
         }
         composable(
             route = "${FlashcardScreen.Deck.name}/{id}",

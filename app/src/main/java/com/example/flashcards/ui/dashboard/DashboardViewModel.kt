@@ -29,6 +29,7 @@ class DashboardViewModel(
         closeBundleCreatorDialog()
         closeDeckCreatorDialog()
         closeEditBundleNameDialog()
+        closeBundleSelector()
         drop()
 
         viewModelScope.launch {
@@ -41,6 +42,7 @@ class DashboardViewModel(
             currentState.copy(
                 isBundleCloseAnimRequested = false,
                 isCreateOptionsCloseAnimRequested = false,
+                isDeckEnabled = true,
             )
         }
     }
@@ -75,13 +77,19 @@ class DashboardViewModel(
         }
     }
 
-    fun dragStart(position: Offset, content: @Composable () -> Unit, data: DragData) {
+    fun setDeckEnabled(value: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isDeckEnabled = value
+            )
+        }
+    }
+
+    fun dragStart(position: Offset) {
         _uiState.update { currentState ->
             currentState.copy(
                 isDragging = true,
                 dragPosition = position,
-                dragContent = content,
-                dragData = data,
             )
         }
     }
@@ -91,8 +99,6 @@ class DashboardViewModel(
             currentState.copy(
                 isDragging = false,
                 dragPosition = Offset.Zero,
-                dragContent = null,
-                dragData = null,
             )
         }
     }
@@ -141,6 +147,37 @@ class DashboardViewModel(
             )
         }
         deselectAllDecks()
+    }
+
+    fun openBundleSelector() {
+        deselectAllBundles()
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCreatorOpen = false,
+                isBundleSelectorOpen = true,
+            )
+        }
+    }
+
+    fun backFromBundleSelector() {
+        deselectAllBundles()
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCreatorOpen = true,
+                isBundleSelectorOpen = false,
+            )
+        }
+    }
+
+    fun closeBundleSelector() {
+        deselectAllBundles()
+        deselectAllDecks()
+        _uiState.update { currentState ->
+            currentState.copy(
+                isBundleCreatorOpen = false,
+                isBundleSelectorOpen = false,
+            )
+        }
     }
 
     fun openBundleCreatorDialog() {
@@ -229,7 +266,6 @@ class DashboardViewModel(
                 currentBundleIndex = bundleIndex,
                 isBundleCloseAnimRequested = false,
                 isBundleOpen = true,
-                isBundleFakeClosed = false,
             )
         }
     }
@@ -242,7 +278,6 @@ class DashboardViewModel(
                 currentBundleIndex = null,
                 isBundleCloseAnimRequested = false,
                 isBundleOpen = false,
-                isBundleFakeClosed = false,
             )
         }
     }
@@ -251,15 +286,6 @@ class DashboardViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 isBundleCloseAnimRequested = true,
-            )
-        }
-    }
-
-    fun fakeCloseBundle() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isBundleCloseAnimRequested = true,
-                isBundleFakeClosed = true,
             )
         }
     }
@@ -342,6 +368,36 @@ class DashboardViewModel(
         deleteAllEmptyBundles()
     }
 
+    suspend fun moveSelectedDecksToSelectedBundle() {
+        var index: Int? = null
+        for (i in 0..<_uiState.value.bundles.size) {
+            if (_uiState.value.bundles[i].bundle.isSelected) {
+                index = i
+                break
+            }
+        }
+        if (index == null) return
+
+        val id = _uiState.value.bundles[index].bundle.id
+        for (bundle in _uiState.value.bundles) {
+            for (deck in bundle.decks) {
+                if (deck.isSelected) {
+                    deck.bundleId = id
+                    deck.deselect()
+                    cardsRepository.updateDeck(deck)
+                }
+            }
+        }
+        for (deck in _uiState.value.decks) {
+            if (deck.isSelected) {
+                deck.bundleId = id
+                deck.deselect()
+                cardsRepository.updateDeck(deck)
+            }
+        }
+        deleteAllEmptyBundles()
+    }
+
     suspend fun moveDeckOutOfBundle(deckIndex: Int, bundleIndex: Int) {
         if (_uiState.value.bundles.getOrNull(bundleIndex) == null) return
         val deck = _uiState.value.bundles[bundleIndex].decks.getOrElse(deckIndex) { return }
@@ -408,12 +464,16 @@ class DashboardViewModel(
         }
     }
 
-    fun toggleDeckSelection(index: Int) {
+    fun toggleDeckSelection(index: Int, value: Boolean? = null) {
         val bundleIndex: Int? = _uiState.value.currentBundleIndex
         val num = _uiState.value.numSelectedDecks
 
         if (bundleIndex == null) {
-            _uiState.value.decks[index].toggleSelection()
+            if (value != null) {
+                _uiState.value.decks[index].isSelected = value
+            } else {
+                _uiState.value.decks[index].toggleSelection()
+            }
             _uiState.update { currentState ->
                 currentState.copy(
                     numSelectedDecks = if (currentState.decks[index].isSelected)
@@ -422,7 +482,11 @@ class DashboardViewModel(
             }
 
         } else {
-            _uiState.value.bundles[bundleIndex].decks[index].toggleSelection()
+            if (value != null) {
+                _uiState.value.bundles[bundleIndex].decks[index].isSelected = value
+            } else {
+                _uiState.value.bundles[bundleIndex].decks[index].toggleSelection()
+            }
             _uiState.update { currentState ->
                 currentState.copy(
                     numSelectedDecks = if (currentState.bundles[bundleIndex].decks[index].isSelected)
@@ -458,6 +522,17 @@ class DashboardViewModel(
 
     }
 
+    fun deselectAllBundles() {
+        for (bundle in _uiState.value.bundles) {
+            bundle.bundle.deselect()
+        }
+        _uiState.update { currentState ->
+            currentState.copy(
+                numSelectedBundles = 0,
+            )
+        }
+    }
+
     fun deselectAllDecks() {
         for (bundle in _uiState.value.bundles) {
             for (deck in bundle.decks) {
@@ -470,6 +545,36 @@ class DashboardViewModel(
         _uiState.update { currentState ->
             currentState.copy(
                 numSelectedDecks = 0,
+            )
+        }
+    }
+
+    fun deselectAllDecksOutOfBundle() {
+        var n = 0
+        for (deck in _uiState.value.decks) {
+            if (deck.isSelected) {
+                deck.deselect()
+                n++
+            }
+        }
+        _uiState.update { currentState ->
+            currentState.copy(
+                numSelectedDecks = currentState.numSelectedDecks - n,
+            )
+        }
+    }
+
+    fun deselectAllDecksInCurrentBundle() {
+        var n = 0
+        for (deck in _uiState.value.bundles[_uiState.value.currentBundleIndex!!].decks) {
+            if (deck.isSelected) {
+                deck.deselect()
+                n++
+            }
+        }
+        _uiState.update { currentState ->
+            currentState.copy(
+                numSelectedDecks = currentState.numSelectedDecks - n,
             )
         }
     }

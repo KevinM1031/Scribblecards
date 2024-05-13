@@ -17,17 +17,16 @@ data class DashboardUiState(
 
     val isDragging: Boolean = false,
     val dragPosition: Offset = Offset.Zero,
-    val dragContent: @Composable (() -> Unit)? = null,
-    val dragData: DragData? = null,
 
     val numSelectedBundles: Int = 0,
     val numSelectedDecks: Int = 0,
     val numSelectedCards: Int = 0,
 
+    val isDeckEnabled: Boolean = true,
     val isBundleOpen: Boolean = false,
-    val isBundleFakeClosed: Boolean = false,
     val isCreateOptionsOpen: Boolean = false,
     val isBundleCreatorOpen: Boolean = false,
+    val isBundleSelectorOpen: Boolean = false,
     val isBundleCreatorDialogOpen: Boolean = false,
     val isRemoveDeckFromBundleUiOpen: Boolean = false,
     val isEditBundleNameDialogOpen: Boolean = false,
