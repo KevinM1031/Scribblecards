@@ -121,7 +121,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-private const val BOX_SIZE_DP = 110
+private const val BOX_SIZE_DP = 100
 
 @Composable
 fun DashboardScreen(
