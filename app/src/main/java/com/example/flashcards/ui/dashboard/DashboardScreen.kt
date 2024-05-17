@@ -128,7 +128,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-private const val BOX_SIZE_DP = 300
+private const val BOX_SIZE_DP = 120
 private const val BOX_SIZE_IN_BUNDLE_DP = 110
 
 @Composable
@@ -148,6 +148,7 @@ fun DashboardScreen(
     val configuration = LocalConfiguration.current
     val snackbarHostState = remember { SnackbarHostState() }
     var topAppBarHeight by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
 
     Scaffold(
         topBar = {
@@ -295,7 +296,7 @@ fun DashboardScreen(
                             if (scrollAmount.absoluteValue > 0.2f) {
                                 lazyGridState.scrollBy(16f * scrollAmount)
                             }
-                            delay(40)
+                            delay(10)
                         }
                     }
                 }
@@ -357,6 +358,10 @@ fun DashboardScreen(
                             onDrop = {
                                 targetBundleIndex = null
                                 targetDeckIndex = null
+                                viewModel.drop()
+                                dragOffset = Offset.Zero
+                            },
+                            onDropCancel = {
                                 viewModel.drop()
                                 dragOffset = Offset.Zero
                             },
@@ -426,10 +431,25 @@ fun DashboardScreen(
                     ) {
 
                         val bundleLazyGridState = rememberLazyGridState()
+                        var bundleLazyGridHeight by remember { mutableIntStateOf(0) }
+
+                        LaunchedEffect(uiState.isDragging) {
+                            launch {
+                                while (uiState.isDragging) {
+                                    val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight - with(density) {mediumPadding.toPx()}
+                                    val scrollAmount = 32f * (y / bundleLazyGridHeight - 0.5f).pow(5f)
+                                    if (scrollAmount.absoluteValue > 0.2f) {
+                                        lazyGridState.scrollBy(16f * scrollAmount)
+                                    }
+                                    delay(10)
+                                }
+                            }
+                        }
 
                         LazyVerticalGrid(
                             state = bundleLazyGridState,
-                            columns = GridCells.Adaptive(minSize = BOX_SIZE_IN_BUNDLE_DP.dp)
+                            columns = GridCells.Adaptive(minSize = BOX_SIZE_IN_BUNDLE_DP.dp),
+                            modifier = Modifier.onGloballyPositioned { bundleLazyGridHeight = it.size.height }
                         ) {
 
                             items(viewModel.getNumDecksInCurrentBundle()) { i ->
