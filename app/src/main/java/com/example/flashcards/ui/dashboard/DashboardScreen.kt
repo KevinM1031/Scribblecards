@@ -128,7 +128,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-private const val BOX_SIZE_DP = 120
+private const val BOX_SIZE_DP = 300
 private const val BOX_SIZE_IN_BUNDLE_DP = 110
 
 @Composable
@@ -161,6 +161,7 @@ fun DashboardScreen(
                         viewModel.setDeckEnabled(false)
                         viewModel.requestCloseBundleAnim()
                     },
+                    setHeight = { topAppBarHeight = it },
                 )
 
             } else if (uiState.isBundleSelectorOpen) {
@@ -177,7 +178,8 @@ fun DashboardScreen(
                             viewModel.closeBundleSelector()
                         }
                     },
-                )
+                    setHeight = { topAppBarHeight = it },
+                    )
             } else if (uiState.isBundleOpen) {
                 if (uiState.isRemoveDeckFromBundleUiOpen) {
                     RemoveDeckFromBundleTopBar(
@@ -189,7 +191,8 @@ fun DashboardScreen(
                                 viewModel.closeBundle()
                             }
                         },
-                    )
+                        setHeight = { topAppBarHeight = it },
+                        )
                 } else {
                     BundleTopAppBar(
                         onBackButtonClicked = { viewModel.requestCloseBundleAnim(); },
@@ -197,6 +200,7 @@ fun DashboardScreen(
                         onSortButtonClicked = { viewModel.cycleSortType() },
                         currentSortType = uiState.sortType,
                         title = viewModel.getBundle(uiState.currentBundleIndex!!)?.bundle?.name ?: "",
+                        setHeight = { topAppBarHeight = it },
                     )
                 }
 
@@ -875,7 +879,8 @@ fun BundleTopAppBar(
     onSortButtonClicked: () -> Unit,
     currentSortType: SortType,
     title: String,
-) {
+    setHeight: (Int) -> Unit,
+    ) {
     TopAppBar(
         title = { Text(text = title, overflow = TextOverflow.Ellipsis,) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
@@ -915,7 +920,11 @@ fun BundleTopAppBar(
                     )
                 }
             }
-        }
+        },
+        modifier = Modifier
+            .onGloballyPositioned {
+                setHeight(it.size.height)
+            }
     )
 }
 
@@ -926,6 +935,7 @@ fun BundleCreatorTopAppBar(
     onCloseClicked: () -> Unit,
     onCreateClicked: () -> Unit,
     onMoveClicked: () -> Unit,
+    setHeight: (Int) -> Unit,
     ) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -982,7 +992,11 @@ fun BundleCreatorTopAppBar(
                     )
                 }
             }
-        }
+        },
+        modifier = Modifier
+            .onGloballyPositioned {
+                setHeight(it.size.height)
+            }
     )
 }
 
@@ -992,6 +1006,7 @@ fun BundleSelectorTopAppBar(
     numSelected: Int,
     onCloseClicked: () -> Unit,
     onMoveClicked: () -> Unit,
+    setHeight: (Int) -> Unit,
 ) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -1030,7 +1045,11 @@ fun BundleSelectorTopAppBar(
                     )
                 }
             }
-        }
+        },
+        modifier = Modifier
+            .onGloballyPositioned {
+                setHeight(it.size.height)
+            }
     )
 }
 
@@ -1040,6 +1059,7 @@ fun RemoveDeckFromBundleTopBar(
     numSelected: Int,
     closeRemoveDeckFromBundleUi: () -> Unit,
     onRemoveClicked: () -> Unit,
+    setHeight: (Int) -> Unit,
 ) {
 
     val smallPadding = dimensionResource(R.dimen.padding_small)
@@ -1080,7 +1100,11 @@ fun RemoveDeckFromBundleTopBar(
                     )
                 }
             }
-        }
+        },
+        modifier = Modifier
+            .onGloballyPositioned {
+                setHeight(it.size.height)
+            }
     )
 }
 

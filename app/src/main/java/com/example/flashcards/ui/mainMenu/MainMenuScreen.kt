@@ -64,32 +64,6 @@ fun MainMenuScreen(
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
 
-    val allCardsBtnAnim = animateFloatAsState(
-        targetValue = if (uiState.allCardsBtnAnimRequested) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = 250,
-            easing = FastOutSlowInEasing,
-        ),
-        finishedListener = {
-            if (uiState.allCardsBtnAnimRequested) {
-                onAllCardsButtonClicked()
-            }
-        }
-    )
-
-    val priorityDecksBtnAnim = animateFloatAsState(
-        targetValue = if (uiState.priorityDecksBtnAnimRequested) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = 250,
-            easing = FastOutSlowInEasing,
-        ),
-        finishedListener = {
-            if (uiState.priorityDecksBtnAnimRequested) {
-                onPriorityDecksButtonClicked()
-            }
-        }
-    )
-
     LaunchedEffect(Unit) {
         viewModel.loadSettings(context, configuration)
         viewModel.softReset()
@@ -108,14 +82,11 @@ fun MainMenuScreen(
     ) {
         Spacer(Modifier.weight(0.7f))
         FilledTonalButton(
-            onClick = { viewModel.requestAllCardsBtnAnim() },
-            shape = RoundedCornerShape(percent = (10 * (1 - allCardsBtnAnim.value).toInt())),
+            onClick = { onAllCardsButtonClicked() },
+            shape = RoundedCornerShape(percent = 10),
             modifier = Modifier
-                .size(
-                    width = 300.dp + ((configuration.screenWidthDp - 300) * allCardsBtnAnim.value).dp,
-                    height = (300 * (1-priorityDecksBtnAnim.value)).dp + ((configuration.screenHeightDp - 300) * allCardsBtnAnim.value).dp
-                )
-                .padding(mediumPadding * (1f - allCardsBtnAnim.value - priorityDecksBtnAnim.value))
+                .size(300.dp)
+                .padding(mediumPadding)
             ) {
             Text(
                 text = stringResource(id = R.string.mms_cards),
@@ -126,14 +97,14 @@ fun MainMenuScreen(
         }
 
         FilledTonalButton(
-            onClick = { viewModel.requestPriorityDecksBtnAnim() },
-            shape = RoundedCornerShape(percent = (20 * (1 - priorityDecksBtnAnim.value).toInt())),
+            onClick = { onPriorityDecksButtonClicked() },
+            shape = RoundedCornerShape(percent = 20),
             modifier = Modifier
                 .size(
-                    width = 300.dp + ((configuration.screenWidthDp - 300) * priorityDecksBtnAnim.value).dp,
-                    height = 150.dp + ((configuration.screenHeightDp - 150) * priorityDecksBtnAnim.value).dp
+                    width = 300.dp,
+                    height = 150.dp
                 )
-                .padding(mediumPadding * (1f - priorityDecksBtnAnim.value))
+                .padding(mediumPadding)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
