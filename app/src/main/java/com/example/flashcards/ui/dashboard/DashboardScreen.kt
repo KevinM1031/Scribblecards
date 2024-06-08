@@ -288,18 +288,18 @@ fun DashboardScreen(
                     .blur((12 * bundleCloseAnim.value).dp)
             ) {
 
-                LaunchedEffect(uiState.isDragging && !uiState.isBundleOpen) {
-                    launch {
-                        while (uiState.isDragging) {
-                            val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight
-                            val scrollAmount = 32f * (y / lazyGridHeight - 0.5f).pow(5f)
-                            if (scrollAmount.absoluteValue > 0.2f) {
-                                lazyGridState.scrollBy(16f * scrollAmount)
-                            }
-                            delay(10)
-                        }
-                    }
-                }
+//                LaunchedEffect(uiState.isDragging && !uiState.isBundleOpen) {
+//                    launch {
+//                        while (uiState.isDragging) {
+//                            val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight
+//                            val scrollAmount = 32f * (y / lazyGridHeight - 0.5f).pow(5f)
+//                            if (scrollAmount.absoluteValue > 0.2f) {
+//                                lazyGridState.scrollBy(16f * scrollAmount)
+//                            }
+//                            delay(10)
+//                        }
+//                    }
+//                }
 
                 LazyVerticalGrid(
                     state = lazyGridState,
@@ -325,8 +325,8 @@ fun DashboardScreen(
                             isBundleSelectorOpen = uiState.isBundleSelectorOpen,
                             isBundle = true,
                             size = BOX_SIZE_DP,
-                            dragPosition = uiState.dragPosition + dragOffset,
-                            isDropOnAllowed = !uiState.isBundleOpen,
+//                            dragPosition = uiState.dragPosition + dragOffset,
+//                            isDropOnAllowed = !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging,
                             lastUpdated = uiState.lastUpdated,
                         )
@@ -344,36 +344,36 @@ fun DashboardScreen(
                             isBundle = false,
                             size = BOX_SIZE_DP,
                             onLongPress = { viewModel.openBundleCreator() },
-                            onDragStart = {
-                                viewModel.dragStart(it)
-                            },
-                            onDrag = {
-                                dragOffset += it
-                                viewModel.deselectAllDecksOutOfBundle()
-                                val t = targetDeckIndex ?: i
-                                for (j in if (i > t) t..i else i..t) {
-                                    viewModel.toggleDeckSelection(j, true)
-                                }
-                            },
-                            onDrop = {
-                                targetBundleIndex = null
-                                targetDeckIndex = null
-                                viewModel.drop()
-                                dragOffset = Offset.Zero
-                            },
-                            onDropCancel = {
-                                viewModel.drop()
-                                dragOffset = Offset.Zero
-                            },
-                            onDraggedOver = {
-                                targetBundleIndex = null
-                                targetDeckIndex = i
-                            },
-                            onDraggedAway = {
-                                if (targetDeckIndex == i) targetDeckIndex = null
-                            },
-                            dragPosition = uiState.dragPosition + dragOffset,
-                            isDropOnAllowed = !uiState.isBundleOpen,
+//                            onDragStart = {
+//                                viewModel.dragStart(it)
+//                            },
+//                            onDrag = {
+//                                dragOffset += it
+//                                viewModel.deselectAllDecksOutOfBundle()
+//                                val t = targetDeckIndex ?: i
+//                                for (j in if (i > t) t..i else i..t) {
+//                                    viewModel.toggleDeckSelection(j, true)
+//                                }
+//                            },
+//                            onDrop = {
+//                                targetBundleIndex = null
+//                                targetDeckIndex = null
+//                                viewModel.drop()
+//                                dragOffset = Offset.Zero
+//                            },
+//                            onDropCancel = {
+//                                viewModel.drop()
+//                                dragOffset = Offset.Zero
+//                            },
+//                            onDraggedOver = {
+//                                targetBundleIndex = null
+//                                targetDeckIndex = i
+//                            },
+//                            onDraggedAway = {
+//                                if (targetDeckIndex == i) targetDeckIndex = null
+//                            },
+//                            dragPosition = uiState.dragPosition + dragOffset,
+//                            isDropOnAllowed = !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
                             lastUpdated = uiState.lastUpdated,
                         )
@@ -433,18 +433,18 @@ fun DashboardScreen(
                         val bundleLazyGridState = rememberLazyGridState()
                         var bundleLazyGridHeight by remember { mutableIntStateOf(0) }
 
-                        LaunchedEffect(uiState.isDragging) {
-                            launch {
-                                while (uiState.isDragging) {
-                                    val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight - with(density) {mediumPadding.toPx()}
-                                    val scrollAmount = 32f * (y / bundleLazyGridHeight - 0.5f).pow(5f)
-                                    if (scrollAmount.absoluteValue > 0.2f) {
-                                        lazyGridState.scrollBy(16f * scrollAmount)
-                                    }
-                                    delay(10)
-                                }
-                            }
-                        }
+//                        LaunchedEffect(uiState.isDragging) {
+//                            launch {
+//                                while (uiState.isDragging) {
+//                                    val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight - with(density) {mediumPadding.toPx()}
+//                                    val scrollAmount = 32f * (y / bundleLazyGridHeight - 0.5f).pow(5f)
+//                                    if (scrollAmount.absoluteValue > 0.2f) {
+//                                        lazyGridState.scrollBy(16f * scrollAmount)
+//                                    }
+//                                    delay(10)
+//                                }
+//                            }
+//                        }
 
                         LazyVerticalGrid(
                             state = bundleLazyGridState,
@@ -474,34 +474,34 @@ fun DashboardScreen(
                                             viewModel.openRemoveDeckFromBundleUi()
                                         }
                                     },
-                                    onDragStart = { viewModel.dragStart(it) },
-                                    onDrag = {
-                                        dragOffset += it
-                                        viewModel.deselectAllDecksInCurrentBundle()
-                                        val t = targetDeckIndex ?: i
-                                        for (j in if (i > t) t..i else i..t) {
-                                            viewModel.toggleDeckSelection(j, true)
-                                        }
-                                    },
-                                    onDrop = {
-                                        targetBundleIndex = null
-                                        targetDeckIndex = null
-                                        viewModel.drop()
-                                        dragOffset = Offset.Zero
-                                    },
-                                    onDropCancel = {
-                                        viewModel.drop()
-                                        dragOffset = Offset.Zero
-                                    },
-                                    onDraggedOver = {
-                                        targetBundleIndex = null
-                                        targetDeckIndex = i
-                                    },
-                                    onDraggedAway = {
-                                        if (targetDeckIndex == i) targetDeckIndex = null
-                                    },
-                                    isDropOnAllowed = true,
-                                    dragPosition = uiState.dragPosition + dragOffset,
+//                                    onDragStart = { viewModel.dragStart(it) },
+//                                    onDrag = {
+//                                        dragOffset += it
+//                                        viewModel.deselectAllDecksInCurrentBundle()
+//                                        val t = targetDeckIndex ?: i
+//                                        for (j in if (i > t) t..i else i..t) {
+//                                            viewModel.toggleDeckSelection(j, true)
+//                                        }
+//                                    },
+//                                    onDrop = {
+//                                        targetBundleIndex = null
+//                                        targetDeckIndex = null
+//                                        viewModel.drop()
+//                                        dragOffset = Offset.Zero
+//                                    },
+//                                    onDropCancel = {
+//                                        viewModel.drop()
+//                                        dragOffset = Offset.Zero
+//                                    },
+//                                    onDraggedOver = {
+//                                        targetBundleIndex = null
+//                                        targetDeckIndex = i
+//                                    },
+//                                    onDraggedAway = {
+//                                        if (targetDeckIndex == i) targetDeckIndex = null
+//                                    },
+//                                    isDropOnAllowed = true,
+//                                    dragPosition = uiState.dragPosition + dragOffset,
                                     isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
                                     lastUpdated = uiState.lastUpdated,
                                 )
@@ -598,8 +598,8 @@ fun SelectableComposable(
     onDropCancel: () -> Unit = {},
     onDraggedOver: () -> Unit = {},
     onDraggedAway: () -> Unit = {},
-    dragPosition: Offset,
-    isDropOnAllowed: Boolean,
+    dragPosition: Offset = Offset.Zero,
+    isDropOnAllowed: Boolean = false,
     isClickEnabled: Boolean = true,
     alpha: Float = 1f,
     lastUpdated: Long,
@@ -659,25 +659,25 @@ fun SelectableComposable(
                         }
                     }
             }
-            .pointerInput(Unit) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = {
-                        onDragStart(posInRoot + it)
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(dragAmount)
-                    },
-                    onDragEnd = {
-                        isDragging = false
-                        onDrop()
-                    },
-                    onDragCancel = {
-                        isDragging = false
-                        onDropCancel()
-                    },
-                )
-            }
+//            .pointerInput(Unit) {
+//                detectDragGesturesAfterLongPress(
+//                    onDragStart = {
+//                        onDragStart(posInRoot + it)
+//                    },
+//                    onDrag = { change, dragAmount ->
+//                        change.consume()
+//                        onDrag(dragAmount)
+//                    },
+//                    onDragEnd = {
+//                        isDragging = false
+//                        onDrop()
+//                    },
+//                    onDragCancel = {
+//                        isDragging = false
+//                        onDropCancel()
+//                    },
+//                )
+//            }
     ) {
         content()
     }
