@@ -17,8 +17,8 @@ data class SavedSettings (
 )
 
 enum class Language(val localeString: String, val displayName: String) {
-    KOR(localeString = "kr", displayName = "한국어"),
-    ENG(localeString = "", displayName = "English"),
-    JPN(localeString = "jp", displayName = "日本語"),
-    UNSET(localeString = "unset", displayName = "Default")
+    KOR(localeString = "ko", displayName = "한국어"),
+    ENG(localeString = "en", displayName = "English"),
+    JPN(localeString = "ja", displayName = "日本語"),
+    UNSET(localeString = "en", displayName = "Default")
 }

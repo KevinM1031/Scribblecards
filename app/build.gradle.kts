@@ -25,6 +25,10 @@ plugins {
 android {
     compileSdk = 34
 
+    androidResources {
+        generateLocaleConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.example.flashcards"
         minSdk = 25
@@ -36,6 +40,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        resourceConfigurations.plus(listOf("ja", "ko"))
     }
 
     buildTypes {
@@ -93,6 +99,9 @@ dependencies {
 
     implementation("androidx.compose.material:material-icons-extended")
 
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.appcompat:appcompat-resources:1.7.0")
+
     testImplementation(libs.junit)
 
     androidTestImplementation(libs.androidx.junit)
@@ -102,4 +111,5 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
 }

@@ -11,6 +11,7 @@ import androidx.core.os.ConfigurationCompat
 import androidx.core.os.LocaleListCompat
 import com.example.flashcards.data.entities.Language
 import com.example.flashcards.data.entities.SavedSettings
+import java.util.Locale
 
 class Settings {
     companion object {
@@ -38,8 +39,8 @@ class Settings {
 
             language = if (savedSettings.language == Language.UNSET) {
                 when (ConfigurationCompat.getLocales(configuration).get(0)?.language) {
-                    "jp" -> Language.JPN
-                    "kr" -> Language.KOR
+                    "ja" -> Language.JPN
+                    "ko" -> Language.KOR
                     else -> Language.ENG
                 }
             } else {
@@ -49,7 +50,8 @@ class Settings {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.getSystemService(LocaleManager::class.java).applicationLocales = LocaleList.forLanguageTags(savedSettings.language.localeString)
             } else {
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(savedSettings.language.localeString))
+                val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(savedSettings.language.localeString)
+                AppCompatDelegate.setApplicationLocales(appLocale)
             }
         }
     }
