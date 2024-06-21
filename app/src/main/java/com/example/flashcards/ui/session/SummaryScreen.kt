@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -114,7 +115,7 @@ fun SummaryScreen (
         )
         Spacer(modifier = Modifier.weight(0.1f))
         Text(
-            text = "Session Summary",
+            text = stringResource(id = R.string.sms),
         )
         Spacer(modifier = Modifier.weight(0.5f))
         Row(
@@ -160,14 +161,36 @@ fun SummaryScreen (
         }
         Spacer(modifier = Modifier.weight(0.2f))
         Text(
-            text = "Cards studied: ${deck.cards.size}",
+            text = "${stringResource(id = R.string.sms_studied)}${deck.cards.size}",
             fontSize = 20.sp,
         )
         Spacer(modifier = Modifier.weight(0.2f))
         Text(
-            text = "Perfect: ${uiState.numPerfect}",
+            text = "${stringResource(id = R.string.sms_perfect)}${uiState.numPerfect}",
             fontSize = 20.sp,
         )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = stringResource(id = R.string.sms_save),
+                fontSize = 16.sp,
+            )
+            IconButton(onClick = { viewModel.toggleTipDialog() }) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = "Back"
+                )
+            }
+            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.padding_small)))
+            Checkbox(
+                checked = saveSessionData,
+                onCheckedChange = { saveSessionData = it },
+            )
+        }
         Spacer(modifier = Modifier.weight(0.5f))
         Button(
             onClick = {
@@ -182,29 +205,7 @@ fun SummaryScreen (
             }
         ) {
             Text(
-                text = "Exit"
-            )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Text(
-                text = "Save session data",
-                fontSize = 16.sp,
-            )
-            IconButton(onClick = { viewModel.toggleTipDialog() }) {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = "Back"
-                )
-            }
-            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.padding_small)))
-            Checkbox(
-                checked = saveSessionData,
-                onCheckedChange = { saveSessionData = it },
+                text = stringResource(id = R.string.exit)
             )
         }
         Spacer(modifier = Modifier.weight(2f))

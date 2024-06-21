@@ -215,7 +215,7 @@ fun CloseDialog(
                     Button(
                         onClick = onCloseButtonClicked,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.close)) }
+                    ) { Text(stringResource(id = R.string.quit)) }
                 }
             }
         }

@@ -102,6 +102,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -215,6 +216,8 @@ fun DashboardScreen(
             }
         },
         floatingActionButton = {
+            val pfx = stringResource(id = R.string.ds_e_deck_limit)
+            val sfx = stringResource(id = R.string.ds_e_deck_limit_sfx)
             if (!uiState.isBundleCreatorOpen) {
                 CreateOptionButton(
                     isCreateOptionsOpen = uiState.isCreateOptionsOpen,
@@ -224,7 +227,7 @@ fun DashboardScreen(
                     onTooManyDecks = {
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "Deck limit reached (maximum ${Constants.MAX_DECKS} decks).",
+                                message = "$pfx${Constants.MAX_DECKS}$sfx",
                                 withDismissAction = true,
                             )
                         }
@@ -851,7 +854,7 @@ fun DashboardTopAppBar(
     setHeight: (Int) -> Unit,
 ) {
     TopAppBar(
-        title = { Text(text = "Dashboard", overflow = TextOverflow.Ellipsis,) },
+        title = { Text(text = stringResource(id = R.string.ds), overflow = TextOverflow.Ellipsis) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -961,7 +964,7 @@ fun BundleCreatorTopAppBar(
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     LargeTopAppBar(
-        title = { Text(text = "$numSelected Selected") },
+        title = { Text(text = "$numSelected ${stringResource(id = R.string.selected_)}") },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -984,7 +987,7 @@ fun BundleCreatorTopAppBar(
             ) {
                 Row() {
                     Text(
-                        text = "Move",
+                        text = stringResource(id = R.string.move),
                         fontSize = 16.sp,
                     )
                     Spacer(modifier = Modifier.size(smallPadding))
@@ -1002,7 +1005,7 @@ fun BundleCreatorTopAppBar(
             ) {
                 Row() {
                     Text(
-                        text = "Create",
+                        text = stringResource(id = R.string.create),
                         fontSize = 16.sp,
                     )
                     Spacer(modifier = Modifier.size(smallPadding))
@@ -1032,7 +1035,7 @@ fun BundleSelectorTopAppBar(
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     LargeTopAppBar(
-        title = { Text(text = "Select destination bundle") },
+        title = { Text(text = stringResource(id = R.string.ds_tb_select_bundle)) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -1055,7 +1058,7 @@ fun BundleSelectorTopAppBar(
             ) {
                 Row() {
                     Text(
-                        text = "Move",
+                        text = stringResource(id = R.string.move),
                         fontSize = 16.sp,
                     )
                     Spacer(modifier = Modifier.size(smallPadding))
@@ -1085,7 +1088,7 @@ fun RemoveDeckFromBundleTopBar(
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     LargeTopAppBar(
-        title = { Text(text = "$numSelected Selected") },
+        title = { Text(text = "$numSelected ${stringResource(R.string.selected_)}") },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -1110,7 +1113,7 @@ fun RemoveDeckFromBundleTopBar(
             ) {
                 Row() {
                     Text(
-                        text = "Remove",
+                        text = stringResource(R.string.remove),
                         fontSize = 16.sp,
                     )
                     Spacer(modifier = Modifier.size(smallPadding))
@@ -1169,13 +1172,13 @@ fun CreateOptionButton(
                     },
                     modifier = Modifier.padding(smallPadding)
                 ) {
-                    Text(text = "Create new deck", modifier = Modifier.padding(smallPadding))
+                    Text(text = stringResource(id = R.string.ds_ab_create_deck), modifier = Modifier.padding(smallPadding))
                 }
                 FloatingActionButton(
                     onClick = openBundleCreator,
                     modifier = Modifier.padding(smallPadding)
                 ) {
-                    Text(text = "Move decks to new or existing bundle", modifier = Modifier.padding(smallPadding))
+                    Text(text = stringResource(id = R.string.ds_ab_move_deck), modifier = Modifier.padding(smallPadding))
                 }
             }
         }
@@ -1236,7 +1239,7 @@ fun CreateBundleDialog(
 
             ) {
                 Text(
-                    text = "Name for the bundle:",
+                    text = stringResource(id = R.string.ds_d_create_bundle),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
@@ -1245,7 +1248,7 @@ fun CreateBundleDialog(
                 ) {
                     if (isError) {
                         Text(
-                            text = "This field is required.",
+                            text = stringResource(id = R.string.e_field_required),
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -1253,7 +1256,7 @@ fun CreateBundleDialog(
                     OutlinedTextField(
                         value = userInput ?: "",
                         onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
-                        label = { Text("Bundle name") },
+                        label = { Text(stringResource(id = R.string.ds_d_bundle_name)) },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
@@ -1268,7 +1271,7 @@ fun CreateBundleDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(id = R.string.cancel)) }
                     Button(
                         onClick = {
                             if (userInput.isNullOrBlank()) {
@@ -1278,7 +1281,7 @@ fun CreateBundleDialog(
                             }
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(if (editMode) "Save" else "Create") }
+                    ) { Text(if (editMode) stringResource(id = R.string.save) else stringResource(id = R.string.create)) }
                 }
             }
         }
@@ -1324,7 +1327,7 @@ fun CreateDeckDialog(
 
             ) {
                 Text(
-                    text = "Name for the deck:",
+                    text = stringResource(id = R.string.ds_d_create_deck),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
@@ -1333,7 +1336,7 @@ fun CreateDeckDialog(
                 ) {
                     if (isError) {
                         Text(
-                            text = "This field is required.",
+                            text = stringResource(id = R.string.e_field_required),
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Start,
@@ -1348,7 +1351,7 @@ fun CreateDeckDialog(
                                 )
                             )
                         },
-                        label = { Text("Deck name") },
+                        label = { Text(stringResource(id = R.string.ds_d_deck_name)) },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {
@@ -1367,7 +1370,7 @@ fun CreateDeckDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(id = R.string.cancel)) }
                     Button(
                         onClick = {
                             if (userInput.isNullOrBlank()) {
@@ -1377,7 +1380,7 @@ fun CreateDeckDialog(
                             }
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Create") }
+                    ) { Text(stringResource(id = R.string.create)) }
                 }
             }
         }

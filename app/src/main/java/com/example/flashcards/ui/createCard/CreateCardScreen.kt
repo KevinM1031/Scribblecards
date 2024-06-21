@@ -41,6 +41,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -76,7 +77,7 @@ fun CreateCardScreen (
                 ),
                 title = {
                     Text(
-                        text = "Create Card",
+                        text = stringResource(id = R.string.cc),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -113,7 +114,7 @@ fun CreateCardScreen (
                             TextButton(
                                 onClick = onBackButtonClicked,
                                 modifier = Modifier.size(120.dp, 40.dp)
-                            ) { Text("Cancel") }
+                            ) { Text(stringResource(id = R.string.cancel)) }
                             Button(
                                 enabled = uiState.questionTextInput.isNotBlank() && uiState.answerTextInput.isNotBlank(),
                                 onClick = {
@@ -123,7 +124,7 @@ fun CreateCardScreen (
                                     }
                                 },
                                 modifier = Modifier.size(120.dp, 40.dp)
-                            ) { Text("Create") }
+                            ) { Text(stringResource(id = R.string.create)) }
                         }
                     }
                 }
@@ -146,37 +147,37 @@ fun CreateCardScreen (
             ) {
                 Spacer(modifier = Modifier.height(mediumPadding))
                 CustomTextField(
-                    text = "Question",
+                    text = stringResource(id = R.string.ec_question),
                     value = uiState.questionTextInput,
                     onValueChange = { viewModel.setQuestionTextInput(it) },
-                    label = "Question text",
+                    label = stringResource(id = R.string.ec_question_text),
                     focusManager = focusManager,
                     modifier = Modifier
                         .padding(vertical = smallPadding)
                 )
                 CustomTextField(
-                    text = "Answer",
+                    text = stringResource(id = R.string.ec_answer),
                     value = uiState.answerTextInput,
                     onValueChange = { viewModel.setAnswerTextInput(it) },
-                    label = "Answer text",
+                    label = stringResource(id = R.string.ec_answer_text),
                     focusManager = focusManager,
                     modifier = Modifier
                         .padding(vertical = smallPadding)
                 )
                 CustomTextField(
-                    text = "Hint (optional)",
+                    text = stringResource(id = R.string.ec_hint),
                     value = uiState.hintTextInput,
                     onValueChange = { viewModel.setHintTextInput(it) },
-                    label = "Hint text",
+                    label = stringResource(id = R.string.ec_hint_text),
                     focusManager = focusManager,
                     modifier = Modifier
                         .padding(vertical = smallPadding)
                 )
                 CustomTextField(
-                    text = "Example (optional)",
+                    text = stringResource(id = R.string.ec_example),
                     value = uiState.exampleTextInput,
                     onValueChange = { viewModel.setExampleTextInput(it) },
-                    label = "Example text",
+                    label = stringResource(id = R.string.ec_example_text),
                     focusManager = focusManager,
                     isLast = true,
                     modifier = Modifier
@@ -200,7 +201,7 @@ fun CustomTextField(
     focusManager: FocusManager,
     isLast: Boolean = false,
     isError: Boolean = false,
-    errorMessage: String = " - this field is required.",
+    errorMessage: String = stringResource(id = R.string.e_field_required_sfx),
     ) {
     Column(
         verticalArrangement = Arrangement.Top,

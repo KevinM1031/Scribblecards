@@ -104,6 +104,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -332,12 +333,12 @@ fun QuitDialog(
 
             ) {
                 Text(
-                    text = "Quit Session?",
+                    text = stringResource(id = R.string.sss_quit),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Current session record will be lost.",
+                    text = stringResource(id = R.string.sss_record_will_be_lost),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
@@ -351,13 +352,13 @@ fun QuitDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(id = R.string.cancel)) }
                     Button(
                         onClick = {
                             onQuitButtonClicked()
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Quit") }
+                    ) { Text(stringResource(id = R.string.quit)) }
                 }
             }
         }
@@ -395,12 +396,12 @@ fun RestartDialog(
 
             ) {
                 Text(
-                    text = "Restart Session?",
+                    text = stringResource(id = R.string.sss_restart),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Current session record will be lost.",
+                    text = stringResource(id = R.string.sss_record_will_be_lost),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                 )
@@ -414,11 +415,11 @@ fun RestartDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(id = R.string.cancel)) }
                     Button(
                         onClick = onRestartButtonClicked,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Restart") }
+                    ) { Text(stringResource(id = R.string.restart)) }
                 }
             }
         }
@@ -492,7 +493,7 @@ fun SessionMenu(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = "${(progress*100).roundToInt()}% Completed ",
+                    text = "${(progress*100).roundToInt()}${stringResource(id = R.string.sss_percent)}",
                     fontSize = 14.sp
                 )
                 LinearProgressIndicator(
@@ -513,7 +514,7 @@ fun SessionMenu(
         ) {
             item {
                 Text(
-                    text = "Current card:",
+                    text = stringResource(id = R.string.sss_current),
                     fontSize = 16.sp,
                     modifier = Modifier.padding(top = smallPadding, bottom = smallPadding, start = smallPadding)
                 )
@@ -528,7 +529,7 @@ fun SessionMenu(
             if (activeCardIndices.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Upcoming cards:",
+                        text = stringResource(id = R.string.sss_upcoming),
                         fontSize = 16.sp,
                         modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
                     )
@@ -544,7 +545,7 @@ fun SessionMenu(
             if (usedCardIndices.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Seen cards:",
+                        text = stringResource(id = R.string.sss_seen),
                         fontSize = 16.sp,
                         modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
                     )
@@ -560,7 +561,7 @@ fun SessionMenu(
             if (completedCardIndices.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Completed cards:",
+                        text = stringResource(id = R.string.sss_completed),
                         fontSize = 16.sp,
                         modifier = Modifier.padding(start = smallPadding, bottom = smallPadding)
                     )
@@ -795,8 +796,14 @@ fun Flashcard(
             .graphicsLayer {
                 val x = swipeCardRotation.x * swipeCardRotationReturn.value
                 val y = swipeCardRotation.y * swipeCardRotationReturn.value
-                val swipeRotationX = if (y == 0f) 0f else (180f * log(y.absoluteValue+1, 20f) * if(y < 0) -1 else 1).coerceIn(-20f..20f)
-                val swipeRotationY = if (x == 0f) 0f else (180f * log(x.absoluteValue+1, 20f) * if(x < 0) -1 else 1).coerceIn(-20f..20f)
+                val swipeRotationX = if (y == 0f) 0f else (180f * log(
+                    y.absoluteValue + 1,
+                    20f
+                ) * if (y < 0) -1 else 1).coerceIn(-20f..20f)
+                val swipeRotationY = if (x == 0f) 0f else (180f * log(
+                    x.absoluteValue + 1,
+                    20f
+                ) * if (x < 0) -1 else 1).coerceIn(-20f..20f)
 
                 rotationX = swipeRotationX
                 rotationY = swipeRotationY + cardRotation.value
@@ -845,7 +852,7 @@ fun Flashcard(
                     ) {
                         if (isHistoryShown && cardSkip.value == 0f)
                             if (historyList.isEmpty()) {
-                                Text("This is a new card!")
+                                Text(stringResource(id = R.string.sss_new))
                             } else {
                                 for (wasCorrect in currentCardHistory.getHistory()) {
                                     if (wasCorrect) {
@@ -931,7 +938,7 @@ fun Flashcard(
                                     .weight(1f)
                             ) {
                                 Text(
-                                    text = "Hint",
+                                    text = stringResource(id = R.string.sss_hint),
                                     textDecoration = TextDecoration.Underline,
                                     fontSize = 16.sp,
                                     overflow = TextOverflow.Ellipsis,
@@ -955,7 +962,7 @@ fun Flashcard(
                                     .weight(1f)
                             ) {
                                 Text(
-                                    text = "Example",
+                                    text = stringResource(id = R.string.sss_example),
                                     textDecoration = TextDecoration.Underline,
                                     fontSize = 16.sp,
                                     overflow = TextOverflow.Ellipsis,
@@ -1330,7 +1337,7 @@ fun TipDialog(
                     onClick = { onDismissRequest() },
                     modifier = Modifier.size(120.dp, 40.dp)
                 ) {
-                    Text(text = "Close")
+                    Text(text = stringResource(id = R.string.close))
                 }
             }
         }

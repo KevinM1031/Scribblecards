@@ -89,6 +89,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -155,7 +156,7 @@ fun PriorityDecksScreen(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = if (uiState.decks?.size == 1) "deck remaining." else "decks remaining.",
+                    text = if (uiState.decks?.size == 1) stringResource(id = R.string.pd_deck_remaining) else stringResource(id = R.string.pd_decks_remaining),
                     fontSize = 20.sp,
                 )
             }
@@ -181,7 +182,7 @@ fun PriorityDecksScreen(
                         .size(86.dp)
                 )
                 Text(
-                    text = "Congratulations! There aren't any cards you have to study right now.",
+                    text = stringResource(id = R.string.pd_よしよし),
                     fontSize = 20.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -247,7 +248,7 @@ fun TopAppBar(
     onBackButtonClicked: () -> Unit,
 ) {
     TopAppBar(
-        title = { Text(text = "Priority decks", overflow = TextOverflow.Ellipsis,) },
+        title = { Text(text = stringResource(id = R.string.pd), overflow = TextOverflow.Ellipsis) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
         containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -255,7 +256,7 @@ fun TopAppBar(
             IconButton(onClick = onBackButtonClicked) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(id = R.string.pd)
                 )
             }
         }

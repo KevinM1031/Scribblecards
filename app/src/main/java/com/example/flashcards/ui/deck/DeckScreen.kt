@@ -91,6 +91,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -215,7 +216,7 @@ fun DeckScreen (
                                     .width(160.dp),
                             ) {
                                 Text(
-                                    text = "Start",
+                                    text = stringResource(id = R.string.start),
                                     textAlign = TextAlign.Center,
                                     fontSize = 16.sp,
                                 )
@@ -236,6 +237,7 @@ fun DeckScreen (
                     }
                 )
                 if (uiState.isSessionOptionsOpen) {
+                    val tip = stringResource(id = R.string.dk_d_tip)
                     SessionOptions(
                         deck = uiState.deck,
                         setShowHints = {
@@ -259,7 +261,7 @@ fun DeckScreen (
                             coroutineScope.launch { viewModel.updateDeck() }
                         },
                         onTipButtonClicked = {
-                            viewModel.setTipText("In \"Double Difficulty\" mode, a card isn't considered completed until you have guessed it correctly two times in a row.",)
+                            viewModel.setTipText(tip)
                             viewModel.toggleTip()
                         },
                     )
@@ -272,6 +274,9 @@ fun DeckScreen (
     ) { innerPadding ->
 
         val customCardEditorBar = @Composable {
+            val errorPfx = stringResource(id = R.string.dk_e_card_limit)
+            val errorSfx = stringResource(id = R.string.dk_e_card_limit_sfx)
+
             CardEditorBar(
                 onAllCardsSelected = { viewModel.selectAllCardsInCurrentDeck() },
                 onAllCardsDeselected = { viewModel.deselectAllCards() },
@@ -286,7 +291,7 @@ fun DeckScreen (
                 onTooManyCards = {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
-                            message = "Card limit reached (maximum ${Constants.MAX_CARDS} cards).",
+                            message = "$errorPfx${Constants.MAX_CARDS}$errorSfx",
                             withDismissAction = true,
                         )
                     }
@@ -426,9 +431,9 @@ fun CardEditorBar(
         title = {
             Text(
                 text = if (isCardSelectorOpen)
-                    "$numSelectedCards / $numCards Selected"
-                    else if (numCards == 1) "$numCards Card total"
-                    else "$numCards Cards total",
+                    "$numSelectedCards / $numCards ${stringResource(id = R.string.selected_)}"
+                    else if (numCards == 1) "$numCards ${stringResource(id = R.string.dk_card_total)}"
+                    else "$numCards ${stringResource(id = R.string.dk_cards_total)}",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -683,7 +688,7 @@ fun DeckStats(
                     }
                 }
                 Text(
-                    text = "mastered",
+                    text = stringResource(id = R.string.dk_mastered),
                     fontSize = 16.sp,
                     modifier = Modifier
                         .padding(bottom = smallPadding)
@@ -692,39 +697,39 @@ fun DeckStats(
             }
              if (deck.deck.isLocked) {
                  Text(
-                     text = "Deck hidden!",
+                     text = stringResource(id = R.string.dk_deck_hidden),
                      fontSize = 32.sp,
                      modifier = Modifier
                  )
             } else if (deck.deck.isNeverStudied()) {
                  Text(
-                     text = "New deck!",
+                     text = stringResource(id = R.string.dk_new_deck),
                      fontSize = 32.sp,
                      modifier = Modifier
                  )
             } else if (days < 1) {
                 Text(
                     text =
-                        "${hours} hour" + (if(hours == 1.toLong()) ", " else "s, ") +
-                        "${minutes} minute" + (if(minutes == 1.toLong()) "" else "s"),
+                        "${hours} ${stringResource(id = R.string.hour)}" + (if(hours == 1.toLong()) ", " else "${stringResource(id = R.string.plural_suffix)}, ") +
+                        "${minutes} ${stringResource(id = R.string.minute)}" + (if(minutes == 1.toLong()) "" else "${stringResource(id = R.string.plural_suffix)}"),
                     fontSize = 32.sp,
                     modifier = Modifier
                 )
                 Text(
-                    text = "since last studied",
+                    text = stringResource(id = R.string.dk_since_last_studied),
                     fontSize = 16.sp,
                     modifier = Modifier
                 )
             } else {
                 Text(
                     text =
-                        "${days} day" + (if(days == 1.toLong()) ", " else "s, ") +
-                        "${hours} hour" + (if(hours == 1.toLong()) "" else "s"),
+                        "${days} ${stringResource(id = R.string.day)}" + (if(days == 1.toLong()) ", " else "${stringResource(id = R.string.plural_suffix)}, ") +
+                        "${hours} ${stringResource(id = R.string.hour)}" + (if(hours == 1.toLong()) "" else "${stringResource(id = R.string.plural_suffix)}"),
                     fontSize = 32.sp,
                     modifier = Modifier
                 )
                 Text(
-                    text = "since last studied",
+                    text = stringResource(id = R.string.dk_since_last_studied),
                     fontSize = 16.sp,
                     modifier = Modifier
                 )
@@ -753,14 +758,14 @@ fun SessionOptions(
             .verticalScroll(rememberScrollState())
     ) {
         CustomSwitch(
-            label = "Display hints by default",
+            label = stringResource(id = R.string.dk_show_hints),
             checked = deck.deck.showHints,
             onChecked = setShowHints,
             modifier = Modifier
                 .padding(horizontal = smallPadding)
         )
         CustomSwitch(
-            label = "Display examples by default",
+            label = stringResource(id = R.string.dk_show_examples),
             checked = deck.deck.showExamples,
             onChecked = setShowExamples,
             modifier = Modifier
@@ -768,7 +773,7 @@ fun SessionOptions(
                 .padding(top = smallPadding)
         )
         CustomSwitch(
-            label = "Flip questions and answers",
+            label = stringResource(id = R.string.dk_flip_QnA),
             checked = deck.deck.flipQnA,
             onChecked = setFlipQnA,
             modifier = Modifier
@@ -776,7 +781,7 @@ fun SessionOptions(
                 .padding(top = smallPadding)
         )
         CustomSwitch(
-            label = "Double Difficulty",
+            label = stringResource(id = R.string.dk_double_difficulty),
             checked = deck.deck.doubleDifficulty,
             onChecked = setDoubleDifficulty,
             showTip = true,
@@ -853,7 +858,7 @@ fun TipDialog(
                     onClick = { onDismissRequest() },
                     modifier = Modifier.size(120.dp, 40.dp)
                 ) {
-                    Text(text = "Close")
+                    Text(text = stringResource(id = R.string.close))
                 }
             }
         }
@@ -890,12 +895,12 @@ fun DeleteDeckDialog(
 
             ) {
                 Text(
-                    text = "Delete this deck?",
+                    text = stringResource(id = R.string.dk_d_delete_deck),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "This action cannot be undone.",
+                    text = stringResource(id = R.string.dk_d_no_undo),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -911,13 +916,13 @@ fun DeleteDeckDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(id = R.string.cancel)) }
                     Button(
                         onClick = {
                             onDeleteButtonClicked()
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Delete") }
+                    ) { Text(stringResource(id = R.string.delete)) }
                 }
             }
         }
@@ -955,12 +960,12 @@ fun DeleteCardDialog(
 
             ) {
                 Text(
-                    text = "Delete selected card" + if (isMultipleCardsSelected) "s?" else "?",
+                    text = stringResource(R.string.plural_suffix) + if (isMultipleCardsSelected) "${stringResource(R.string.plural_suffix)}?" else "?",
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "This action cannot be undone.",
+                    text = stringResource(R.string.dk_d_no_undo),
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -975,13 +980,13 @@ fun DeleteCardDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(R.string.cancel)) }
                     Button(
                         onClick = {
                             onDeleteButtonClicked()
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Delete") }
+                    ) { Text(stringResource(R.string.delete)) }
                 }
             }
         }
@@ -1025,7 +1030,7 @@ fun EditDeckNameDialog(
 
             ) {
                 Text(
-                    text = "Name for the deck:",
+                    text = stringResource(R.string.ds_d_deck_name),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
@@ -1034,7 +1039,7 @@ fun EditDeckNameDialog(
                 ) {
                     if (isError) {
                         Text(
-                            text = "This field is required.",
+                            text = stringResource(R.string.e_field_required),
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Start,
@@ -1043,7 +1048,7 @@ fun EditDeckNameDialog(
                     OutlinedTextField(
                         value = userInput ?: "",
                         onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
-                        label = { Text("Deck name") },
+                        label = { Text(stringResource(R.string.ds_d_deck_name)) },
                         isError = isError,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
@@ -1058,7 +1063,7 @@ fun EditDeckNameDialog(
                     TextButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Cancel") }
+                    ) { Text(stringResource(R.string.cancel)) }
                     Button(
                         onClick = {
                             if (userInput.isNullOrBlank()) {
@@ -1068,7 +1073,7 @@ fun EditDeckNameDialog(
                             }
                         },
                         modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.save)) }
                 }
             }
         }

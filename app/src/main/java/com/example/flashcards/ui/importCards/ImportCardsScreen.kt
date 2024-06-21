@@ -149,10 +149,10 @@ fun ImportCardsScreen (
                 ),
                 title = {
                     val text =
-                        if (uiState.isBringFromDecksScreenOpen) "Bring from decks"
-                        else if (uiState.isImportThroughTextScreenOpen) "Import through copied text"
-                        else if (uiState.isUploadCsvFileScreenOpen) "Upload .CSV file"
-                        else "Import cards"
+                        if (uiState.isBringFromDecksScreenOpen) stringResource(id = R.string.ic_deck)
+                        else if (uiState.isImportThroughTextScreenOpen) stringResource(id = R.string.ic_text)
+                        else if (uiState.isUploadCsvFileScreenOpen) stringResource(id = R.string.ic_csv)
+                        else stringResource(id = R.string.ic)
                     Text(
                         text = text,
                         maxLines = 1,
@@ -200,8 +200,11 @@ fun ImportCardsScreen (
                                 .fillMaxWidth()
                                 .padding(horizontal = mediumPadding)
                         ) {
+                            val cardTxt = stringResource(id = R.string.ic_card)
+                            val cardsTxt = stringResource(id = R.string.ic_cards)
 
                             if (uiState.isBringFromDecksScreenOpen) {
+                                val importFromTxt = stringResource(id = R.string.ic_import_from)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -211,7 +214,7 @@ fun ImportCardsScreen (
                                     TextButton(
                                         onClick = { viewModel.toggleBringFromDecksScreen() },
                                         modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text("Cancel") }
+                                    ) { Text(stringResource(id = R.string.cancel)) }
                                     Button(
                                         enabled = uiState.bFD_selectedDeck != null,
                                         onClick = {
@@ -223,7 +226,7 @@ fun ImportCardsScreen (
                                                         viewModel.toggleBringFromDecksScreen()
                                                         viewModel.addSubDeck(
                                                             SubDeck(
-                                                                name = ("${cards.size} " + if (cards.size == 1) "card" else "cards") + " - import from \"${uiState.bFD_selectedDeck!!.name}\"",
+                                                                name = ("${cards.size} " + if (cards.size == 1) cardTxt else cardsTxt) + "$importFromTxt\"${uiState.bFD_selectedDeck!!.name}\"",
                                                                 type = SubDeckType.DEFAULT,
                                                                 cards = cards,
                                                             )
@@ -233,10 +236,11 @@ fun ImportCardsScreen (
                                             }
                                         },
                                         modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text("Import") }
+                                    ) { Text(stringResource(id = R.string.import_)) }
                                 }
 
                             } else if (uiState.isImportThroughTextScreenOpen) {
+                                val importedFromTextTxt = stringResource(id = R.string.ic_imported_from_text)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -246,7 +250,7 @@ fun ImportCardsScreen (
                                     TextButton(
                                         onClick = { viewModel.toggleImportThroughTextScreen() },
                                         modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text("Cancel") }
+                                    ) { Text(stringResource(id = R.string.cancel)) }
                                     Button(
                                         enabled = uiState.iTT_inputText.isNotBlank() && uiState.iTT_questionLines.isNotBlank() && uiState.iTT_answerLines.isNotBlank(),
                                         onClick = {
@@ -256,7 +260,7 @@ fun ImportCardsScreen (
                                                 viewModel.toggleImportThroughTextScreen()
                                                 viewModel.addSubDeck(
                                                     SubDeck(
-                                                        name = ("${cards.size} " + if (cards.size == 1) "card" else "cards") + " - imported from text",
+                                                        name = ("${cards.size} " + if (cards.size == 1) cardTxt else cardsTxt) + importedFromTextTxt,
                                                         type = SubDeckType.TEXT,
                                                         cards = cards,
                                                     )
@@ -264,7 +268,7 @@ fun ImportCardsScreen (
                                             }
                                         },
                                         modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text("Import") }
+                                    ) { Text(stringResource(id = R.string.import_)) }
                                 }
                             } else if (uiState.isUploadCsvFileScreenOpen) {
                                 Row(
@@ -276,7 +280,7 @@ fun ImportCardsScreen (
                                     TextButton(
                                         onClick = { viewModel.toggleUploadCsvFileScreen() },
                                         modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text("Cancel") }
+                                    ) { Text(stringResource(id = R.string.cancel)) }
                                     Button(
                                         enabled = uiState.uCF_csvFileData.isNotEmpty() && uiState.uCF_questionIndex != null && uiState.uCF_answerIndex != null,
                                         onClick = {
@@ -294,9 +298,11 @@ fun ImportCardsScreen (
                                             }
                                         },
                                         modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text("Import") }
+                                    ) { Text(stringResource(id = R.string.import_)) }
                                 }
                             } else {
+                                val errorPfx = stringResource(id = R.string.ic_e_card_limit)
+                                val errorSfx = stringResource(id = R.string.ic_e_card_limit_sfx)
                                 Button(
                                     onClick = {
                                         if (viewModel.getTotalNumCards() <= Constants.MAX_CARDS) {
@@ -308,7 +314,7 @@ fun ImportCardsScreen (
                                         } else {
                                             coroutineScope.launch {
                                                 snackbarHostState.showSnackbar(
-                                                    message = "Card limit reached (maximum ${Constants.MAX_CARDS} cards).",
+                                                    message = "$errorPfx${Constants.MAX_CARDS}$errorSfx",
                                                     withDismissAction = true,
                                                 )
                                             }
@@ -319,7 +325,7 @@ fun ImportCardsScreen (
                                         .width(160.dp),
                                 ) {
                                     Text(
-                                        text = "Create cards",
+                                        text = stringResource(id = R.string.ic_create_cards),
                                         textAlign = TextAlign.Center,
                                         fontSize = 16.sp,
                                     )
@@ -438,12 +444,12 @@ fun ImportCardsScreen (
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.DashboardCustomize,
-                                contentDescription = "Bring from other decks",
+                                contentDescription = "Bring from decks",
                                 modifier = Modifier.size(32.dp)
                             )
                             Spacer(modifier = Modifier.width(mediumPadding))
                             Text(
-                                text = "Bring from other decks",
+                                text = stringResource(id = R.string.ic_deck),
                                 fontSize = 20.sp,
                             )
                         }
@@ -466,12 +472,12 @@ fun ImportCardsScreen (
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PostAdd,
-                                contentDescription = "Import through text",
+                                contentDescription = "Import through copied text",
                                 modifier = Modifier.size(32.dp)
                             )
                             Spacer(modifier = Modifier.width(mediumPadding))
                             Text(
-                                text = "Import through copied text",
+                                text = stringResource(id = R.string.ic_text),
                                 fontSize = 20.sp,
                             )
                         }
@@ -499,7 +505,7 @@ fun ImportCardsScreen (
                             )
                             Spacer(modifier = Modifier.width(mediumPadding))
                             Text(
-                                text = "Upload .CSV file",
+                                text = stringResource(id = R.string.ic_csv),
                                 fontSize = 20.sp,
                             )
                         }
@@ -560,9 +566,9 @@ fun ImportCardsScreen (
     if (uiState.isTipOpen) {
         val tip =
             if (uiState.isImportThroughTextScreenOpen)
-                "Copy and paste the raw text from other decks."
+                stringResource(id = R.string.ic_text_tip)
             else if (uiState.isUploadCsvFileScreenOpen)
-                "Upload .CSV spreadsheet file."
+                stringResource(id = R.string.ic_csv_tip)
             else "How did you open this dialog??"
         TipDialog(
             onDismissRequest = { viewModel.toggleTip() },
@@ -620,13 +626,13 @@ fun UploadCsvFileScreen(
 
         ) {
             Text(
-                text = "Select .CSV file" + (
+                text = stringResource(id = R.string.ic_csv_select_file) + (
                     when (errorState) {
-                        UCF_ErrorState.FILE_EMPTY -> " - file is empty."
-                        UCF_ErrorState.FILE_INCOMPLETE -> " - file contains inconsistent data."
-                        UCF_ErrorState.FILE_TOO_LONG -> " - too many cards (will only import the first ${Constants.MAX_CARDS} cards).."
-                        UCF_ErrorState.FILE_TOO_LARGE -> " - file is too large (maximum: ${Constants.MAX_FILE_SIZE/1000000} MB)."
-                        UCF_ErrorState.INVALID_FILE_FORMAT -> " - invalid file format."
+                        UCF_ErrorState.FILE_EMPTY -> stringResource(id = R.string.ic_csv_e_file_empty)
+                        UCF_ErrorState.FILE_INCOMPLETE -> stringResource(id = R.string.ic_csv_e_file_incomplete)
+                        UCF_ErrorState.FILE_TOO_LONG -> "${stringResource(id = R.string.ic_csv_e_file_long)}${Constants.MAX_CARDS}${stringResource(id = R.string.ic_csv_e_file_long_sfx)}"
+                        UCF_ErrorState.FILE_TOO_LARGE -> "${stringResource(id = R.string.ic_csv_e_file_large)}${Constants.MAX_FILE_SIZE/1000000}${stringResource(id = R.string.ic_csv_e_file_large)}"
+                        UCF_ErrorState.INVALID_FILE_FORMAT -> stringResource(id = R.string.ic_csv_e_file_invalid)
                         else -> ""
                     }
                 ),
@@ -649,7 +655,7 @@ fun UploadCsvFileScreen(
 
                 ) {
                     Text(
-                        text = csvFileName.ifBlank { "File not selected" },
+                        text = csvFileName.ifBlank { stringResource(id = R.string.ic_csv_no_file) },
                         fontSize = 16.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -663,7 +669,7 @@ fun UploadCsvFileScreen(
                         .size(120.dp, 40.dp)
                         .focusRequester(focusRequesterF)
                 ) {
-                    Text("Browse file")
+                    Text(stringResource(id = R.string.ic_csv_browse_file))
                 }
             }
             if (csvFileName.isNotEmpty()) {
@@ -671,7 +677,7 @@ fun UploadCsvFileScreen(
                     text =
                         "${"%,d".format(csvFileSize)} bytes, "
                         + (if (errorState == UCF_ErrorState.FILE_TOO_LARGE) "? " else "${csvFileData.size} ")
-                        + (if (csvFileData.size == 1) "card" else "cards"),
+                        + (if (csvFileData.size == 1) stringResource(id = R.string.ic_card) else stringResource(id = R.string.ic_cards)),
                     fontSize = 16.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -681,10 +687,10 @@ fun UploadCsvFileScreen(
             }
 
             CustomTextField(
-                text = "Question text column",
+                text = stringResource(id = R.string.ic_csv_question_column),
                 value = "${questionIndex ?: ""}",
                 onValueChange = { setQuestionIndex(it) },
-                label = "Column number",
+                label = stringResource(id = R.string.ic_csv_column_number),
                 maxLines = 1,
                 useNumberKeyboard = true,
                 focusManager = focusManager,
@@ -692,10 +698,10 @@ fun UploadCsvFileScreen(
                     .padding(top = mediumLargePadding, bottom = smallPadding)
             )
             CustomTextField(
-                text = "Answer text column",
+                text = stringResource(id = R.string.ic_csv_answer_column),
                 value = "${answerIndex ?: ""}",
                 onValueChange = { setAnswerIndex(it) },
-                label = "Column number",
+                label = stringResource(id = R.string.ic_csv_column_number),
                 maxLines = 1,
                 useNumberKeyboard = true,
                 focusManager = focusManager,
@@ -703,10 +709,10 @@ fun UploadCsvFileScreen(
                     .padding(vertical = smallPadding)
             )
             CustomTextField(
-                text = "Hint text column (optional)",
+                text = stringResource(id = R.string.ic_csv_hint_column),
                 value = "${hintIndex ?: ""}",
                 onValueChange = { setHintIndex(it) },
-                label = "Column number",
+                label = stringResource(id = R.string.ic_csv_column_number),
                 maxLines = 1,
                 useNumberKeyboard = true,
                 focusManager = focusManager,
@@ -714,10 +720,10 @@ fun UploadCsvFileScreen(
                     .padding(vertical = smallPadding)
             )
             CustomTextField(
-                text = "Example text column (optional)",
+                text = stringResource(id = R.string.ic_csv_example_column),
                 value = "${exampleIndex ?: ""}",
                 onValueChange = { setExampleIndex(it) },
-                label = "Column number",
+                label = stringResource(id = R.string.ic_csv_column_number),
                 maxLines = 1,
                 useNumberKeyboard = true,
                 focusManager = focusManager,
@@ -728,7 +734,7 @@ fun UploadCsvFileScreen(
 
             Column {
                 Text(
-                    text = "Preview (first 2 cards)",
+                    text = stringResource(id = R.string.ic_preview),
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
                 )
@@ -744,7 +750,7 @@ fun UploadCsvFileScreen(
                                 .padding(mediumPadding)
                         ) {
 
-                            Text(text = "Question", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_question), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -758,7 +764,7 @@ fun UploadCsvFileScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Answer", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_answer), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -772,7 +778,7 @@ fun UploadCsvFileScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Hint", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_hint), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -786,7 +792,7 @@ fun UploadCsvFileScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Example", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_example), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -814,7 +820,7 @@ fun UploadCsvFileScreen(
                                 .padding(mediumPadding)
                         ) {
 
-                            Text(text = "Question", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_question), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -828,7 +834,7 @@ fun UploadCsvFileScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Answer", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_answer), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -842,7 +848,7 @@ fun UploadCsvFileScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Hint", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_hint), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -856,7 +862,7 @@ fun UploadCsvFileScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Example", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_example), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -930,14 +936,14 @@ fun ImportThroughTextScreen(
 
         ) {
             CustomTextField(
-                text = "Copied text",
+                text = stringResource(id = R.string.ic_text_text),
                 value = inputText ?: "",
                 onValueChange = { setInputText(it); updatePreviews() },
-                label = "Copy and paste text directly from a table, list, etc.",
+                label = stringResource(id = R.string.ic_text_text_tip),
                 isError = errorState.isTextError,
                 errorMessage = when (errorState) {
-                    ITT_ErrorState.TEXT_INCOMPLETE -> "number of questions and answers do not match."
-                    ITT_ErrorState.TEXT_TOO_LONG -> "this text is too long."
+                    ITT_ErrorState.TEXT_INCOMPLETE -> stringResource(id = R.string.ic_text_e_text_incomplete)
+                    ITT_ErrorState.TEXT_TOO_LONG -> "${stringResource(id = R.string.ic_text_e_text_long)}${Constants.MAX_CARDS}${stringResource(id = R.string.ic_text_e_text_long_sfx)}"
                     else -> "what have you done??"
                 },
                 minLines = inputTextUiNumLines,
@@ -945,15 +951,16 @@ fun ImportThroughTextScreen(
                 focusManager = focusManager,
                 stringLength = StringLength.VLONG,
                 useNumberKeyboard = false,
+                allowEnter = true,
                 modifier = Modifier
                     .padding(vertical = smallPadding)
                     .focusRequester(focusRequesterT)
             )
             CustomTextField(
-                text = "Question text lines",
+                text = stringResource(id = R.string.ic_text_question_lines),
                 value = questionLines ?: "",
                 onValueChange = { setQuestionLines(it); updatePreviews() },
-                label = "Split with \',\' and define ranges with \'-\'",
+                label = stringResource(id = R.string.ic_text_line_tip),
                 isError = errorState.isQuestionLineError || errorState2.isQuestionLineError,
                 errorMessage =
                 if (errorState == ITT_ErrorState.QUESTION_LINES_DUPLICATE || errorState2 == ITT_ErrorState.QUESTION_LINES_DUPLICATE)
@@ -967,14 +974,14 @@ fun ImportThroughTextScreen(
                     .focusRequester(focusRequesterQ)
             )
             CustomTextField(
-                text = "Answer text lines",
+                text = stringResource(id = R.string.ic_text_answer_lines),
                 value = answerLines ?: "",
                 onValueChange = { setAnswerLines(it); updatePreviews() },
-                label = "Split with \',\' and define ranges with \'-\'",
+                label = stringResource(id = R.string.ic_text_line_tip),
                 isError = errorState.isAnswerLineError || errorState2.isAnswerLineError,
                 errorMessage =
                 if (errorState == ITT_ErrorState.ANSWER_LINES_DUPLICATE || errorState2 == ITT_ErrorState.ANSWER_LINES_DUPLICATE)
-                    "lines cannot overlap."
+                    stringResource(id = R.string.ic_text_e_line_overlap)
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
@@ -984,14 +991,14 @@ fun ImportThroughTextScreen(
                     .focusRequester(focusRequesterA)
             )
             CustomTextField(
-                text = "Hint text lines (optional)",
+                text = stringResource(id = R.string.ic_text_hint_lines),
                 value = hintLines ?: "",
                 onValueChange = { setHintLines(it); updatePreviews() },
-                label = "Split with \',\' and define ranges with \'-\'",
+                label = stringResource(id = R.string.ic_text_line_tip),
                 isError = errorState.isHintLineError || errorState2.isHintLineError,
                 errorMessage =
                 if (errorState == ITT_ErrorState.HINT_LINES_DUPLICATE || errorState2 == ITT_ErrorState.HINT_LINES_DUPLICATE)
-                    "lines cannot overlap."
+                    stringResource(id = R.string.ic_text_e_line_overlap)
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
@@ -1001,14 +1008,14 @@ fun ImportThroughTextScreen(
                     .focusRequester(focusRequesterH)
             )
             CustomTextField(
-                text = "Example text lines (optional)",
+                text = stringResource(id = R.string.ic_text_example_lines),
                 value = exampleLines ?: "",
                 onValueChange = { setExampleLines(it); updatePreviews() },
-                label = "Split with \',\' and define ranges with \'-\'",
+                label = stringResource(id = R.string.ic_text_line_tip),
                 isError = errorState.isExampleLineError || errorState2.isExampleLineError,
                 errorMessage =
                 if (errorState == ITT_ErrorState.EXAMPLE_LINES_DUPLICATE || errorState2 == ITT_ErrorState.EXAMPLE_LINES_DUPLICATE)
-                    "lines cannot overlap."
+                    stringResource(id = R.string.ic_text_e_line_overlap)
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
@@ -1018,14 +1025,14 @@ fun ImportThroughTextScreen(
                     .focusRequester(focusRequesterE)
             )
             CustomTextField(
-                text = "Lines to ignore (optional)",
+                text = stringResource(id = R.string.ic_text_ignore_lines),
                 value = ignoredLines ?: "",
                 onValueChange = { setIgnoredLines(it); updatePreviews() },
-                label = "Split with \',\' and define ranges with \'-\'",
+                label = stringResource(id = R.string.ic_text_line_tip),
                 isError = errorState.isIgnoredLineError || errorState2.isIgnoredLineError,
                 errorMessage =
                 if (errorState == ITT_ErrorState.IGNORED_LINES_DUPLICATE || errorState2 == ITT_ErrorState.IGNORED_LINES_DUPLICATE)
-                    "lines cannot overlap."
+                    stringResource(id = R.string.ic_text_e_line_overlap)
                 else "what have you done??",
                 maxLines = 1,
                 focusManager = focusManager,
@@ -1040,7 +1047,7 @@ fun ImportThroughTextScreen(
 
             Column {
                 Text(
-                    text = "Preview (first 2 cards)",
+                    text = stringResource(id = R.string.ic_preview),
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
                 )
@@ -1056,7 +1063,7 @@ fun ImportThroughTextScreen(
                                 .padding(mediumPadding)
                         ) {
 
-                            Text(text = "Question", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_question), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1070,7 +1077,7 @@ fun ImportThroughTextScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Answer", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_answer), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1084,7 +1091,7 @@ fun ImportThroughTextScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Hint", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_hint), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1098,7 +1105,7 @@ fun ImportThroughTextScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Example", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_example), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1126,7 +1133,7 @@ fun ImportThroughTextScreen(
                                 .padding(mediumPadding)
                         ) {
 
-                            Text(text = "Question", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_question), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1140,7 +1147,7 @@ fun ImportThroughTextScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Answer", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_answer), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1154,7 +1161,7 @@ fun ImportThroughTextScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Hint", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_hint), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1168,7 +1175,7 @@ fun ImportThroughTextScreen(
                                 )
                             }
                             Spacer(modifier = Modifier.height(smallPadding))
-                            Text(text = "Example", fontSize = 14.sp,)
+                            Text(text = stringResource(id = R.string.ic_example), fontSize = 14.sp,)
                             Card(
                                 colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer),
                                 modifier = Modifier.fillMaxWidth()
@@ -1243,7 +1250,7 @@ fun BringFromDecksScreen(
                     .height(86.dp)
             ) {
                 Text(
-                    text = "Bundle (optional)",
+                    text = stringResource(id = R.string.ic_deck_bundle),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = smallPadding)
@@ -1265,12 +1272,12 @@ fun BringFromDecksScreen(
                             .padding(horizontal = mediumPadding)
                     ) {
                         Text(
-                            text = selectedBundle?.bundle?.name ?: "None"
+                            text = selectedBundle?.bundle?.name ?: stringResource(id = R.string.ic_deck_none)
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(
                             imageVector = if (dropdownMenuState == 1) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Expand"
+                            contentDescription = stringResource(id = R.string.ic_deck_expand)
                         )
                     }
                 }
@@ -1283,7 +1290,7 @@ fun BringFromDecksScreen(
                         .heightIn(0.dp, 240.dp)
                 ) {
                     DropdownMenuItem(
-                        text = { Text(text = "None") },
+                        text = { Text(text = stringResource(id = R.string.ic_deck_none)) },
                         onClick = {
                             if (selectedBundle != null) selectDeck(null)
                             selectBundle(null)
@@ -1306,7 +1313,7 @@ fun BringFromDecksScreen(
                     .height(86.dp)
             ) {
                 Text(
-                    text = "Deck",
+                    text = stringResource(id = R.string.ic_deck_deck),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = smallPadding)
@@ -1325,12 +1332,12 @@ fun BringFromDecksScreen(
                             .padding(horizontal = mediumPadding)
                     ) {
                         Text(
-                            text = selectedDeck?.name ?: "None"
+                            text = selectedDeck?.name ?: stringResource(id = R.string.ic_deck_none)
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(
                             imageVector = if (dropdownMenuState == 2) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Expand"
+                            contentDescription = stringResource(id = R.string.ic_deck_expand)
                         )
                     }
                 }
@@ -1353,7 +1360,7 @@ fun BringFromDecksScreen(
                     }
                     if (n == 0) {
                         DropdownMenuItem(
-                            text = { Text(text = "None") },
+                            text = { Text(text = stringResource(id = R.string.ic_deck_none)) },
                             onClick = {
                                 selectDeck(null)
                                 dropdownMenuState = 0
@@ -1375,7 +1382,7 @@ fun BringFromDecksScreen(
                 )
                 Spacer(modifier = Modifier.width(mediumPadding))
                 Text(
-                    text = "Filter by mastery level",
+                    text = stringResource(id = R.string.ic_deck_filter_mastery),
                     fontSize = 16.sp,
                 )
             }
@@ -1384,14 +1391,14 @@ fun BringFromDecksScreen(
                 visible = excludeMastered
             ) {
                 CustomTextField(
-                    text = "Maximum mastery level",
+                    text = stringResource(id = R.string.ic_deck_max_mastery),
                     value = if (maxMasteryLevel != null) "${(maxMasteryLevel*100f).toInt()}" else "",
                     onValueChange = {
                         val n = it.toIntOrNull()
                         if (n != null) setMaxMasteryLevel(n.coerceIn(1..99)/100f)
                         else setMaxMasteryLevel(null)
                     },
-                    label = "Mastery Level",
+                    label = stringResource(id = R.string.ic_deck_mastery),
                     unit = "%",
                     maxLines = 1,
                     useNumberKeyboard = true,
@@ -1413,7 +1420,7 @@ fun BringFromDecksScreen(
                 )
                 Spacer(modifier = Modifier.width(mediumPadding))
                 Text(
-                    text = "Clear history",
+                    text = stringResource(id = R.string.ic_deck_clear_history),
                     fontSize = 16.sp,
                 )
             }
@@ -1454,7 +1461,7 @@ fun TipDialog(
                     onClick = { onDismissRequest() },
                     modifier = Modifier.size(120.dp, 40.dp)
                 ) {
-                    Text(text = "Close")
+                    Text(text = stringResource(id = R.string.close))
                 }
             }
         }
@@ -1473,10 +1480,11 @@ fun CustomTextField(
     maxLines: Int = 5,
     focusManager: FocusManager,
     isLast: Boolean = false,
+    allowEnter: Boolean = false,
     isError: Boolean = false,
     useNumberKeyboard: Boolean = false,
     unit: String = "",
-    errorMessage: String = " - this field is required.",
+    errorMessage: String = stringResource(id = R.string.e_field_required_sfx),
     stringLength: StringLength = StringLength.SHORT,
 ) {
     Column(
@@ -1499,12 +1507,12 @@ fun CustomTextField(
             maxLines = maxLines,
             suffix = { Text(unit) },
             keyboardOptions = KeyboardOptions(
-                imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
+                imeAction = if (allowEnter) ImeAction.Default else if (isLast) ImeAction.Done else ImeAction.Next,
                 keyboardType = if (useNumberKeyboard) KeyboardType.Number else KeyboardType.Text
             ),
             keyboardActions = KeyboardActions(
                 onNext = {
-                    focusManager.moveFocus(if (isLast) FocusDirection.Exit else FocusDirection.Down)
+                    focusManager.moveFocus(if (allowEnter) FocusDirection.Enter else if (isLast) FocusDirection.Exit else FocusDirection.Down)
                 }
             ),
             modifier = Modifier
@@ -1541,13 +1549,13 @@ fun NoCardsErrorDialog(
 
             ) {
                 Text(
-                    text = "No cards found",
+                    text = stringResource(id = R.string.ic_e_no_cards),
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier
                         .padding(top = largePadding)
                         .fillMaxWidth()
