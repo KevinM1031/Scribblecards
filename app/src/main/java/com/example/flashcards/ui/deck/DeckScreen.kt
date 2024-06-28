@@ -431,7 +431,7 @@ fun CardEditorBar(
         title = {
             Text(
                 text = if (isCardSelectorOpen)
-                    "$numSelectedCards / $numCards ${stringResource(id = R.string.selected_)}"
+                    "$numSelectedCards / $numCards${stringResource(id = R.string.selected_)}"
                     else if (numCards == 1) "$numCards ${stringResource(id = R.string.dk_card_total)}"
                     else "$numCards ${stringResource(id = R.string.dk_cards_total)}",
                 maxLines = 1,

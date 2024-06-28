@@ -226,7 +226,7 @@ fun ImportCardsScreen (
                                                         viewModel.toggleBringFromDecksScreen()
                                                         viewModel.addSubDeck(
                                                             SubDeck(
-                                                                name = ("${cards.size} " + if (cards.size == 1) cardTxt else cardsTxt) + "$importFromTxt\"${uiState.bFD_selectedDeck!!.name}\"",
+                                                                name = ("${cards.size}" + if (cards.size == 1) cardTxt else cardsTxt) + "$importFromTxt\"${uiState.bFD_selectedDeck!!.name}\"",
                                                                 type = SubDeckType.DEFAULT,
                                                                 cards = cards,
                                                             )
@@ -260,7 +260,7 @@ fun ImportCardsScreen (
                                                 viewModel.toggleImportThroughTextScreen()
                                                 viewModel.addSubDeck(
                                                     SubDeck(
-                                                        name = ("${cards.size} " + if (cards.size == 1) cardTxt else cardsTxt) + importedFromTextTxt,
+                                                        name = ("${cards.size}" + if (cards.size == 1) cardTxt else cardsTxt) + importedFromTextTxt,
                                                         type = SubDeckType.TEXT,
                                                         cards = cards,
                                                     )

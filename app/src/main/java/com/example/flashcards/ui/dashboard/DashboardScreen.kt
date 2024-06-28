@@ -964,7 +964,7 @@ fun BundleCreatorTopAppBar(
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     LargeTopAppBar(
-        title = { Text(text = "$numSelected ${stringResource(id = R.string.selected_)}") },
+        title = { Text(text = "$numSelected${stringResource(id = R.string.selected_)}") },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -1088,7 +1088,7 @@ fun RemoveDeckFromBundleTopBar(
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     LargeTopAppBar(
-        title = { Text(text = "$numSelected ${stringResource(R.string.selected_)}") },
+        title = { Text(text = "$numSelected${stringResource(R.string.selected_)}") },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),

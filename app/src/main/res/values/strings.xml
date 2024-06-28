@@ -6,7 +6,7 @@
     <string name="confirm">Confirm</string>
     <string name="save">Save</string>
     <string name="save_changes">Save changes</string>
-    <string name="selected_">Selected</string>
+    <string name="selected_"> Selected</string>
     <string name="move">Move</string>
     <string name="import_">Import</string>
     <string name="create">Create</string>
@@ -55,7 +55,7 @@
     <string name="ds_ab_move_deck">Move decks to new or existing bundle</string>
     <string name="ds_d_create_bundle">Name for the bundle:</string>
     <string name="ds_d_bundle_name">Bundle name</string>
-    <string name="ds_d_create_deck">"Name for the deck:"</string>
+    <string name="ds_d_create_deck">Name for the deck:</string>
     <string name="ds_d_deck_name">Deck name</string>
 
     <string name="dk_d_tip">In "Double Difficulty" mode, a card isn\'t considered completed until you have guessed it correctly two times in a row.</string>
@@ -89,9 +89,9 @@
     <string name="cc">Create card</string>
 
     <string name="ic">Import cards</string>
-    <string name="ic_card">card</string>
-    <string name="ic_cards">cards</string>
-    <string name="ic_import_from"> - import from </string>
+    <string name="ic_card"> card</string>
+    <string name="ic_cards"> cards</string>
+    <string name="ic_import_from"> - imported from </string>
     <string name="ic_imported_from_text"> - imported from text</string>
     <string name="ic_create_cards">Create cards</string>
     <string name="ic_preview">Preview (first 2 cards)</string>
@@ -122,7 +122,7 @@
     <string name="ic_csv_example_column">Example text column (optional)</string>
 
     <string name="ic_text">Import through copied text</string>
-    <string name="ic_text_tip">Copy and paste the raw text from other decks.</string>
+    <string name="ic_text_tip">Copy and paste the raw text from other apps or websites.</string>
     <string name="ic_text_text">Copied text</string>
     <string name="ic_text_text_tip">Copy and paste text directly from a table, list, etc.</string>
     <string name="ic_text_e_text_incomplete">text is either incomplete or does not match the line format as defined below.</string>
@@ -159,9 +159,9 @@
     <string name="sss_upcoming">Upcoming cards:</string>
     <string name="sss_seen">Seen cards:</string>
     <string name="sss_completed">Completed cards:</string>
-    <string name="sss_new">This is a new card!</string>
-    <string name="sss_hint">Hint</string>
-    <string name="sss_example">Example</string>
+    <string name="sss_new">NEW</string>
+    <string name="sss_hint">See hint</string>
+    <string name="sss_example">See example</string>
 
     <string name="sms">Session summary</string>
     <string name="sms_studied">Cards studied: </string>
