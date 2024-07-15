@@ -2,9 +2,13 @@ package com.example.flashcards.ui.deck
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -50,9 +54,11 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -68,6 +74,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -97,6 +104,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -109,6 +117,8 @@ import com.example.flashcards.data.StringLength
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
+import com.example.flashcards.ui.theme.md_theme_light_onSurface
+import com.example.flashcards.ui.theme.md_theme_light_onSurfaceVariant
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -135,9 +145,11 @@ fun DeckScreen (
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 ),
                 title = {
                     Text(
@@ -198,10 +210,10 @@ fun DeckScreen (
             )
         },
         bottomBar = {
-            Column() {
+            Column {
                 BottomAppBar(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     actions = {
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -212,6 +224,10 @@ fun DeckScreen (
                             Button(
                                 onClick = { onStartButtonClicked(uiState.deck.deck.id) },
                                 enabled = uiState.deck.cards.isNotEmpty(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                ),
                                 modifier = Modifier
                                     .width(160.dp),
                             ) {
@@ -234,7 +250,8 @@ fun DeckScreen (
                                 )
                             }
                         }
-                    }
+                    },
+                    modifier = Modifier.height(64.dp)
                 )
                 if (uiState.isSessionOptionsOpen) {
                     val tip = stringResource(id = R.string.dk_d_tip)
@@ -424,9 +441,11 @@ fun CardEditorBar(
     val smallPadding = dimensionResource(R.dimen.padding_small)
 
     TopAppBar(
-        colors = topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.primary,
+        colors = TopAppBarDefaults.mediumTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         title = {
             Text(
@@ -508,6 +527,9 @@ fun CardEditorBar(
                         onAllCardsSelected()
                     }
                 },
+                colors = CheckboxDefaults.colors (
+                    checkedColor = MaterialTheme.colorScheme.secondary
+                ),
                 checked = numCards > 0 && numCards == numSelectedCards,
                 enabled = numCards > 0,
                 modifier = Modifier
@@ -569,6 +591,7 @@ fun CardComponent(
                     modifier = Modifier
                         .weight(1f)
                         .blur(if (isAnswerBlurred) 8.dp else 0.dp)
+                        .background(if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.R && isAnswerBlurred) md_theme_light_onSurfaceVariant else Color.Transparent)
                         .pointerInput(Unit) {
                             detectTapGestures(
                                 onTap = { isAnswerBlurred = !isAnswerBlurred }
@@ -602,7 +625,7 @@ fun CardComponent(
                     if (card.isFavorite) {
                         Icon(
                             imageVector = Icons.Filled.Star,
-                            tint = Color.Yellow,
+                            tint = MaterialTheme.colorScheme.tertiary,
                             contentDescription = "Toggle favorite ($lastUpdated)"
                         )
                     } else {
@@ -651,7 +674,7 @@ fun DeckStats(
 
     Box(
         modifier = modifier
-            .background(color = MaterialTheme.colorScheme.tertiaryContainer)
+            .background(color = MaterialTheme.colorScheme.secondaryContainer)
             .fillMaxWidth()
             .wrapContentWidth(Alignment.CenterHorizontally)
             .wrapContentHeight(Alignment.CenterVertically)
@@ -675,7 +698,7 @@ fun DeckStats(
                         progress = displayedMasteryLevel.value,
                         modifier = Modifier.size(circleSize),
                         strokeWidth = 8.dp,
-                        trackColor = Color.Gray,
+                        trackColor = Color.White,
                     )
                     Box(modifier = Modifier
                         .size(circleSize)
@@ -701,11 +724,19 @@ fun DeckStats(
                      fontSize = 32.sp,
                      modifier = Modifier
                  )
+                 Text(
+                     text = " ",
+                     fontSize = 16.sp,
+                 )
             } else if (deck.deck.isNeverStudied()) {
                  Text(
                      text = stringResource(id = R.string.dk_new_deck),
                      fontSize = 32.sp,
                      modifier = Modifier
+                 )
+                 Text(
+                     text = " ",
+                     fontSize = 16.sp,
                  )
             } else if (days < 1) {
                 Text(
@@ -752,7 +783,6 @@ fun SessionOptions(
     Column(
         verticalArrangement = Arrangement.SpaceEvenly,
         modifier = Modifier
-            .background(color = MaterialTheme.colorScheme.inversePrimary)
             .fillMaxWidth()
             .padding(smallPadding)
             .verticalScroll(rememberScrollState())
@@ -839,10 +869,6 @@ fun TipDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -880,10 +906,6 @@ fun DeleteDeckDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -945,10 +967,6 @@ fun DeleteCardDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -960,7 +978,7 @@ fun DeleteCardDialog(
 
             ) {
                 Text(
-                    text = stringResource(R.string.plural_suffix) + if (isMultipleCardsSelected) "${stringResource(R.string.plural_suffix)}?" else "?",
+                    text = stringResource(R.string.dk_d_delete_card) + if (isMultipleCardsSelected) "${stringResource(R.string.plural_suffix)}?" else "?",
                     fontSize = 24.sp,
                     textAlign = TextAlign.Center,
                 )
@@ -1014,10 +1032,6 @@ fun EditDeckNameDialog(
         var isError by remember { mutableStateOf(false) }
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier
                 .fillMaxWidth()
         ) {

@@ -145,7 +145,7 @@ fun PriorityDecksScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.tertiaryContainer)
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
                     .fillMaxWidth()
                     .height(150.dp)
                     .padding(mediumPadding)
@@ -208,8 +208,8 @@ fun DeckComponent(
         onClick = { onDeckOpened(deck.id) },
         shape = RoundedCornerShape(10),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -250,7 +250,10 @@ fun TopAppBar(
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.pd), overflow = TextOverflow.Ellipsis) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-        containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         navigationIcon = {
             IconButton(onClick = onBackButtonClicked) {

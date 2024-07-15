@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -102,7 +103,7 @@ fun SettingsScreen(
             Column {
                 BottomAppBar(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     actions = {
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -112,6 +113,10 @@ fun SettingsScreen(
                         ) {
                             Button(
                                 enabled = uiState.changeMade,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                ),
                                 onClick = {
                                     coroutineScope.launch {
                                         viewModel.updateSettings(context, configuration)
@@ -320,10 +325,6 @@ fun TipDialog(
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier
                 .fillMaxWidth()
         ) {
@@ -455,10 +456,6 @@ fun ResetDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -504,7 +501,10 @@ fun CustomTopAppBar(
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.ss), overflow = TextOverflow.Ellipsis) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         navigationIcon = {
             IconButton(onClick = onBackButtonClicked) {

@@ -20,10 +20,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AssignmentLate
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -80,53 +85,75 @@ fun MainMenuScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(Modifier.weight(0.7f))
+        Spacer(Modifier.weight(0.5f))
         FilledTonalButton(
             onClick = { onAllCardsButtonClicked() },
-            shape = RoundedCornerShape(percent = 10),
+            shape = RoundedCornerShape(percent = 3),
             modifier = Modifier
                 .size(300.dp)
                 .padding(mediumPadding)
             ) {
-            Text(
-                text = stringResource(id = R.string.mms_cards),
-                fontSize = 48.sp,
-                lineHeight = 52.sp,
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        FilledTonalButton(
-            onClick = { onPriorityDecksButtonClicked() },
-            shape = RoundedCornerShape(percent = 20),
-            modifier = Modifier
-                .size(
-                    width = 300.dp,
-                    height = 150.dp
-                )
-                .padding(mediumPadding)
-        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxWidth()
             ) {
-                Text(
-                    text = stringResource(id = R.string.mms_priority),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
+                Icon(
+                    imageVector = Icons.Outlined.Dashboard,
+                    contentDescription = "Dashboard",
+                    modifier = Modifier.size(128.dp)
                 )
-                Spacer(modifier = Modifier.height(smallPadding))
                 Text(
-                    text = "${uiState.numPriorityDecks} " + stringResource(id = R.string.mms_priority_remaining),
-                    fontSize = 32.sp,
-                    overflow = TextOverflow.Ellipsis,
+                    text = stringResource(id = R.string.mms_cards),
+                    fontSize = 42.sp,
+                    lineHeight = 48.sp,
                     textAlign = TextAlign.Center,
                 )
             }
         }
 
-        Spacer(Modifier.weight(1.0f))
+        FilledTonalButton(
+            onClick = { onPriorityDecksButtonClicked() },
+            shape = RoundedCornerShape(percent = 6),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (uiState.numPriorityDecks == 0) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
+                contentColor = if (uiState.numPriorityDecks == 0) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary,
+            ),
+            modifier = Modifier
+                .size(
+                    width = 300.dp,
+                    height = 200.dp
+                )
+                .padding(mediumPadding)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Spacer(Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.Outlined.AssignmentLate,
+                    contentDescription = "Priority decks",
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = stringResource(id = R.string.mms_priority),
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.weight(0.5f))
+                Text(
+                    text = "${uiState.numPriorityDecks}" + stringResource(id = R.string.mms_priority_remaining),
+                    fontSize = 24.sp,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.weight(1f))
+            }
+        }
+
+        Spacer(Modifier.weight(0.5f))
         Button(
             onClick = { onSettingsButtonClicked() },
             modifier = Modifier
@@ -140,19 +167,19 @@ fun MainMenuScreen(
             )
         }
 
-        Button(
-            onClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(mediumPadding)
-        ) {
-            Text(
-                text = stringResource(id = R.string.mms_credits),
-                fontSize = 24.sp,
-                onTextLayout = {}
-            )
-        }
-        Spacer(Modifier.weight(0.4f))
+//        Button(
+//            onClick = {},
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(mediumPadding)
+//        ) {
+//            Text(
+//                text = stringResource(id = R.string.mms_credits),
+//                fontSize = 24.sp,
+//                onTextLayout = {}
+//            )
+//        }
+        Spacer(Modifier.weight(0.2f))
     }
 
     if (uiState.isCloseDialogOpen) {
@@ -181,10 +208,6 @@ fun CloseDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(

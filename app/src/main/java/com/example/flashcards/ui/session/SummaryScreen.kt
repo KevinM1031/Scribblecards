@@ -131,15 +131,15 @@ fun SummaryScreen (
                     progress = uiState.newMasteryLevel * progressIndicatorAnim.value,
                     modifier = Modifier.size(circleSize),
                     strokeWidth = 12.dp,
-                    trackColor = Color.LightGray,
-                    color = Color.Green,
+                    trackColor = MaterialTheme.colorScheme.secondaryContainer,
+                    color = MaterialTheme.colorScheme.primary,
                     )
                 CircularProgressIndicator(
                     progress = uiState.oldMasteryLevel * progressIndicatorAnim.value,
                     modifier = Modifier.size(circleSize),
                     strokeWidth = 12.dp,
                     trackColor = Color(0,0,0,0),
-                    color = Color.Blue,
+                    color = MaterialTheme.colorScheme.secondary,
                 )
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -154,7 +154,7 @@ fun SummaryScreen (
                     Text(
                         text = "+${Math.round((uiState.newMasteryLevel-uiState.oldMasteryLevel)*100  * progressIndicatorAnim.value)}%",
                         fontSize = 16.sp,
-                        color = Color.Green,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -169,6 +169,7 @@ fun SummaryScreen (
             text = "${stringResource(id = R.string.sms_perfect)}${uiState.numPerfect}",
             fontSize = 20.sp,
         )
+        Spacer(modifier = Modifier.weight(0.4f))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
@@ -191,7 +192,7 @@ fun SummaryScreen (
                 onCheckedChange = { saveSessionData = it },
             )
         }
-        Spacer(modifier = Modifier.weight(0.5f))
+        Spacer(modifier = Modifier.weight(0.2f))
         Button(
             onClick = {
                 if (saveSessionData) {
@@ -202,7 +203,8 @@ fun SummaryScreen (
                 } else {
                     onExit(uiState.param)
                 }
-            }
+            },
+            modifier = Modifier.size(120.dp, 40.dp)
         ) {
             Text(
                 text = stringResource(id = R.string.exit)

@@ -317,10 +317,6 @@ fun QuitDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier
                 .fillMaxWidth()
         ) {
@@ -379,10 +375,6 @@ fun RestartDialog(
         val largePadding = dimensionResource(R.dimen.padding_large)
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier
                 .fillMaxWidth()
         ) {
@@ -607,7 +599,7 @@ fun CardComponent(
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
-                    tint = Color.Yellow,
+                    tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier
                         .padding(end = smallPadding)
                 )
@@ -629,13 +621,13 @@ fun CardComponent(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Correct",
-                            tint = Color.Green,
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Wrong",
-                            tint = Color.Red,
+                            tint = MaterialTheme.colorScheme.secondary,
                         )
                     }
                 }
@@ -669,12 +661,12 @@ fun Flashcard(
     modifier: Modifier = Modifier,
     ) {
 
-    var verticalSlide by remember { mutableStateOf(false) }
+    var horizontalSlide by remember { mutableStateOf(false) }
     val localDensity = LocalDensity.current
     val rotationDuration = 250
 
     val cardSkip = animateFloatAsState(
-        targetValue = if (verticalSlide || isSlideAnimRequested) 1f else 0f,
+        targetValue = if (horizontalSlide || isSlideAnimRequested) 1f else 0f,
         animationSpec = tween(
             durationMillis = 250,
             easing = FastOutSlowInEasing,
@@ -682,9 +674,9 @@ fun Flashcard(
         finishedListener = {
             if (isFlipped) onFlipButtonClicked()
             if (isSlideAnimRequested) nextCard()
-            if (verticalSlide) onSkipButtonClicked()
+            if (horizontalSlide) onSkipButtonClicked()
             completeSlideAnimRequest()
-            verticalSlide = false
+            horizontalSlide = false
         }
     )
 
@@ -764,10 +756,8 @@ fun Flashcard(
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.tertiary,
-            disabledContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            disabledContentColor = MaterialTheme.colorScheme.tertiary,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         onClick = {
             onFlipButtonClicked()
@@ -777,7 +767,7 @@ fun Flashcard(
             .background(color = MaterialTheme.colorScheme.primaryContainer)
             .padding(dimensionResource(R.dimen.padding_small))
             .zIndex(if (cardSkip.value > 0) -100f else 100f)
-            .offset(y = cardSkip.value.dp * 100f)
+            .offset(x = cardSkip.value.dp * 100f * if (horizontalSlide) 1 else -1)
             .alpha(1f - cardSkip.value)
             .draggable2D(
                 state = swipeableState,
@@ -836,7 +826,7 @@ fun Flashcard(
                         )
                     }
                     IconButton(
-                        onClick = { verticalSlide = true }
+                        onClick = { horizontalSlide = true }
                     ) {
                         Icon(
                             imageVector = Icons.Default.SkipNext,
@@ -885,7 +875,7 @@ fun Flashcard(
                         if (card.isFavorite) {
                             Icon(
                                 imageVector = Icons.Filled.Star,
-                                tint = Color.Yellow,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 contentDescription = "Toggle favorite"
                             )
                         } else {
@@ -986,6 +976,7 @@ fun FlipBar(
     requestSlideAnim: () -> Unit,
     ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
+    val lineColor = MaterialTheme.colorScheme.secondary
 
     if (enabled) {
         val configuration = LocalConfiguration.current
@@ -1051,7 +1042,7 @@ fun FlipBar(
             }
             Icon(
                 imageVector = Icons.Outlined.Circle,
-                tint = Color.Black,
+                tint = lineColor,
                 contentDescription = "Selector",
                 modifier = Modifier
                     .size(SWIPER_SIZE.dp)
@@ -1146,6 +1137,7 @@ fun Notepad(
         val maxHeight = constraints.maxHeight.toFloat()
 
         var isDrawing by remember { mutableStateOf(false) }
+        val lineColor = MaterialTheme.colorScheme.secondary
 
         Canvas(
             modifier = Modifier
@@ -1227,11 +1219,11 @@ fun Notepad(
 
                 val path = Path()
                 path.moveTo(stroke[0].start.x, stroke[0].start.y)
-                drawCircle(color = Color.Black, radius = thickness/2, center = stroke[0].start)
+                drawCircle(color = lineColor, radius = thickness/2, center = stroke[0].start)
 
                 if (stroke.size == 1) {
                     path.lineTo(stroke[0].end.x, stroke[0].end.y)
-                    drawCircle(color = Color.Black, radius = thickness/2, center = stroke[0].end)
+                    drawCircle(color = lineColor, radius = thickness/2, center = stroke[0].end)
 
                 } else {
 
@@ -1250,17 +1242,17 @@ fun Notepad(
 //                        drawCircle(color = Color.Blue, radius = 10f, center = cp2)
 
                         path.cubicTo(cp1.x, cp1.y, cp2.x, cp2.y, stroke[i].end.x, stroke[i].end.y,)
-                        drawCircle(color = Color.Black, radius = thickness/2, center = stroke[i].end)
+                        drawCircle(color = lineColor, radius = thickness/2, center = stroke[i].end)
                     }
 
                     val i = stroke.size-1
                     cp = getControlPoint(stroke[i].end, stroke[i].start, stroke[i].start, -k)
                     path.quadraticBezierTo(cp.x, cp.y, stroke[i].end.x, stroke[i].end.y)
-                    drawCircle(color = Color.Black, radius = thickness/2, center = stroke[i].end)
+                    drawCircle(color = lineColor, radius = thickness/2, center = stroke[i].end)
                 }
                 drawPath(
                     path = path,
-                    color = Color.Black,
+                    color = lineColor,
                     style = Stroke(thickness)
                 )
             }
@@ -1318,8 +1310,8 @@ fun TipDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ),
             modifier = Modifier
                 .fillMaxWidth()

@@ -69,6 +69,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/DEPENDENCIES"
         }
     }
     namespace = "com.example.flashcards"
@@ -101,6 +102,14 @@ dependencies {
 
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.appcompat:appcompat-resources:1.7.0")
+
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+
+    implementation("com.google.api-client:google-api-client:2.0.0")
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0")
 
     testImplementation(libs.junit)
 

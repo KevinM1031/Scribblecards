@@ -277,9 +277,6 @@ fun DashboardScreen(
                 }
         ) {
 
-            var targetBundleIndex by remember { mutableStateOf<Int?>(null) }
-            var targetDeckIndex by remember { mutableStateOf<Int?>(null) }
-
             val mediumPadding = dimensionResource(id = R.dimen.padding_medium)
 
             val lazyGridState = rememberLazyGridState()
@@ -289,20 +286,8 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .blur((12 * bundleCloseAnim.value).dp)
+                    .alpha(if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.R) 1f - bundleCloseAnim.value*0.7f else 1f)
             ) {
-
-//                LaunchedEffect(uiState.isDragging && !uiState.isBundleOpen) {
-//                    launch {
-//                        while (uiState.isDragging) {
-//                            val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight
-//                            val scrollAmount = 32f * (y / lazyGridHeight - 0.5f).pow(5f)
-//                            if (scrollAmount.absoluteValue > 0.2f) {
-//                                lazyGridState.scrollBy(16f * scrollAmount)
-//                            }
-//                            delay(10)
-//                        }
-//                    }
-//                }
 
                 LazyVerticalGrid(
                     state = lazyGridState,
@@ -328,8 +313,6 @@ fun DashboardScreen(
                             isBundleSelectorOpen = uiState.isBundleSelectorOpen,
                             isBundle = true,
                             size = BOX_SIZE_DP,
-//                            dragPosition = uiState.dragPosition + dragOffset,
-//                            isDropOnAllowed = !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging,
                             lastUpdated = uiState.lastUpdated,
                         )
@@ -347,36 +330,6 @@ fun DashboardScreen(
                             isBundle = false,
                             size = BOX_SIZE_DP,
                             onLongPress = { viewModel.openBundleCreator() },
-//                            onDragStart = {
-//                                viewModel.dragStart(it)
-//                            },
-//                            onDrag = {
-//                                dragOffset += it
-//                                viewModel.deselectAllDecksOutOfBundle()
-//                                val t = targetDeckIndex ?: i
-//                                for (j in if (i > t) t..i else i..t) {
-//                                    viewModel.toggleDeckSelection(j, true)
-//                                }
-//                            },
-//                            onDrop = {
-//                                targetBundleIndex = null
-//                                targetDeckIndex = null
-//                                viewModel.drop()
-//                                dragOffset = Offset.Zero
-//                            },
-//                            onDropCancel = {
-//                                viewModel.drop()
-//                                dragOffset = Offset.Zero
-//                            },
-//                            onDraggedOver = {
-//                                targetBundleIndex = null
-//                                targetDeckIndex = i
-//                            },
-//                            onDraggedAway = {
-//                                if (targetDeckIndex == i) targetDeckIndex = null
-//                            },
-//                            dragPosition = uiState.dragPosition + dragOffset,
-//                            isDropOnAllowed = !uiState.isBundleOpen,
                             isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
                             lastUpdated = uiState.lastUpdated,
                         )
@@ -409,6 +362,9 @@ fun DashboardScreen(
                         configuration.screenWidthDp - mediumPadding.value*2
 
                 Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.inverseSurface
+                    ),
                     modifier = Modifier
                         .alpha(bundleCloseAnim.value)
                         .padding(mediumPadding)
@@ -436,18 +392,6 @@ fun DashboardScreen(
                         val bundleLazyGridState = rememberLazyGridState()
                         var bundleLazyGridHeight by remember { mutableIntStateOf(0) }
 
-//                        LaunchedEffect(uiState.isDragging) {
-//                            launch {
-//                                while (uiState.isDragging) {
-//                                    val y = (uiState.dragPosition + dragOffset).y - topAppBarHeight - with(density) {mediumPadding.toPx()}
-//                                    val scrollAmount = 32f * (y / bundleLazyGridHeight - 0.5f).pow(5f)
-//                                    if (scrollAmount.absoluteValue > 0.2f) {
-//                                        lazyGridState.scrollBy(16f * scrollAmount)
-//                                    }
-//                                    delay(10)
-//                                }
-//                            }
-//                        }
 
                         LazyVerticalGrid(
                             state = bundleLazyGridState,
@@ -477,34 +421,6 @@ fun DashboardScreen(
                                             viewModel.openRemoveDeckFromBundleUi()
                                         }
                                     },
-//                                    onDragStart = { viewModel.dragStart(it) },
-//                                    onDrag = {
-//                                        dragOffset += it
-//                                        viewModel.deselectAllDecksInCurrentBundle()
-//                                        val t = targetDeckIndex ?: i
-//                                        for (j in if (i > t) t..i else i..t) {
-//                                            viewModel.toggleDeckSelection(j, true)
-//                                        }
-//                                    },
-//                                    onDrop = {
-//                                        targetBundleIndex = null
-//                                        targetDeckIndex = null
-//                                        viewModel.drop()
-//                                        dragOffset = Offset.Zero
-//                                    },
-//                                    onDropCancel = {
-//                                        viewModel.drop()
-//                                        dragOffset = Offset.Zero
-//                                    },
-//                                    onDraggedOver = {
-//                                        targetBundleIndex = null
-//                                        targetDeckIndex = i
-//                                    },
-//                                    onDraggedAway = {
-//                                        if (targetDeckIndex == i) targetDeckIndex = null
-//                                    },
-//                                    isDropOnAllowed = true,
-//                                    dragPosition = uiState.dragPosition + dragOffset,
                                     isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
                                     lastUpdated = uiState.lastUpdated,
                                 )
@@ -662,25 +578,6 @@ fun SelectableComposable(
                         }
                     }
             }
-//            .pointerInput(Unit) {
-//                detectDragGesturesAfterLongPress(
-//                    onDragStart = {
-//                        onDragStart(posInRoot + it)
-//                    },
-//                    onDrag = { change, dragAmount ->
-//                        change.consume()
-//                        onDrag(dragAmount)
-//                    },
-//                    onDragEnd = {
-//                        isDragging = false
-//                        onDrop()
-//                    },
-//                    onDragCancel = {
-//                        isDragging = false
-//                        onDropCancel()
-//                    },
-//                )
-//            }
     ) {
         content()
     }
@@ -704,18 +601,10 @@ fun BundleComponent(
     Card(
         shape = RoundedCornerShape(10),
         colors = CardDefaults.cardColors(
-            containerColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiary
-                else if (isHighlighted) MaterialTheme.colorScheme.secondary
-                else MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiaryContainer
-                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.tertiary,
-            disabledContainerColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiary
-                else if (isHighlighted) MaterialTheme.colorScheme.secondary
-                else MaterialTheme.colorScheme.tertiaryContainer,
-            disabledContentColor = if (bundle.isSelected) MaterialTheme.colorScheme.tertiaryContainer
-                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.tertiary,
+            containerColor = if (bundle.isSelected || isHighlighted) MaterialTheme.colorScheme.secondary
+            else MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = if (bundle.isSelected || isHighlighted) MaterialTheme.colorScheme.onSecondary
+            else MaterialTheme.colorScheme.onTertiaryContainer,
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -780,18 +669,10 @@ fun DeckComponent(
     Card(
         shape = RoundedCornerShape(10),
         colors = CardDefaults.cardColors(
-            containerColor = if (deck.isSelected) MaterialTheme.colorScheme.primaryContainer
-                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.primary,
-            contentColor = if (deck.isSelected) MaterialTheme.colorScheme.primary
-                else if (isHighlighted) MaterialTheme.colorScheme.secondary
-                else MaterialTheme.colorScheme.primaryContainer,
-            disabledContainerColor = if (deck.isSelected) MaterialTheme.colorScheme.primaryContainer
-                else if (isHighlighted) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.primary,
-            disabledContentColor = if (deck.isSelected) MaterialTheme.colorScheme.primary
-                else if (isHighlighted) MaterialTheme.colorScheme.secondary
-                else MaterialTheme.colorScheme.primaryContainer,
+            containerColor = if (deck.isSelected || isHighlighted) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = if (deck.isSelected || isHighlighted) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         modifier = Modifier
             .fillMaxSize()
@@ -856,8 +737,11 @@ fun DashboardTopAppBar(
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.ds), overflow = TextOverflow.Ellipsis) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
         navigationIcon = {
             IconButton(onClick = onBackButtonClicked) {
                 Icon(
@@ -907,7 +791,10 @@ fun BundleTopAppBar(
     TopAppBar(
         title = { Text(text = title, overflow = TextOverflow.Ellipsis,) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         navigationIcon = {
             IconButton(onClick = onBackButtonClicked) {
@@ -966,7 +853,10 @@ fun BundleCreatorTopAppBar(
     LargeTopAppBar(
         title = { Text(text = "$numSelected${stringResource(id = R.string.selected_)}") },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         navigationIcon = {
             IconButton(
@@ -982,6 +872,10 @@ fun BundleCreatorTopAppBar(
             Button(
                 onClick = onMoveClicked,
                 enabled = numSelected > 0,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
                 modifier = Modifier
                     .padding(smallPadding)
             ) {
@@ -1000,6 +894,10 @@ fun BundleCreatorTopAppBar(
             Button(
                 onClick = onCreateClicked,
                 enabled = numSelected > 0,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
                 modifier = Modifier
                     .padding(smallPadding)
             ) {
@@ -1037,7 +935,10 @@ fun BundleSelectorTopAppBar(
     LargeTopAppBar(
         title = { Text(text = stringResource(id = R.string.ds_tb_select_bundle)) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         navigationIcon = {
             IconButton(
@@ -1053,6 +954,10 @@ fun BundleSelectorTopAppBar(
             Button(
                 onClick = onMoveClicked,
                 enabled = numSelected > 0,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
                 modifier = Modifier
                     .padding(smallPadding)
             ) {
@@ -1090,7 +995,10 @@ fun RemoveDeckFromBundleTopBar(
     LargeTopAppBar(
         title = { Text(text = "$numSelected${stringResource(R.string.selected_)}") },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.primary,
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
         navigationIcon = {
             IconButton(
@@ -1108,6 +1016,10 @@ fun RemoveDeckFromBundleTopBar(
                     onRemoveClicked()
                 },
                 enabled = numSelected > 0,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
                 modifier = Modifier
                     .padding(smallPadding)
             ) {
@@ -1223,10 +1135,6 @@ fun CreateBundleDialog(
         var isError by remember { mutableStateOf(false) }
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier
                 .fillMaxWidth()
         ) {
@@ -1311,10 +1219,6 @@ fun CreateDeckDialog(
         var isError by remember { mutableStateOf(false) }
 
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
             modifier = Modifier
                 .fillMaxWidth()
         ) {

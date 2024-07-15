@@ -9,6 +9,7 @@
     <string name="selected_">개 선택</string>
     <string name="move">이동</string>
     <string name="import_">가져오기</string>
+    <string name="link">연동</string>
     <string name="create">생성</string>
     <string name="remove">제거</string>
     <string name="delete">삭제</string>
@@ -16,13 +17,13 @@
     <string name="exit">나가기</string>
     <string name="restart">다시하기</string>
     <string name="start">시작</string>
-    <string name="plural_suffix"> </string>
+    <string name="plural_suffix"> </string>ㅁㄴㅇ
     <string name="day">일</string>
     <string name="hour">시간</string>
     <string name="minute">분</string>
 
     <string name="e_field_required">이 칸이 비어있습니다.</string>
-    <string name="e_field_required_sfx"> - 이 칸이 비어있습니다.</string>
+    <string name="e_field_required_sfx">&#160;- 이 칸이 비어있습니다.</string>
 
     <string name="mms_cards">모아보기</string>
     <string name="mms_priority">지금 공부할 카드들</string>
@@ -48,7 +49,7 @@
     <string name="ss_d_revert">기본 설정 값들로 복구할까요?</string>
 
     <string name="ds">모아보기</string>
-    <string name="ds_e_deck_limit">암기장이 너무 많습니다 (최대 </string>
+    <string name="ds_e_deck_limit">암기장이 너무 많습니다 (최대&#160;</string>
     <string name="ds_e_deck_limit_sfx">개).</string>
     <string name="ds_tb_select_bundle">암기장 선택</string>
     <string name="ds_ab_create_deck">새 암기장 만들기</string>
@@ -59,7 +60,7 @@
     <string name="ds_d_deck_name">암기장 이름</string>
 
     <string name="dk_d_tip">"하드모드" 선택 시 각 카드를 연속 2회씩 맞춰야 학습이 완료됩니다.</string>
-    <string name="dk_e_card_limit">카드가 너무 많습니다 (최대 </string>
+    <string name="dk_e_card_limit">카드가 너무 많습니다 (최대&#160;</string>
     <string name="dk_e_card_limit_sfx">개).</string>
     <string name="dk_card_total">개</string>
     <string name="dk_cards_total">개</string>
@@ -91,28 +92,30 @@
     <string name="ic">카드들 가져오기</string>
     <string name="ic_card">개</string>
     <string name="ic_cards">개</string>
-    <string name="ic_import_from"> - 출처: </string>
-    <string name="ic_imported_from_text"> - 텍스트 변환</string>
+    <string name="ic_import_from">&#160;- 출처:&#160;</string>
+    <string name="ic_imported_from_text">&#160;- 텍스트 변환</string>
     <string name="ic_create_cards">카드들 생성</string>
     <string name="ic_preview">미리보기 (첫 2개)</string>
     <string name="ic_question">문제</string>
     <string name="ic_answer">답</string>
     <string name="ic_hint">힌트</string>
     <string name="ic_example">예시</string>
-    <string name="ic_e_card_limit">카드가 너무 많습니다 (최대 </string>
+    <string name="ic_e_card_limit">카드가 너무 많습니다 (최대&#160;</string>
     <string name="ic_e_card_limit_sfx">개).</string>
     <string name="ic_e_no_cards">추가할 카드가 없습니다.</string>
+
+    <string name="ic_drive">구글 드라이브 연동</string>
 
     <string name="ic_csv">.CSV 파일 업로드</string>
     <string name="ic_csv_tip">.CSV 파일을 업로드해주세요.</string>
     <string name="ic_csv_select_file">파일 선택하기</string>
-    <string name="ic_csv_e_file_empty"> - 파일이 비어있습니다.</string>
-    <string name="ic_csv_e_file_incomplete"> - 파일 내용이 불규칙적입니다.</string>
-    <string name="ic_csv_e_file_long"> - 카드가 너무 많습니다 (첫 </string>
+    <string name="ic_csv_e_file_empty">&#160;- 파일이 비어있습니다.</string>
+    <string name="ic_csv_e_file_incomplete">&#160;- 파일 내용이 불규칙적입니다.</string>
+    <string name="ic_csv_e_file_long">&#160;- 카드가 너무 많습니다 (첫&#160;</string>
     <string name="ic_csv_e_file_long_sfx">개만 가져옵니다).</string>
-    <string name="ic_csv_e_file_large"> - 파일이 너무 큽니다 (최대 </string>
-    <string name="ic_csv_e_file_large_sfx"> MB).</string>
-    <string name="ic_csv_e_file_invalid"> - .CSV 파일이 아닙니다.</string>
+    <string name="ic_csv_e_file_large">&#160;- 파일이 너무 큽니다 (최대&#160;</string>
+    <string name="ic_csv_e_file_large_sfx">&#160;MB).</string>
+    <string name="ic_csv_e_file_invalid">&#160;- .CSV 파일이 아닙니다.</string>
     <string name="ic_csv_no_file">선택된 파일이 없습니다.</string>
     <string name="ic_csv_browse_file">파일 검색</string>
     <string name="ic_csv_column_number">열 번호</string>
@@ -126,7 +129,7 @@
     <string name="ic_text_text">텍스트</string>
     <string name="ic_text_text_tip">외부 표나 리스트의 텍스트를 한번에 붙여넣기.</string>
     <string name="ic_text_e_text_incomplete">텍스트가 불완전하거나 아래 정의된 규칙과 호환되지 않습니다.</string>
-    <string name="ic_text_e_text_long">너무 많은 카드가 생성됩니다 (최대: </string>
+    <string name="ic_text_e_text_long">너무 많은 카드가 생성됩니다 (최대:&#160;</string>
     <string name="ic_text_e_text_long_sfx">개).</string>
     <string name="ic_text_line_tip">다수의 줄 선택 시 \',\'와 \'-\'를 사용하세요.</string>
     <string name="ic_text_e_line_overlap">줄은 중복선택이 불가합니다.</string>
@@ -164,8 +167,8 @@
     <string name="sss_example">예시 보기</string>
 
     <string name="sms">세션 요약</string>
-    <string name="sms_studied">총 학습한 카드들: </string>
-    <string name="sms_perfect">한번에 맞춘 카드들: </string>
+    <string name="sms_studied">총 학습한 카드들:&#160;</string>
+    <string name="sms_perfect">한번에 맞춘 카드들:&#160;</string>
     <string name="sms_save">이 세션 기억하기</string>
 
 </resources>
