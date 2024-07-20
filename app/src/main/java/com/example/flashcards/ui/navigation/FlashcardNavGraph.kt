@@ -54,7 +54,6 @@ fun FlashcardNavHost(
             MainMenuScreen(
                 onAllCardsButtonClicked = { navController.navigate(FlashcardScreen.Dashboard.name) },
                 onPriorityDecksButtonClicked = { navController.navigate(FlashcardScreen.PriorityDecks.name) },
-                onLanguageButtonClicked = {  },
                 onSettingsButtonClicked = { navController.navigate(FlashcardScreen.Settings.name) },
             )
         }

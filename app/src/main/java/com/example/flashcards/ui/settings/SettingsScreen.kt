@@ -70,6 +70,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.entities.Language
 import com.example.flashcards.ui.AppViewModelProvider
+import com.example.flashcards.ui.component.ConfirmOrCancelDialog
+import com.example.flashcards.ui.component.TextDialog
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -294,57 +296,22 @@ fun SettingsScreen(
     }
 
     if (uiState.isTipOpen) {
-        TipDialog(
+        TextDialog(
             onDismissRequest = { viewModel.toggleTip() },
-            tip = uiState.tip,
+            text = uiState.tip,
         )
 
     } else if (uiState.isResetDialogOpen) {
-        ResetDialog(
+        ConfirmOrCancelDialog(
+            titleText = stringResource(id = R.string.ss_d_revert),
             onDismissRequest = { viewModel.toggleResetDialog() },
-            onConfirmButtonClicked = {
+            onConfirmClicked = {
                 coroutineScope.launch{
                     viewModel.revertChanges(context, configuration)
                     viewModel.toggleResetDialog()
                 }
             },
         )
-    }
-}
-
-@Composable
-fun TipDialog(
-    onDismissRequest: () -> Unit,
-    tip: String,
-) {
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127))) {}
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-            ) {
-                Text(text = tip, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(largePadding))
-                Button(
-                    onClick = { onDismissRequest() },
-                    modifier = Modifier.size(120.dp, 40.dp)
-                ) {
-                    Text(text = stringResource(id = R.string.close))
-                }
-            }
-        }
     }
 }
 
@@ -439,56 +406,6 @@ fun SettingsTextField(
                 .width(100.dp)
                 .padding(end = smallPadding)
         )
-    }
-}
-
-@Composable
-fun ResetDialog(
-    onDismissRequest: () -> Unit,
-    onConfirmButtonClicked: () -> Unit,
-) {
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127)))
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-            ) {
-                Text(
-                    text = stringResource(id = R.string.ss_d_revert),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .padding(top = largePadding)
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.cancel)) }
-                    Button(
-                        onClick = onConfirmButtonClicked,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.confirm)) }
-                }
-            }
-        }
     }
 }
 

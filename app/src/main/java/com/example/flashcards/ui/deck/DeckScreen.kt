@@ -1,14 +1,12 @@
 package com.example.flashcards.ui.deck
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideIn
-import androidx.compose.animation.slideOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,8 +26,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,14 +33,9 @@ import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
@@ -56,26 +46,20 @@ import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -86,41 +70,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Constants
 import com.example.flashcards.data.Settings
-import com.example.flashcards.data.StringLength
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
-import com.example.flashcards.ui.theme.md_theme_light_onSurface
+import com.example.flashcards.ui.component.ConfirmOrCancelDialog
+import com.example.flashcards.ui.component.TextDialog
+import com.example.flashcards.ui.component.TextFieldDialog
 import com.example.flashcards.ui.theme.md_theme_light_onSurfaceVariant
 import kotlinx.coroutines.launch
-import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -209,82 +183,6 @@ fun DeckScreen (
                 },
             )
         },
-        bottomBar = {
-            Column {
-                BottomAppBar(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    actions = {
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                        ) {
-                            Spacer(modifier = Modifier.weight(1f))
-                            Button(
-                                onClick = { onStartButtonClicked(uiState.deck.deck.id) },
-                                enabled = uiState.deck.cards.isNotEmpty(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.onPrimary,
-                                    contentColor = MaterialTheme.colorScheme.primary,
-                                ),
-                                modifier = Modifier
-                                    .width(160.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(id = R.string.start),
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 16.sp,
-                                )
-                            }
-                            IconButton(
-                                onClick = { viewModel.toggleSessionOptions() },
-                                modifier = Modifier
-                                    .weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = if (uiState.isSessionOptionsOpen)
-                                        Icons.Default.KeyboardArrowDown
-                                        else Icons.Default.KeyboardArrowUp,
-                                    contentDescription = "Back"
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.height(64.dp)
-                )
-                if (uiState.isSessionOptionsOpen) {
-                    val tip = stringResource(id = R.string.dk_d_tip)
-                    SessionOptions(
-                        deck = uiState.deck,
-                        setShowHints = {
-                            uiState.deck.deck.showHints = it
-                            viewModel.update()
-                            coroutineScope.launch { viewModel.updateDeck() }
-                        },
-                        setShowExamples = {
-                            uiState.deck.deck.showExamples = it
-                            viewModel.update()
-                            coroutineScope.launch { viewModel.updateDeck() }
-                        },
-                        setFlipQnA = {
-                            uiState.deck.deck.flipQnA = it
-                            viewModel.update()
-                            coroutineScope.launch { viewModel.updateDeck() }
-                        },
-                        setDoubleDifficulty = {
-                            uiState.deck.deck.doubleDifficulty = it
-                            viewModel.update()
-                            coroutineScope.launch { viewModel.updateDeck() }
-                        },
-                        onTipButtonClicked = {
-                            viewModel.setTipText(tip)
-                            viewModel.toggleTip()
-                        },
-                    )
-                }
-            }
-        },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
         },
@@ -367,28 +265,138 @@ fun DeckScreen (
                 }
             }
         }
+
+        val startBottomBar = @Composable {
+            BottomAppBar(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                actions = {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                    ) {
+                        Spacer(modifier = Modifier.weight(1f))
+                        Button(
+                            onClick = { onStartButtonClicked(uiState.deck.deck.id) },
+                            enabled = uiState.deck.cards.isNotEmpty(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.onPrimary,
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ),
+                            modifier = Modifier
+                                .width(160.dp),
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.start),
+                                textAlign = TextAlign.Center,
+                                fontSize = 16.sp,
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewModel.toggleSessionOptions() },
+                            modifier = Modifier
+                                .weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.isSessionOptionsOpen)
+                                    Icons.Default.KeyboardArrowDown
+                                else Icons.Default.KeyboardArrowUp,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.height(64.dp)
+            )
+        }
+
+        if (!uiState.isSessionOptionsOpen) {
+            Column(
+                verticalArrangement = Arrangement.Bottom,
+                modifier = Modifier
+                    .fillMaxHeight()
+            ) {
+                startBottomBar()
+            }
+        }
+
+        Column(
+            verticalArrangement = Arrangement.Bottom,
+            modifier = Modifier
+                .fillMaxHeight()
+        ) {
+
+            val tip = stringResource(id = R.string.dk_d_tip)
+            val bottomBarHeight = with (LocalDensity.current) {64.dp.toPx().toInt()}
+
+            AnimatedVisibility(
+                visible = uiState.isSessionOptionsOpen,
+                enter = slideInVertically(initialOffsetY = { it - bottomBarHeight }),
+                exit = slideOutVertically(targetOffsetY = { it - bottomBarHeight }),
+            ) {
+                Column (
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+                    startBottomBar()
+                    SessionOptions(
+                        deck = uiState.deck,
+                        setShowHints = {
+                            uiState.deck.deck.showHints = it
+                            viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
+                        },
+                        setShowExamples = {
+                            uiState.deck.deck.showExamples = it
+                            viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
+                        },
+                        setFlipQnA = {
+                            uiState.deck.deck.flipQnA = it
+                            viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
+                        },
+                        setDoubleDifficulty = {
+                            uiState.deck.deck.doubleDifficulty = it
+                            viewModel.update()
+                            coroutineScope.launch { viewModel.updateDeck() }
+                        },
+                        onTipButtonClicked = {
+                            viewModel.setTipText(tip)
+                            viewModel.toggleTip()
+                        },
+                    )
+                }
+            }
+        }
     }
 
     if (uiState.isTipOpen) {
-        TipDialog(
-            tip = uiState.tipText,
+        TextDialog(
+            text = uiState.tipText,
             onDismissRequest = { viewModel.toggleTip() }
         )
 
     } else if (uiState.isDeleteCardDialogOpen) {
-        DeleteCardDialog(
+        ConfirmOrCancelDialog(
+            titleText = stringResource(id = R.string.dk_d_delete_card),
+            descriptionText = stringResource(id = R.string.dk_d_no_undo),
+            confirmText = stringResource(R.string.delete),
             onDismissRequest = { viewModel.toggleDeleteCardDialog() },
-            onDeleteButtonClicked = {
+            onConfirmClicked = {
                 coroutineScope.launch {
                     viewModel.deleteSelectedCardsInCurrentDeck()
                     viewModel.toggleDeleteCardDialog()
                 }
             },
-            isMultipleCardsSelected = uiState.numSelectedCards > 1,
         )
 
     } else if (uiState.isEditDeckNameDialogOpen) {
-        EditDeckNameDialog(
+        TextFieldDialog(
+            titleText = stringResource(R.string.ds_d_deck_name),
+            textFieldLabel = stringResource(R.string.ds_d_deck_name),
+            confirmText = stringResource(R.string.save),
             onDismissRequest = { viewModel.toggleEditDeckNameDialog() },
             onConfirmClicked = {
                 coroutineScope.launch {
@@ -402,9 +410,12 @@ fun DeckScreen (
             )
 
     } else if (uiState.isDeleteDeckDialogOpen) {
-        DeleteDeckDialog(
+        ConfirmOrCancelDialog(
+            titleText = stringResource(id = R.string.dk_d_delete_deck),
+            descriptionText = stringResource(id = R.string.dk_d_no_undo),
+            confirmText = stringResource(R.string.delete),
             onDismissRequest = { viewModel.toggleDeleteDeckDialog() },
-            onDeleteButtonClicked = {
+            onConfirmClicked = {
                 coroutineScope.launch {
                     viewModel.deleteDeck()
                     viewModel.toggleDeleteDeckDialog()
@@ -853,256 +864,5 @@ fun CustomSwitch(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun TipDialog(
-    onDismissRequest: () -> Unit,
-    tip: String,
-) {
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127))) {}
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-            ) {
-                Text(text = tip, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(largePadding))
-                Button(
-                    onClick = { onDismissRequest() },
-                    modifier = Modifier.size(120.dp, 40.dp)
-                ) {
-                    Text(text = stringResource(id = R.string.close))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DeleteDeckDialog(
-    onDismissRequest: () -> Unit,
-    onDeleteButtonClicked: () -> Unit,
-) {
-    val smallPadding = dimensionResource(R.dimen.padding_small)
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127)))
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-            ) {
-                Text(
-                    text = stringResource(id = R.string.dk_d_delete_deck),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = stringResource(id = R.string.dk_d_no_undo),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = smallPadding, bottom = largePadding)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.cancel)) }
-                    Button(
-                        onClick = {
-                            onDeleteButtonClicked()
-                        },
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.delete)) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DeleteCardDialog(
-    onDismissRequest: () -> Unit,
-    onDeleteButtonClicked: () -> Unit,
-    isMultipleCardsSelected: Boolean,
-) {
-    val smallPadding = dimensionResource(R.dimen.padding_small)
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127)))
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-            ) {
-                Text(
-                    text = stringResource(R.string.dk_d_delete_card) + if (isMultipleCardsSelected) "${stringResource(R.string.plural_suffix)}?" else "?",
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = stringResource(R.string.dk_d_no_undo),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(top = smallPadding, bottom = largePadding)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(R.string.cancel)) }
-                    Button(
-                        onClick = {
-                            onDeleteButtonClicked()
-                        },
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(R.string.delete)) }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun EditDeckNameDialog(
-    onDismissRequest: () -> Unit,
-    onConfirmClicked: (String) -> Unit,
-    setUserInput: (String) -> Unit,
-    userInput: String?,
-    focusManager: FocusManager,
-    ) {
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127))) {}
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        val smallPadding = dimensionResource(R.dimen.padding_small)
-        val mediumPadding = dimensionResource(R.dimen.padding_medium)
-        val largePadding = dimensionResource(R.dimen.padding_large)
-        var isError by remember { mutableStateOf(false) }
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-            ) {
-                Text(
-                    text = stringResource(R.string.ds_d_deck_name),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Column(
-                    modifier = Modifier.padding(top = smallPadding, bottom = largePadding)
-                ) {
-                    if (isError) {
-                        Text(
-                            text = stringResource(R.string.e_field_required),
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Start,
-                        )
-                    }
-                    OutlinedTextField(
-                        value = userInput ?: "",
-                        onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
-                        label = { Text(stringResource(R.string.ds_d_deck_name)) },
-                        isError = isError,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(R.string.cancel)) }
-                    Button(
-                        onClick = {
-                            if (userInput.isNullOrBlank()) {
-                                isError = true
-                            } else {
-                                onConfirmClicked(userInput)
-                            }
-                        },
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(R.string.save)) }
-                }
-            }
-        }
-    }
-}
-
-@Preview(
-    showBackground = true,
-    device = "spec:width=393dp,height=808dp"
-    //device = "spec:width=650dp,height=900dp"
-    //device = "spec:orientation=landscape,width=393dp,height=808dp"
-)
-@Composable
-fun DeckScreenPreview() {
-    FlashcardsTheme() {
-        DeckScreen(viewModel(), {}, {a -> {a}}, {a -> {a}}, {}, {})
     }
 }

@@ -2,7 +2,6 @@ package com.example.flashcards.ui.session
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,12 +12,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.Draggable2DState
 import androidx.compose.foundation.gestures.DraggableAnchors
-import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.draggable2D
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +23,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,13 +32,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -50,26 +40,20 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -92,7 +76,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -112,15 +95,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import com.example.flashcards.ui.theme.FlashcardsTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
-import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.relations.DeckWithCards
 import com.example.flashcards.ui.AppViewModelProvider
+import com.example.flashcards.ui.component.ConfirmOrCancelDialog
+import com.example.flashcards.ui.component.TextDialog
 import kotlinx.coroutines.launch
 import java.lang.Math.random
 import kotlin.math.absoluteValue
@@ -271,9 +254,12 @@ fun SessionScreen (
         }
 
         if (uiState.isQuitDialogOpen) {
-            QuitDialog(
+            ConfirmOrCancelDialog(
+                titleText = stringResource(id = R.string.sss_quit),
+                descriptionText = stringResource(id = R.string.sss_record_will_be_lost),
+                confirmText = stringResource(id = R.string.quit),
                 onDismissRequest = { viewModel.toggleQuitDialog() },
-                onQuitButtonClicked = {
+                onConfirmClicked = {
                     viewModel.toggleQuitDialog()
                     onQuit(uiState.param)
                 },
@@ -281,9 +267,12 @@ fun SessionScreen (
         }
 
         if (uiState.isRestartDialogOpen) {
-            RestartDialog(
+            ConfirmOrCancelDialog(
+                titleText = stringResource(id = R.string.sss_restart),
+                descriptionText = stringResource(id = R.string.sss_record_will_be_lost),
+                confirmText = stringResource(id = R.string.restart),
                 onDismissRequest = { viewModel.toggleRestartDialog() },
-                onRestartButtonClicked = {
+                onConfirmClicked = {
                     viewModel.toggleRestartDialog()
                     viewModel.reset()
                     coroutineScope.launch {
@@ -296,125 +285,10 @@ fun SessionScreen (
     }
 
     if (uiState.isTipDialogOpen) {
-        TipDialog(
-            tip = uiState.tipText,
+        TextDialog(
+            text = uiState.tipText,
             onDismissRequest = { viewModel.toggleTipDialog() }
         )
-    }
-}
-
-@Composable
-fun QuitDialog(
-    onDismissRequest: () -> Unit,
-    onQuitButtonClicked: () -> Unit,
-) {
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127)))
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-            ) {
-                Text(
-                    text = stringResource(id = R.string.sss_quit),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = stringResource(id = R.string.sss_record_will_be_lost),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(largePadding))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.cancel)) }
-                    Button(
-                        onClick = {
-                            onQuitButtonClicked()
-                        },
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.quit)) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RestartDialog(
-    onDismissRequest: () -> Unit,
-    onRestartButtonClicked: () -> Unit,
-) {
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127))) {}
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        val mediumPadding = dimensionResource(R.dimen.padding_medium)
-        val largePadding = dimensionResource(R.dimen.padding_large)
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-
-            ) {
-                Text(
-                    text = stringResource(id = R.string.sss_restart),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = stringResource(id = R.string.sss_record_will_be_lost),
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(largePadding))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.cancel)) }
-                    Button(
-                        onClick = onRestartButtonClicked,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.restart)) }
-                }
-            }
-        }
     }
 }
 
@@ -1294,46 +1168,6 @@ fun getControlPoint(p1: Offset, p2: Offset, p3: Offset, k: Float): Offset {
     val v2 = Offset(p3.x-p1.x, p3.y-p1.y)
     val c = k * (v1.x*v2.x + v1.y*v2.y) / l
     return Offset(p2.x + v2.x*c, p2.y + v2.y*c)
-}
-
-@Composable
-fun TipDialog(
-    onDismissRequest: () -> Unit,
-    tip: String,
-) {
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127))) {}
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-            ) {
-                Text(text = tip, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(largePadding))
-                Button(
-                    onClick = { onDismissRequest() },
-                    modifier = Modifier.size(120.dp, 40.dp)
-                ) {
-                    Text(text = stringResource(id = R.string.close))
-                }
-            }
-        }
-    }
 }
 
 @Preview(

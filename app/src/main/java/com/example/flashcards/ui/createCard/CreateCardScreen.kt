@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -116,10 +117,17 @@ fun CreateCardScreen (
                         ) {
                             TextButton(
                                 onClick = onBackButtonClicked,
+                                colors = ButtonDefaults.buttonColors(
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
                                 modifier = Modifier.size(120.dp, 40.dp)
                             ) { Text(stringResource(id = R.string.cancel)) }
                             Button(
                                 enabled = uiState.questionTextInput.isNotBlank() && uiState.answerTextInput.isNotBlank(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.onPrimary,
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                ),
                                 onClick = {
                                     coroutineScope.launch {
                                         viewModel.createCard()

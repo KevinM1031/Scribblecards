@@ -1,20 +1,12 @@
 package com.example.flashcards.ui.mainMenu
 
 import android.app.Activity
-import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -23,22 +15,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AssignmentLate
 import androidx.compose.material.icons.outlined.Dashboard
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -48,10 +37,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.ui.AppViewModelProvider
+import com.example.flashcards.ui.component.ConfirmOrCancelDialog
 import com.example.flashcards.ui.theme.FlashcardsTheme
 
 @Composable
@@ -59,11 +48,9 @@ fun MainMenuScreen(
     viewModel: MainMenuViewModel = viewModel(factory = AppViewModelProvider.Factory),
     onAllCardsButtonClicked: () -> Unit,
     onPriorityDecksButtonClicked: () -> Unit,
-    onLanguageButtonClicked: () -> Unit,
     onSettingsButtonClicked: () -> Unit,
 ) {
 
-    val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -154,38 +141,28 @@ fun MainMenuScreen(
         }
 
         Spacer(Modifier.weight(0.5f))
-        Button(
+        IconButton(
             onClick = { onSettingsButtonClicked() },
             modifier = Modifier
-                .fillMaxWidth()
                 .padding(mediumPadding)
         ) {
-            Text(
-                text = stringResource(id = R.string.mms_settings),
-                fontSize = 24.sp,
-                onTextLayout = {}
+            Icon(
+                imageVector = Icons.Outlined.Settings,
+                contentDescription = "Settings",
+                modifier = Modifier
+                    .size(48.dp)
             )
         }
-
-//        Button(
-//            onClick = {},
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(mediumPadding)
-//        ) {
-//            Text(
-//                text = stringResource(id = R.string.mms_credits),
-//                fontSize = 24.sp,
-//                onTextLayout = {}
-//            )
-//        }
         Spacer(Modifier.weight(0.2f))
     }
 
     if (uiState.isCloseDialogOpen) {
-        CloseDialog(
+        ConfirmOrCancelDialog(
+            titleText = stringResource(id = R.string.mms_d_close),
+            confirmText = stringResource(id = R.string.quit),
+            cancelText = stringResource(id = R.string.cancel),
             onDismissRequest = { viewModel.closeCloseDialog() },
-            onCloseButtonClicked = {
+            onConfirmClicked = {
                 val activity = (context as? Activity)
                 activity?.finish()
             }
@@ -193,62 +170,10 @@ fun MainMenuScreen(
     }
 }
 
-@Composable
-fun CloseDialog(
-    onDismissRequest: () -> Unit,
-    onCloseButtonClicked: () -> Unit,
-) {
-    val smallPadding = dimensionResource(R.dimen.padding_small)
-    val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val largePadding = dimensionResource(R.dimen.padding_large)
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127)))
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-            ) {
-                Text(
-                    text = stringResource(id = R.string.mms_d_close),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .padding(top = smallPadding, bottom = largePadding)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.cancel)) }
-                    Button(
-                        onClick = onCloseButtonClicked,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.quit)) }
-                }
-            }
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 fun MainMenuScreenPreview() {
     FlashcardsTheme {
-        MainMenuScreen(viewModel(), {}, {}, {}, {})
+        MainMenuScreen(viewModel(), {}, {}, {})
     }
 }

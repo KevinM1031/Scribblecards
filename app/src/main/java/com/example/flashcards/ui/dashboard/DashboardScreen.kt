@@ -1,50 +1,33 @@
 package com.example.flashcards.ui.dashboard
 
 import android.content.res.Configuration
-import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowOutward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Sort
@@ -59,74 +42,51 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flashcards.R
 import com.example.flashcards.data.Constants
-import com.example.flashcards.data.StringLength
 import com.example.flashcards.data.entities.Bundle
 import com.example.flashcards.data.entities.Deck
-import com.example.flashcards.data.entities.Selectable
 import com.example.flashcards.data.relations.BundleWithDecks
 import com.example.flashcards.ui.AppViewModelProvider
-import com.example.flashcards.ui.theme.FlashcardsTheme
-import kotlinx.coroutines.delay
+import com.example.flashcards.ui.component.TextFieldDialog
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
-import kotlin.math.pow
 import kotlin.math.roundToInt
 
 private const val BOX_SIZE_DP = 120
@@ -149,7 +109,6 @@ fun DashboardScreen(
     val configuration = LocalConfiguration.current
     val snackbarHostState = remember { SnackbarHostState() }
     var topAppBarHeight by remember { mutableStateOf(0) }
-    val density = LocalDensity.current
 
     Scaffold(
         topBar = {
@@ -314,7 +273,6 @@ fun DashboardScreen(
                             isBundle = true,
                             size = BOX_SIZE_DP,
                             isClickEnabled = !uiState.isDragging,
-                            lastUpdated = uiState.lastUpdated,
                         )
                     }
 
@@ -331,7 +289,6 @@ fun DashboardScreen(
                             size = BOX_SIZE_DP,
                             onLongPress = { viewModel.openBundleCreator() },
                             isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
-                            lastUpdated = uiState.lastUpdated,
                         )
                     }
                 }
@@ -422,7 +379,6 @@ fun DashboardScreen(
                                         }
                                     },
                                     isClickEnabled = !uiState.isDragging && uiState.isDeckEnabled,
-                                    lastUpdated = uiState.lastUpdated,
                                 )
                             }
                         }
@@ -437,9 +393,12 @@ fun DashboardScreen(
     }
 
     if (uiState.isBundleCreatorDialogOpen) {
-        CreateBundleDialog(
+        TextFieldDialog(
+            titleText = stringResource(id = R.string.ds_d_create_bundle),
+            confirmText = stringResource(id = R.string.create),
+            textFieldLabel = stringResource(id = R.string.ds_d_bundle_name),
             onDismissRequest = { viewModel.closeBundleCreatorDialog() },
-            onCreateClicked = {
+            onConfirmClicked = {
                 viewModel.closeBundleCreatorDialog()
                 coroutineScope.launch {
                     viewModel.createBundle(it)
@@ -453,9 +412,12 @@ fun DashboardScreen(
         )
 
     } else if (uiState.isDeckCreatorDialogOpen) {
-        CreateDeckDialog(
+        TextFieldDialog(
+            titleText = stringResource(id = R.string.ds_d_create_deck),
+            confirmText = stringResource(id = R.string.create),
+            textFieldLabel = stringResource(id = R.string.ds_d_deck_name),
             onDismissRequest = { viewModel.closeDeckCreatorDialog() },
-            onCreateClicked = {
+            onConfirmClicked = {
                 viewModel.closeDeckCreatorDialog()
                 viewModel.closeCreateOptions()
                 coroutineScope.launch {
@@ -468,13 +430,17 @@ fun DashboardScreen(
         )
 
     } else if (uiState.isEditBundleNameDialogOpen) {
-        CreateBundleDialog(
-            editMode = true,
-            onDismissRequest = { viewModel.closeEditBundleNameDialog() },
-            onCreateClicked = {
-                viewModel.closeEditBundleNameDialog()
+        TextFieldDialog(
+            titleText = stringResource(id = R.string.ds_d_create_bundle),
+            confirmText = stringResource(id = R.string.save),
+            textFieldLabel = stringResource(id = R.string.ds_d_bundle_name),
+            onDismissRequest = { viewModel.closeBundleCreatorDialog() },
+            onConfirmClicked = {
+                viewModel.closeBundleCreatorDialog()
                 coroutineScope.launch {
-                    viewModel.updateCurrentBundleName(it)
+                    viewModel.createBundle(it)
+                    viewModel.closeBundleCreator()
+                    viewModel.requestCloseBundleAnim()
                 }
             },
             setUserInput = { viewModel.setUserInput(it) },
@@ -511,17 +477,12 @@ fun SelectableComposable(
     isBundle: Boolean,
     size: Int,
     onLongPress: () -> Unit = {},
-    onDragStart: (Offset) -> Unit = {},
-    onDrag: (Offset) -> Unit = {},
-    onDrop: () -> Unit = {},
-    onDropCancel: () -> Unit = {},
     onDraggedOver: () -> Unit = {},
     onDraggedAway: () -> Unit = {},
     dragPosition: Offset = Offset.Zero,
     isDropOnAllowed: Boolean = false,
     isClickEnabled: Boolean = true,
     alpha: Float = 1f,
-    lastUpdated: Long,
 ) {
 
     var isVisible by remember { mutableStateOf(false) }
@@ -1110,183 +1071,6 @@ fun CreateOptionButton(
                 modifier = Modifier
                     .rotate(optionOpenAnim.value * -45f)
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun CreateBundleDialog(
-    editMode: Boolean = false,
-    onDismissRequest: () -> Unit,
-    onCreateClicked: (String) -> Unit,
-    setUserInput: (String) -> Unit,
-    userInput: String?,
-    focusManager: FocusManager,
-    ) {
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0, 0, 0, 127))) {}
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        val smallPadding = dimensionResource(R.dimen.padding_small)
-        val mediumPadding = dimensionResource(R.dimen.padding_medium)
-        val largePadding = dimensionResource(R.dimen.padding_large)
-        var isError by remember { mutableStateOf(false) }
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .padding(mediumPadding)
-                    .fillMaxWidth()
-
-            ) {
-                Text(
-                    text = stringResource(id = R.string.ds_d_create_bundle),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Column(
-                    modifier = Modifier.padding(top = smallPadding, bottom = largePadding)
-                ) {
-                    if (isError) {
-                        Text(
-                            text = stringResource(id = R.string.e_field_required),
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                    OutlinedTextField(
-                        value = userInput ?: "",
-                        onValueChange = { setUserInput(if (it.length <= StringLength.SHORT.maxLength) it else it.substring(0..StringLength.SHORT.maxLength)) },
-                        label = { Text(stringResource(id = R.string.ds_d_bundle_name)) },
-                        isError = isError,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onNext = {focusManager.moveFocus(FocusDirection.Exit) }),
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.cancel)) }
-                    Button(
-                        onClick = {
-                            if (userInput.isNullOrBlank()) {
-                                isError = true
-                            } else {
-                                onCreateClicked(userInput)
-                            }
-                        },
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(if (editMode) stringResource(id = R.string.save) else stringResource(id = R.string.create)) }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-fun CreateDeckDialog(
-    onDismissRequest: () -> Unit,
-    onCreateClicked: (String) -> Unit,
-    setUserInput: (String) -> Unit,
-    userInput: String?,
-    focusManager: FocusManager,
-) {
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0, 0, 0, 127))
-    ) {}
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-
-        val smallPadding = dimensionResource(R.dimen.padding_small)
-        val mediumPadding = dimensionResource(R.dimen.padding_medium)
-        val largePadding = dimensionResource(R.dimen.padding_large)
-        var isError by remember { mutableStateOf(false) }
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Column(
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(mediumPadding)
-
-            ) {
-                Text(
-                    text = stringResource(id = R.string.ds_d_create_deck),
-                    fontSize = 24.sp,
-                    textAlign = TextAlign.Center,
-                )
-                Column(
-                    modifier = Modifier.padding(top = smallPadding, bottom = largePadding)
-                ) {
-                    if (isError) {
-                        Text(
-                            text = stringResource(id = R.string.e_field_required),
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Start,
-                        )
-                    }
-                    OutlinedTextField(
-                        value = userInput ?: "",
-                        onValueChange = {
-                            setUserInput(
-                                if (it.length <= StringLength.SHORT.maxLength) it else it.substring(
-                                    0..StringLength.SHORT.maxLength
-                                )
-                            )
-                        },
-                        label = { Text(stringResource(id = R.string.ds_d_deck_name)) },
-                        isError = isError,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onNext = {
-                            focusManager.moveFocus(
-                                FocusDirection.Exit
-                            )
-                        }),
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    TextButton(
-                        onClick = onDismissRequest,
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.cancel)) }
-                    Button(
-                        onClick = {
-                            if (userInput.isNullOrBlank()) {
-                                isError = true
-                            } else {
-                                onCreateClicked(userInput)
-                            }
-                        },
-                        modifier = Modifier.size(120.dp, 40.dp)
-                    ) { Text(stringResource(id = R.string.create)) }
-                }
-            }
         }
     }
 }
