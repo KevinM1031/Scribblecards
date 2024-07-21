@@ -2,6 +2,7 @@ package com.example.flashcards.ui.mainMenu
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,11 +73,26 @@ fun MainMenuScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .background(MaterialTheme.colorScheme.primaryContainer)
     ) {
+
         Spacer(Modifier.weight(0.5f))
+        Text(
+            text = "Scribblecards",
+            fontSize = 42.sp,
+            overflow = TextOverflow.Visible,
+            maxLines = 1,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+
+        Spacer(Modifier.weight(0.2f))
         FilledTonalButton(
             onClick = { onAllCardsButtonClicked() },
             shape = RoundedCornerShape(percent = 3),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
             modifier = Modifier
                 .size(300.dp)
                 .padding(mediumPadding)
@@ -103,8 +120,8 @@ fun MainMenuScreen(
             onClick = { onPriorityDecksButtonClicked() },
             shape = RoundedCornerShape(percent = 6),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (uiState.numPriorityDecks == 0) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
-                contentColor = if (uiState.numPriorityDecks == 0) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary,
+                containerColor = if (uiState.numPriorityDecks == 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.secondary,
+                contentColor = if (uiState.numPriorityDecks == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary,
             ),
             modifier = Modifier
                 .size(
@@ -143,6 +160,7 @@ fun MainMenuScreen(
         Spacer(Modifier.weight(0.5f))
         IconButton(
             onClick = { onSettingsButtonClicked() },
+            colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary),
             modifier = Modifier
                 .padding(mediumPadding)
         ) {

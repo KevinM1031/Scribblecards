@@ -232,6 +232,13 @@ fun ImportCardsScreen (
                                     modifier = Modifier
                                         .fillMaxWidth()
                                 ) {
+                                    TextButton(
+                                        onClick = { viewModel.toggleImportThroughTextScreen() },
+                                        colors = ButtonDefaults.buttonColors(
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
+                                        modifier = Modifier.size(120.dp, 40.dp)
+                                    ) { Text(stringResource(id = R.string.cancel)) }
                                     Button(
                                         enabled = uiState.iTT_inputText.isNotBlank() && uiState.iTT_questionLines.isNotBlank() && uiState.iTT_answerLines.isNotBlank(),
                                         colors = ButtonDefaults.buttonColors(
@@ -254,13 +261,6 @@ fun ImportCardsScreen (
                                         },
                                         modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text(stringResource(id = R.string.import_)) }
-                                    TextButton(
-                                        onClick = { viewModel.toggleImportThroughTextScreen() },
-                                        colors = ButtonDefaults.buttonColors(
-                                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                                        ),
-                                        modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text(stringResource(id = R.string.cancel)) }
                                 }
                             } else if (uiState.isUploadCsvFileScreenOpen) {
                                 Row(
@@ -269,6 +269,13 @@ fun ImportCardsScreen (
                                     modifier = Modifier
                                         .fillMaxWidth()
                                 ) {
+                                    TextButton(
+                                        onClick = { viewModel.toggleUploadCsvFileScreen() },
+                                        colors = ButtonDefaults.buttonColors(
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
+                                        modifier = Modifier.size(120.dp, 40.dp)
+                                    ) { Text(stringResource(id = R.string.cancel)) }
                                     Button(
                                         enabled = uiState.uCF_csvFileData.isNotEmpty() && uiState.uCF_questionIndex != null && uiState.uCF_answerIndex != null,
                                         colors = ButtonDefaults.buttonColors(
@@ -291,13 +298,6 @@ fun ImportCardsScreen (
                                         },
                                         modifier = Modifier.size(120.dp, 40.dp)
                                     ) { Text(stringResource(id = R.string.import_)) }
-                                    TextButton(
-                                        onClick = { viewModel.toggleUploadCsvFileScreen() },
-                                        colors = ButtonDefaults.buttonColors(
-                                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                                        ),
-                                        modifier = Modifier.size(120.dp, 40.dp)
-                                    ) { Text(stringResource(id = R.string.cancel)) }
                                 }
                             } else {
                                 val errorPfx = stringResource(id = R.string.ic_e_card_limit)
@@ -640,7 +640,7 @@ fun UploadCsvFileScreen(
                         else -> ""
                     }
                 ),
-                color = if (errorState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
+                color = if (errorState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer,
                 textAlign = TextAlign.Start,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -685,7 +685,7 @@ fun UploadCsvFileScreen(
                     fontSize = 16.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = if (errorState == UCF_ErrorState.FILE_TOO_LARGE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = if (errorState == UCF_ErrorState.FILE_TOO_LARGE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -733,13 +733,13 @@ fun UploadCsvFileScreen(
                 focusManager = focusManager,
                 isLast = true,
                 modifier = Modifier
-                    .padding(vertical = smallPadding)
+                    .padding(top = smallPadding, bottom = mediumPadding)
             )
 
             Column {
                 Text(
                     text = stringResource(id = R.string.ic_preview),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                     textAlign = TextAlign.Center,
                 )
 
@@ -1037,16 +1037,14 @@ fun ImportThroughTextScreen(
                 useNumberKeyboard = true,
                 isLast = true,
                 modifier = Modifier
-                    .padding(vertical = smallPadding)
+                    .padding(top = smallPadding, bottom = mediumPadding)
                     .focusRequester(focusRequesterI)
             )
-
-            Spacer(modifier = Modifier.height(smallPadding))
 
             Column {
                 Text(
                     text = stringResource(id = R.string.ic_preview),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                     textAlign = TextAlign.Center,
                 )
 
@@ -1244,7 +1242,7 @@ fun BringFromDecksScreen(
                 Text(
                     text = stringResource(id = R.string.ic_deck_bundle),
                     fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(top = smallPadding)
                 )
                 Card(
@@ -1307,7 +1305,7 @@ fun BringFromDecksScreen(
                 Text(
                     text = stringResource(id = R.string.ic_deck_deck),
                     fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(top = smallPadding)
                 )
                 Card(
@@ -1446,7 +1444,7 @@ fun CustomTextField(
     ) {
         Text(
             text = text + if (isError) " - $errorMessage" else "",
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer,
             modifier = Modifier
                 .fillMaxWidth()
         )

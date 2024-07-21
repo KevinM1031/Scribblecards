@@ -107,7 +107,7 @@
     <string name="ic_drive">Link to Google Drive</string>
 
     <string name="ic_csv">Upload .CSV file</string>
-    <string name="ic_csv_tip">Upload .CSV spreadsheet file.</string>
+    <string name="ic_csv_tip">Export a spreadsheet as a .CSV file and upload it here to convert it into cards.\n\nFirst, ensure that the spreadsheet contains its questions, answers, hints, and examples in their own columns. Upload the file to this application, and assign the column number to its respective information. If the spreadsheet uses alphabetical notations for its columns, convert it to a number based on its alphabetical order (A=1, B=2, and so on). Check the preview and import.</string>
     <string name="ic_csv_select_file">Select .CSV file</string>
     <string name="ic_csv_e_file_empty">&#160;- file is empty.</string>
     <string name="ic_csv_e_file_incomplete">&#160;- file contains inconsistent data.</string>
@@ -124,8 +124,8 @@
     <string name="ic_csv_hint_column">Hint text column (optional)</string>
     <string name="ic_csv_example_column">Example text column (optional)</string>
 
-    <string name="ic_text">Import through copied text</string>
-    <string name="ic_text_tip">Copy and paste the raw text from other apps or websites.</string>
+    <string name="ic_text">Import with text</string>
+    <string name="ic_text_tip">From tables or lists found online, copy and paste the entire text and convert them into cards. For more detailed or complex tasks, we recommend uploading a .CSV file instead.\n\nFirst, copy and paste the desired text. The result will appear as a list of questions and answers (and hints, etc. if included), each separated in its own line. This list is expected to have a recurring pattern (question in line 1, answer in lines 2-3, then next question in line 4, and so on).\n\nIn this case, set "Question text lines" as 1, and set "Answer text lines" as 2-3, and the first card will be created. If present, hints and examples can be added in the same manner. If some lines contain irrelevant informations such as numberings, add them to "Lines to ignore". Assuming that this pattern repeats throughout the entire list, the following lines will automatically be converted into the remaining cards. Check the preview and import.</string>
     <string name="ic_text_text">Copied text</string>
     <string name="ic_text_text_tip">Copy and paste text directly from a table, list, etc.</string>
     <string name="ic_text_e_text_incomplete">text is either incomplete or does not match the line format as defined below.</string>
@@ -170,5 +170,6 @@
     <string name="sms_studied">Cards studied:&#160;</string>
     <string name="sms_perfect">Perfect:&#160;</string>
     <string name="sms_save">Save session data</string>
+    <string name="sms_save_tip">"By saving session data, your performance during this session will be applied to calculate your mastery level for this deck."</string>
 
 </resources>

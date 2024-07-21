@@ -110,7 +110,7 @@ fun TextDialog(
                     .padding(mediumPadding)
                     .fillMaxWidth()
             ) {
-                Text(text = text, textAlign = TextAlign.Center)
+                Text(text = text, textAlign = TextAlign.Start)
                 Spacer(modifier = Modifier.height(largePadding))
                 Button(
                     onClick = { onDismissRequest() },

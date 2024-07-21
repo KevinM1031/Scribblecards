@@ -28,7 +28,6 @@ data class SessionUiState(
     val completedCards: List<Int> = listOf(),
     val cardHistory: Map<Int, CardHistory> = mapOf(),
 
-    val tipText: String = "By saving session data, your performance during this session will be applied to calculate your mastery level for this deck.",
     val oldMasteryLevel: Float = 0f,
     val newMasteryLevel: Float = 0f,
     val numPerfect: Int = 0,

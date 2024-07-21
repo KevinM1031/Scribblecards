@@ -286,7 +286,7 @@ fun SessionScreen (
 
     if (uiState.isTipDialogOpen) {
         TextDialog(
-            text = uiState.tipText,
+            text = stringResource(id = R.string.sms_save_tip),
             onDismissRequest = { viewModel.toggleTipDialog() }
         )
     }

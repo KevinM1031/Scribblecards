@@ -188,6 +188,8 @@ fun DeckScreen (
         },
     ) { innerPadding ->
 
+        val bottomBarHeight = 64.dp
+
         val customCardEditorBar = @Composable {
             val errorPfx = stringResource(id = R.string.dk_e_card_limit)
             val errorSfx = stringResource(id = R.string.dk_e_card_limit_sfx)
@@ -263,6 +265,9 @@ fun DeckScreen (
                         isQnAFlipped = uiState.deck.deck.flipQnA,
                     )
                 }
+                item {
+                    Spacer(modifier = Modifier.height(bottomBarHeight))
+                }
             }
         }
 
@@ -307,7 +312,7 @@ fun DeckScreen (
                         }
                     }
                 },
-                modifier = Modifier.height(64.dp)
+                modifier = Modifier.height(bottomBarHeight)
             )
         }
 
@@ -328,7 +333,7 @@ fun DeckScreen (
         ) {
 
             val tip = stringResource(id = R.string.dk_d_tip)
-            val bottomBarHeight = with (LocalDensity.current) {64.dp.toPx().toInt()}
+            val bottomBarHeight = with (LocalDensity.current) {bottomBarHeight.toPx().toInt()}
 
             AnimatedVisibility(
                 visible = uiState.isSessionOptionsOpen,
@@ -709,7 +714,7 @@ fun DeckStats(
                         progress = displayedMasteryLevel.value,
                         modifier = Modifier.size(circleSize),
                         strokeWidth = 8.dp,
-                        trackColor = Color.White,
+                        trackColor = MaterialTheme.colorScheme.background,
                     )
                     Box(modifier = Modifier
                         .size(circleSize)

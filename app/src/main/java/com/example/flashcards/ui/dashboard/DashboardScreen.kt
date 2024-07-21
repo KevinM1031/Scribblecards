@@ -434,13 +434,11 @@ fun DashboardScreen(
             titleText = stringResource(id = R.string.ds_d_create_bundle),
             confirmText = stringResource(id = R.string.save),
             textFieldLabel = stringResource(id = R.string.ds_d_bundle_name),
-            onDismissRequest = { viewModel.closeBundleCreatorDialog() },
+            onDismissRequest = { viewModel.closeEditBundleNameDialog() },
             onConfirmClicked = {
-                viewModel.closeBundleCreatorDialog()
+                viewModel.closeEditBundleNameDialog()
                 coroutineScope.launch {
-                    viewModel.createBundle(it)
-                    viewModel.closeBundleCreator()
-                    viewModel.requestCloseBundleAnim()
+                    viewModel.updateCurrentBundleName(it)
                 }
             },
             setUserInput = { viewModel.setUserInput(it) },

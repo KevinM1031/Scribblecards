@@ -170,5 +170,6 @@
     <string name="sms_studied">Cards studied:&#160;</string>
     <string name="sms_perfect">Perfect:&#160;</string>
     <string name="sms_save">Save session data</string>
+    <string name="sms_save_tip">"By saving session data, your performance during this session will be applied to calculate your mastery level for this deck."</string>
 
 </resources>

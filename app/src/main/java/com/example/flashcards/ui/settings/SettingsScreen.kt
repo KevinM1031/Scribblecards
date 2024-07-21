@@ -281,10 +281,10 @@ fun SettingsScreen(
                             text = { Text(text = "English") },
                             onClick = { viewModel.setLanguage(Language.ENG); dropdownMenuState = 0 },
                         )
-                        DropdownMenuItem(
-                            text = { Text(text = "日本語") },
-                            onClick = { viewModel.setLanguage(Language.JPN); dropdownMenuState = 0 },
-                        )
+//                        DropdownMenuItem(
+//                            text = { Text(text = "日本語") },
+//                            onClick = { viewModel.setLanguage(Language.JPN); dropdownMenuState = 0 },
+//                        )
                         DropdownMenuItem(
                             text = { Text(text = "한국어") },
                             onClick = { viewModel.setLanguage(Language.KOR); dropdownMenuState = 0 },
