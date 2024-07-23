@@ -648,12 +648,32 @@ class ImportCardsViewModel(
         val reader = context.contentResolver.openInputStream(uri)?.bufferedReader()
         val strList = mutableListOf<List<String>>()
         while (reader?.ready() == true) {
-            val row = reader.readLine()?.split(",")
-            if (!row.isNullOrEmpty()) {
-                strList.add(row)
+            val row = reader.readLine()
+            val rowItems = mutableListOf<String>()
+            var item = ""
+            var prevChar = ','
+            var inQuotation = false
+            for (char in row) {
+                if (!inQuotation && char == '"' && prevChar == ',') {
+                    inQuotation = true
+                } else if (inQuotation && char == '"') {
+                    inQuotation = false
+
+                } else if (!inQuotation && char == ',') {
+                    rowItems.add(item)
+                    item = ""
+                } else {
+                    item += char
+                }
+                prevChar = char
+            }
+
+            if (!rowItems.isNullOrEmpty()) {
+                strList.add(rowItems)
             }
         }
         reader?.close()
+
         _uiState.update { currentState ->
             currentState.copy(
                 uCF_csvFileName = fileName,
