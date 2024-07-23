@@ -3,6 +3,7 @@ package com.example.flashcards.ui.deck
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import androidx.compose.ui.focus.FocusRequester
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -12,11 +13,13 @@ import com.example.flashcards.data.Constants
 import com.example.flashcards.data.entities.Card
 import com.example.flashcards.data.entities.Deck
 import com.example.flashcards.data.relations.BundleWithDecks
+import com.opencsv.CSVReader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.InputStreamReader
 
 class ImportCardsViewModel(
     private val cardsRepository: CardsRepository,
@@ -645,34 +648,49 @@ class ImportCardsViewModel(
             return
         }
 
-        val reader = context.contentResolver.openInputStream(uri)?.bufferedReader()
+//        val reader = context.contentResolver.openInputStream(uri)?.bufferedReader()
+//        val strList = mutableListOf<List<String>>()
+//        while (reader?.ready() == true) {
+//
+//            val row = reader.readLine()
+//            val rowItems = mutableListOf<String>()
+//            var item = ""
+//            var prevChar = ','
+//            var inQuotation = false
+//            for (char in row) {
+//
+//                if (!inQuotation && char == '"' && prevChar == ',') {
+//                    inQuotation = true
+//                } else if (!inQuotation && char == ',') {
+//                    rowItems.add(item)
+//                    item = ""
+//                } else if (inQuotation && char == ',' && prevChar == '"') {
+//                    Log.d("debug", "$item")
+//                    inQuotation = false
+//                    rowItems.add(item.substring(0..<item.length-1))
+//                    item = ""
+//                } else {
+//                    item += char
+//                }
+//                prevChar = char
+//            }
+//
+//            if (!rowItems.isNullOrEmpty()) {
+//                strList.add(rowItems)
+//            }
+//        }
+//        reader?.close()
+
+        val csvReader = CSVReader(InputStreamReader(context.contentResolver.openInputStream(uri)))
+        val data = csvReader.readAll()
         val strList = mutableListOf<List<String>>()
-        while (reader?.ready() == true) {
-            val row = reader.readLine()
-            val rowItems = mutableListOf<String>()
-            var item = ""
-            var prevChar = ','
-            var inQuotation = false
-            for (char in row) {
-                if (!inQuotation && char == '"' && prevChar == ',') {
-                    inQuotation = true
-                } else if (inQuotation && char == '"') {
-                    inQuotation = false
-
-                } else if (!inQuotation && char == ',') {
-                    rowItems.add(item)
-                    item = ""
-                } else {
-                    item += char
-                }
-                prevChar = char
+        for (rowData in data) {
+            val row = mutableListOf<String>()
+            for (item in rowData) {
+                row.add(item)
             }
-
-            if (!rowItems.isNullOrEmpty()) {
-                strList.add(rowItems)
-            }
+            strList.add(row)
         }
-        reader?.close()
 
         _uiState.update { currentState ->
             currentState.copy(
