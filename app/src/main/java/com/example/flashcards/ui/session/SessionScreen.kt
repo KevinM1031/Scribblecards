@@ -177,7 +177,11 @@ fun SessionScreen (
                             onHintButtonClicked = { viewModel.showHint() },
                             onExampleButtonClicked = { viewModel.showExample() },
                             onInfoButtonClicked = { viewModel.toggleInfo() },
-                            onSkipButtonClicked = { viewModel.skipCard() },
+                            onSkipButtonClicked = {
+                                viewModel.skipCard()
+                                viewModel.clearStrokes()
+                                newStroke.clear()
+                            },
                             onFlipButtonClicked = { viewModel.flipCard() },
                             setContentFlip = { viewModel.setContentFlip(it) },
                             nextCard = {
@@ -495,13 +499,13 @@ fun CardComponent(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Correct",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = Color.Green,
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Wrong",
-                            tint = MaterialTheme.colorScheme.secondary,
+                            tint = Color.Red,
                         )
                     }
                 }
