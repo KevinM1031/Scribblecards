@@ -372,6 +372,7 @@ fun SessionMenu(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(smallPadding)
+                        .background(MaterialTheme.colorScheme.background)
                         .height(8.dp),
                 )
             }
@@ -492,7 +493,10 @@ fun CardComponent(
                     .padding(end = mediumPadding)
             )
             if (cardHistoryList.isEmpty()) {
-                Text("New")
+                Text(
+                    text = "New",
+                    color = MaterialTheme.colorScheme.primary,
+                )
             } else {
                 for (wasCorrect in cardHistoryList) {
                     if (wasCorrect) {
@@ -720,7 +724,10 @@ fun Flashcard(
                     ) {
                         if (isHistoryShown && cardSkip.value == 0f)
                             if (historyList.isEmpty()) {
-                                Text(stringResource(id = R.string.sss_new))
+                                Text(
+                                    text = stringResource(id = R.string.sss_new),
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
                             } else {
                                 for (wasCorrect in currentCardHistory.getHistory()) {
                                     if (wasCorrect) {
@@ -790,7 +797,7 @@ fun Flashcard(
                     modifier = Modifier
                         .weight(0.5f)
                 ) {
-                    if (!card.hintText.isNullOrEmpty() && ((!flipContent && !flipQnA) || (flipContent && flipQnA))) {
+                    if (!card.hintText.isNullOrEmpty() && (flipContent == flipQnA)) {
                         if (isHintShown) {
                             Text(
                                 text = card.hintText ?: "",
@@ -814,7 +821,7 @@ fun Flashcard(
                                 )
                             }
                         }
-                    } else if (!card.exampleText.isNullOrEmpty()) {
+                    } else if (!card.exampleText.isNullOrEmpty() && (flipContent != flipQnA)) {
                         if (isExampleShown) {
                             Text(
                                 text = card.exampleText ?: "",
