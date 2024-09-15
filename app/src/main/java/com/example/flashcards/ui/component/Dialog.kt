@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +50,7 @@ fun AlertDialog(
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val largePadding = dimensionResource(R.dimen.padding_large)
+    val scrollState = rememberScrollState()
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -55,7 +58,7 @@ fun AlertDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().verticalScroll(scrollState)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
@@ -95,13 +98,14 @@ fun TextDialog(
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val largePadding = dimensionResource(R.dimen.padding_large)
+    val scrollState = rememberScrollState()
 
     Box(modifier = Modifier
         .fillMaxSize()
         .background(Color(0, 0, 0, 127))) {}
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().verticalScroll(scrollState)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceBetween,
@@ -135,6 +139,7 @@ fun ConfirmOrCancelDialog(
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val largePadding = dimensionResource(R.dimen.padding_large)
+    val scrollState = rememberScrollState()
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -142,7 +147,7 @@ fun ConfirmOrCancelDialog(
     Dialog(onDismissRequest = { onDismissRequest() }) {
 
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().verticalScroll(scrollState)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
@@ -214,10 +219,11 @@ fun TextFieldDialog(
         val mediumPadding = dimensionResource(R.dimen.padding_medium)
         val largePadding = dimensionResource(R.dimen.padding_large)
         var isError by remember { mutableStateOf(false) }
+        val scrollState = rememberScrollState()
 
         Card(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth().verticalScroll(scrollState)
         ) {
             Column(
                 verticalArrangement = Arrangement.SpaceEvenly,
