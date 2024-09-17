@@ -221,7 +221,7 @@ fun CustomTextField(
     ) {
         Text(
             text = text + if (isError) errorMessage else "",
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer,
             modifier = Modifier
                 .fillMaxWidth()
         )
