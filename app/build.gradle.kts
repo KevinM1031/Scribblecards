@@ -30,7 +30,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.flashcards"
+        applicationId = "com.kevin1031.flashcards"
         minSdk = 25
         targetSdk = 34
         versionCode = 1
@@ -72,7 +72,7 @@ android {
             excludes += "META-INF/DEPENDENCIES"
         }
     }
-    namespace = "com.example.flashcards"
+    namespace = "com.kevin1031.flashcards"
 }
 
 dependencies {

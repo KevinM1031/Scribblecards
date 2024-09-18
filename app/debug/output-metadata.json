@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.flashcards",
+  "applicationId": "com.kevin1031.flashcards",
   "variantName": "debug",
   "elements": [
     {
