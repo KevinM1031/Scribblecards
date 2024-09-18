@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="[https://raw.githubusercontent.com/KevinM1031/SimpleSheet/master/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp](https://raw.githubusercontent.com/KevinM1031/Scribblecards/master/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp)" alt="Icon" title="icon">
+  <img src="https://raw.githubusercontent.com/KevinM1031/Scribblecards/master/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" alt="Icon" title="icon">
 </p>
 
 <h1 class="code-line">
